@@ -27,32 +27,49 @@ body {
   overflow: hidden;
 }
 
+button {
+  font: inherit;
+}
+
 #app {
   width: 100vw;
   height: 100vh;
   display: grid;
   place-items: center;
+  padding: 24px;
 }
 
 .scene-shell {
   position: relative;
-  width: min(900px, 100vw);
-  height: min(680px, 100vh);
+  width: min(1100px, 100%);
+  height: min(720px, 100%);
   border: 1px solid rgba(180, 160, 255, 0.18);
-  background: rgba(22, 17, 35, 0.28);
-  border-radius: 28px;
+  background: rgba(22, 17, 35, 0.32);
+  border-radius: 30px;
   box-shadow: 0 30px 80px rgba(0, 0, 0, 0.3);
   overflow: hidden;
   backdrop-filter: blur(10px);
+  display: grid;
+  grid-template-columns: minmax(260px, 340px) minmax(420px, 1fr);
 }
 
-.pet-panel {
+.page-glow {
   position: absolute;
-  top: 28px;
-  left: 28px;
-  z-index: 2;
-  max-width: 320px;
-  color: #f8f2ff;
+  inset: 0;
+  background: radial-gradient(circle at 80% 20%, rgba(161, 137, 255, 0.25), transparent 32%);
+  pointer-events: none;
+}
+
+.study-panel,
+.workspace-card {
+  position: relative;
+  z-index: 1;
+}
+
+.study-panel {
+  padding: 32px 28px;
+  border-right: 1px solid rgba(180, 160, 255, 0.14);
+  background: rgba(18, 12, 30, 0.2);
 }
 
 .pet-status {
@@ -63,13 +80,13 @@ body {
   border-radius: 999px;
   background: rgba(137, 111, 255, 0.18);
   border: 1px solid rgba(182, 168, 255, 0.22);
-  font-size: 0.75rem;
+  font-size: 0.72rem;
   letter-spacing: 0.08em;
   text-transform: uppercase;
+  color: #f4ebff;
 }
 
 .status-dot {
-  display: inline-block;
   width: 8px;
   height: 8px;
   border-radius: 50%;
@@ -77,18 +94,181 @@ body {
   box-shadow: 0 0 12px rgba(122, 247, 199, 0.8);
 }
 
-.pet-panel h1 {
-  margin: 18px 0 8px;
-  font-size: clamp(2.6rem, 5vw, 4.4rem);
+.study-panel h1 {
+  margin: 20px 0 10px;
+  font-size: clamp(2.6rem, 4vw, 4rem);
   line-height: 0.95;
   letter-spacing: -0.06em;
+  color: #f8f2ff;
 }
 
-.pet-panel p {
+.eyebrow {
+  margin: 0 0 20px;
+  color: rgba(244, 235, 255, 0.75);
+  font-size: 0.9rem;
+}
+
+.summary-card {
+  padding: 18px 18px 16px;
+  border-radius: 20px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(182, 168, 255, 0.12);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.06);
+}
+
+.summary-card .label {
+  display: block;
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: rgba(244, 235, 255, 0.66);
+}
+
+.summary-card strong {
+  display: block;
+  margin-top: 10px;
+  font-size: 1.2rem;
+  color: #fff;
+}
+
+.summary-card p {
+  margin: 8px 0 0;
+  color: rgba(244, 235, 255, 0.74);
+  font-size: 0.9rem;
+}
+
+.actions-row {
+  display: flex;
+  gap: 12px;
+  margin-top: 24px;
+}
+
+.primary-btn,
+.ghost-btn {
+  border: none;
+  padding: 0.8rem 1.1rem;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: transform 0.15s ease, opacity 0.15s ease;
+}
+
+.primary-btn {
+  background: linear-gradient(135deg, #9b7cff, #6f5fe6);
+  color: white;
+  box-shadow: 0 10px 26px rgba(120, 101, 255, 0.35);
+}
+
+.ghost-btn {
+  background: rgba(255, 255, 255, 0.06);
+  color: #f4ebff;
+  border: 1px solid rgba(255,255,255,0.08);
+}
+
+.primary-btn:hover,
+.ghost-btn:hover {
+  transform: translateY(-1px);
+}
+
+.small {
+  padding: 0.6rem 0.9rem;
+  font-size: 0.82rem;
+}
+
+.mini-stats {
+  list-style: none;
+  padding: 0;
+  margin: 26px 0 0;
+  display: grid;
+  gap: 14px;
+}
+
+.mini-stats li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 14px;
+  border-radius: 14px;
+  background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(255,255,255,0.05);
+}
+
+.mini-stats span {
+  color: rgba(244, 235, 255, 0.7);
+}
+
+.mini-stats strong {
+  color: #fff;
+}
+
+.workspace-card {
+  padding: 26px 28px 28px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.workspace-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 18px;
+}
+
+.chip {
+  display: inline-block;
+  padding: 7px 10px;
+  border-radius: 999px;
+  background: rgba(165, 146, 255, 0.14);
+  border: 1px solid rgba(182, 168, 255, 0.15);
+  color: #e7ddff;
+  font-size: 0.74rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.lesson-box {
+  padding: 22px 20px;
+  background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(182, 168, 255, 0.12);
+  border-radius: 20px;
+}
+
+.lesson-box h2 {
+  margin: 0 0 10px;
+  color: #fff;
+  font-size: 1.4rem;
+}
+
+.lesson-box p {
   margin: 0;
-  font-size: 1rem;
-  line-height: 1.6;
-  color: rgba(244, 235, 255, 0.8);
+  color: rgba(244, 235, 255, 0.76);
+}
+
+.lesson-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+  margin-top: 22px;
+}
+
+.mini-box {
+  padding: 18px 16px;
+  border-radius: 18px;
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.05);
+}
+
+.mini-box span {
+  display: block;
+  color: rgba(244, 235, 255, 0.72);
+  font-size: 0.8rem;
+}
+
+.mini-box strong {
+  display: block;
+  margin-top: 10px;
+  color: #fff;
+  font-size: 1.5rem;
 }
 
 #pet-stage {
@@ -96,12 +276,15 @@ body {
   inset: 0;
   width: 100%;
   height: 100%;
+  z-index: 2;
+  pointer-events: none;
 }
 
 #pet-stage canvas {
   display: block;
   width: 100% !important;
   height: 100% !important;
+  pointer-events: none;
 }
 
 .model-fallback {
@@ -109,7 +292,29 @@ body {
   inset: 0;
   display: grid;
   place-items: center;
-  font-size: 1.1rem;
+  font-size: 1rem;
   color: #f4ebff;
   background: rgba(20, 12, 29, 0.6);
 }
+
+@media (max-width: 840px) {
+  #app {
+    padding: 12px;
+  }
+
+  .scene-shell {
+    grid-template-columns: 1fr;
+    height: auto;
+    min-height: 740px;
+  }
+
+  .study-panel {
+    border-right: none;
+    border-bottom: 1px solid rgba(180, 160, 255, 0.14);
+  }
+
+  .lesson-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
