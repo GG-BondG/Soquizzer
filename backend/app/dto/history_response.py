@@ -38,6 +38,8 @@ class AttemptQuestion(BaseModel):
     options: list[str]
     answer_index: int
     explanation: str
+    anchor_section: str
+    source_excerpt: str
     selected_index: int | None  # None if the student left the question unanswered
     is_correct: bool | None
 

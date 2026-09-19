@@ -1,10 +1,43 @@
-from app.dto import AnswerResult, Mistake, ProgressResponse, SubmissionRequest, SubmissionResponse, TypeStat
+from app.dto import (
+    AnswerResult,
+    Mistake,
+    ProgressResponse,
+    RereadSuggestion,
+    SubmissionRequest,
+    SubmissionResponse,
+    TypeStat,
+)
 from app.entity import Answer, Attempt, Question, Quiz
 from app.exception import FileTooLargeError, InvalidSubmissionError, NoMaterialError, QuizNotFoundError
 from app.llm import PastMistake, QuizGenerator, TypeAccuracy
 from app.repository import AnswerRepository, AttemptRepository, MaterialRepository, QuizRepository
 from app.service.course_service import CourseService
 from app.service.section_service import SectionService
+
+_REREAD_SCAN_LIMIT = 200  # how many still-wrong questions are grouped into reread suggestions
+_REREAD_EXCERPTS = 3  # passages listed per suggestion
+_REREAD_SUGGESTIONS = 10
+
+
+def _reread_suggestions(mistakes: list[Question]) -> list[RereadSuggestion]:
+    """Group still-wrong questions (newest mistake first) by the part of the material they come from; the biggest
+    trouble spots first."""
+    groups: dict[str, list[Question]] = {}
+    for question in mistakes:
+        anchor = question.anchor_section.strip()
+        if anchor:  # quizzes made before source anchors existed have none
+            groups.setdefault(anchor, []).append(question)
+    ranked = sorted(groups.items(), key=lambda item: (-len(item[1]), item[0]))
+    return [
+        RereadSuggestion(
+            anchor_section=anchor,
+            mistake_count=len(questions),
+            excerpts=list(dict.fromkeys(q.source_excerpt.strip() for q in questions if q.source_excerpt.strip()))[
+                :_REREAD_EXCERPTS
+            ],
+        )
+        for anchor, questions in ranked[:_REREAD_SUGGESTIONS]
+    ]
 
 
 class QuizService:
@@ -43,7 +76,7 @@ class QuizService:
             raise FileTooLargeError("The course material is too large to fit in one quiz prompt")
 
         mistakes = [
-            PastMistake(q.stem, q.options, q.answer_index, a.selected_index, q.explanation)
+            PastMistake(q.stem, q.options, q.answer_index, a.selected_index, q.explanation, q.anchor_section)
             for q, a in self._answers.still_wrong(self._mistake_review_limit, section_id=section.id)
         ]
         accuracy = [
@@ -59,6 +92,8 @@ class QuizService:
                 options=item.options,
                 answer_index=item.answer_index,
                 explanation=item.explanation,
+                anchor_section=item.anchor_section.strip()[:255],
+                source_excerpt=item.source_excerpt.strip()[:1000],
             )
             for position, item in enumerate(generated.questions, start=1)
         ]
@@ -100,6 +135,8 @@ class QuizService:
                     is_correct=is_correct,
                     answer_index=question.answer_index,
                     explanation=question.explanation,
+                    anchor_section=question.anchor_section,
+                    source_excerpt=question.source_excerpt,
                 )
             )
         score = sum(a.is_correct for a in answers)
@@ -116,6 +153,7 @@ class QuizService:
 
     def progress(self, course_id: str) -> ProgressResponse:
         course = self._courses.get(course_id)
+        still_wrong = self._answers.still_wrong(_REREAD_SCAN_LIMIT, course_id=course.id)
         return ProgressResponse(
             by_type=[
                 TypeStat(type=kind, total=total, correct=correct)
@@ -132,7 +170,10 @@ class QuizService:
                     explanation=q.explanation,
                     selected_index=a.selected_index,
                     answered_at=a.answered_at,
+                    anchor_section=q.anchor_section,
+                    source_excerpt=q.source_excerpt,
                 )
-                for q, a in self._answers.still_wrong(self._mistake_review_limit, course_id=course.id)
+                for q, a in still_wrong[: self._mistake_review_limit]
             ],
+            reread=_reread_suggestions([q for q, _ in still_wrong]),
         )

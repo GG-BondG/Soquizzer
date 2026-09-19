@@ -17,6 +17,8 @@ class AnswerResult(BaseModel):
     is_correct: bool
     answer_index: int
     explanation: str
+    anchor_section: str  # where in the material the question comes from ("" for quizzes made before this existed)
+    source_excerpt: str  # the passage to re-read; shown only after submitting, since it can give the answer away
 
 
 class SubmissionResponse(BaseModel):

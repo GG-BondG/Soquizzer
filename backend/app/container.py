@@ -3,7 +3,7 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
 from app.config import Settings
-from app.entity import Base
+from app.entity import Base, add_missing_columns
 from app.llm import GeminiPdfJsonConverter, GeminiQuizGenerator, PdfJsonConverter, QuizGenerator
 from app.rag import GeminiPageOcr, PageOcr, build_embeddings
 from app.repository import ChunkRepository
@@ -25,6 +25,7 @@ class Container:
         self.settings = settings
         self.engine = create_engine(settings.database_url, connect_args={"check_same_thread": False})
         Base.metadata.create_all(self.engine)
+        add_missing_columns(self.engine)
         self.session_factory = sessionmaker(self.engine, expire_on_commit=False)
         self.storage = LocalStorage(settings.upload_dir)
         self.chunks = ChunkRepository.create(

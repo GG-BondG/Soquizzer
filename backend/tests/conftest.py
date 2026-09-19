@@ -69,6 +69,8 @@ class FakeQuizGenerator:
                     options=options,
                     answer_index=answer,
                     explanation=f"Because {number}.",
+                    anchor_section=f"Section {(number + 1) // 2}",
+                    source_excerpt=f"Passage for question {number}.",
                 )
             )
         return GeneratedQuiz(questions=questions)

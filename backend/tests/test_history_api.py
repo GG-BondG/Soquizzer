@@ -95,6 +95,7 @@ def test_attempt_detail_shows_each_question_with_the_pick_and_the_right_answer(c
     assert first == {
         "question_id": q1, "position": 1, "type": "MULTIPLE_CHOICE", "stem": "Round 1 question 1?",
         "options": ["a", "b", "c", "d"], "answer_index": 1, "explanation": "Because 1.",
+        "anchor_section": "Section 1", "source_excerpt": "Passage for question 1.",
         "selected_index": 1, "is_correct": True,
     }
     assert (second["selected_index"], second["is_correct"], second["answer_index"]) == (1, False, 0)
