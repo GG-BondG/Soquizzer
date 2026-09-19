@@ -34,6 +34,8 @@ export default function QuizPage() {
     setElapsed(0);
     const timer = setInterval(() => setElapsed(Math.floor((Date.now() - startedAt.current) / 1000)), 1000);
     return () => clearInterval(timer);
+    // Restart only for a different quiz or after grading/retaking, not whenever the quiz object is re-created.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [quiz?.id, result]);
 
   async function submit() {
