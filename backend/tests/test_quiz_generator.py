@@ -24,7 +24,10 @@ class StubClient:
 
 
 def question(kind=QuestionType.MULTIPLE_CHOICE, options=("a", "b", "c", "d"), answer_index=1, stem="Q?"):
-    return GeneratedQuestion(type=kind, stem=stem, options=list(options), answer_index=answer_index, explanation="E.")
+    return GeneratedQuestion(
+        type=kind, stem=stem, options=list(options), answer_index=answer_index, explanation="E.",
+        anchor_section="1.2 Cells", source_excerpt="Cells are the basic unit of life.",
+    )
 
 
 def quiz(*questions):
@@ -110,3 +113,13 @@ def test_bad_model_output_or_api_error_raises_llm_error(client):
 def test_missing_api_key_is_a_configuration_error():
     with pytest.raises(ConfigurationError):
         GeminiQuizGenerator(Settings(_env_file=None, google_api_key=""))
+
+
+def test_prompt_asks_for_a_source_anchor_and_names_the_section_of_each_past_mistake():
+    plain = build_prompt(MATERIALS, [], [], 3)
+    with_anchor = build_prompt(MATERIALS, [PastMistake("Q?", ["a", "b"], 1, 0, "E.", anchor_section="1.2 Cells")], [], 3)
+    without_anchor = build_prompt(MATERIALS, [MISTAKE], [], 3)
+
+    assert "anchor_section" in plain and "source_excerpt" in plain
+    assert "Material section: 1.2 Cells" in with_anchor
+    assert "Material section" not in without_anchor

@@ -62,6 +62,8 @@ class HistoryService:
                     options=question.options,
                     answer_index=question.answer_index,
                     explanation=question.explanation,
+                    anchor_section=question.anchor_section,
+                    source_excerpt=question.source_excerpt,
                     selected_index=answer.selected_index if answer else None,
                     is_correct=answer.is_correct if answer else None,
                 )

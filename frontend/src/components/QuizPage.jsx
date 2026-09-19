@@ -139,6 +139,8 @@ export default function QuizPage() {
                 selectedIndex={r?.selected_index}
                 answerIndex={r?.answer_index}
                 explanation={r?.explanation}
+                anchorSection={r?.anchor_section}
+                sourceExcerpt={r?.source_excerpt}
               />
             );
           })}

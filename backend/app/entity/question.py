@@ -30,6 +30,10 @@ class Question(Base):
     options: Mapped[list[str]] = mapped_column(JSON)
     answer_index: Mapped[int]  # 0-based index into options, written by Gemini when it made the question
     explanation: Mapped[str] = mapped_column(Text)
+    # Where in the material the question comes from, so a wrong answer can point the student back to it.
+    # Empty for quizzes made before these columns existed.
+    anchor_section: Mapped[str] = mapped_column(String(255), default="", server_default="")
+    source_excerpt: Mapped[str] = mapped_column(Text, default="", server_default="")
 
     quiz: Mapped[Quiz] = relationship(back_populates="questions")
     answers: Mapped[list["Answer"]] = relationship(back_populates="question", cascade="all, delete-orphan")

@@ -2,9 +2,20 @@ import { typeLabel } from '../format.js';
 import './QuestionReview.css';
 
 // One graded question: every option, the user's pick, the correct answer and the
-// explanation. Used by the quiz results and the history detail page.
+// explanation, and where in the material it came from (so a wrong answer says what to
+// re-read). Used by the quiz results and the history detail page.
 // `selectedIndex` is null/undefined when the question was left unanswered.
-export default function QuestionReview({ number, type, stem, options, selectedIndex, answerIndex, explanation }) {
+export default function QuestionReview({
+  number,
+  type,
+  stem,
+  options,
+  selectedIndex,
+  answerIndex,
+  explanation,
+  anchorSection,
+  sourceExcerpt,
+}) {
   const answered = selectedIndex !== null && selectedIndex !== undefined;
   const correct = answered && selectedIndex === answerIndex;
   const status = !answered ? 'skipped' : correct ? 'correct' : 'wrong';
@@ -39,6 +50,16 @@ export default function QuestionReview({ number, type, stem, options, selectedIn
       </div>
 
       {explanation && <div className="review-explain">{explanation}</div>}
+
+      {(anchorSection || sourceExcerpt) && (
+        <div className="review-source">
+          <div className="review-source-label">
+            {correct ? 'From the material' : 'Re-read this'}
+            {anchorSection ? ` · ${anchorSection}` : ''}
+          </div>
+          {sourceExcerpt && <div className="review-source-text">{sourceExcerpt}</div>}
+        </div>
+      )}
     </div>
   );
 }

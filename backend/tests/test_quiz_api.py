@@ -93,6 +93,7 @@ def test_submission_is_graded_against_the_answer_gemini_wrote(client):
     by_id = {r["question_id"]: r for r in body["results"]}
     assert by_id[first] == {
         "question_id": first, "selected_index": 1, "is_correct": True, "answer_index": 1, "explanation": "Because 1.",
+        "anchor_section": "Section 1", "source_excerpt": "Passage for question 1.",
     }
     wrong = by_id[quiz["questions"][2]["id"]]
     assert wrong["is_correct"] is False and wrong["answer_index"] == 1 and wrong["selected_index"] == 0
@@ -126,7 +127,7 @@ def test_invalid_submission_is_rejected_and_nothing_is_stored(client):
         {"answers": [{"question_id": real, "selected_index": 1}], "time_spent_seconds": -5},
     ]
     assert [client.post(url, json=body).status_code for body in bad_bodies] == [422] * 6
-    assert client.get(f"/api/courses/{course_id}/progress").json() == {"by_type": [], "mistakes": []}
+    assert client.get(f"/api/courses/{course_id}/progress").json() == {"by_type": [], "mistakes": [], "reread": []}
     assert client.get("/api/history").json()["summary"]["attempts"] == 0
 
 
@@ -202,7 +203,7 @@ def test_deleting_a_quiz_removes_its_questions_attempts_and_answers(client, app)
     assert client.delete(f"/api/quizzes/{quiz['id']}").status_code == 204
 
     assert client.get(f"/api/quizzes/{quiz['id']}").status_code == 404
-    assert client.get(f"/api/courses/{course_id}/progress").json() == {"by_type": [], "mistakes": []}
+    assert client.get(f"/api/courses/{course_id}/progress").json() == {"by_type": [], "mistakes": [], "reread": []}
     with app.state.container.session_factory() as session:
         counts = [session.scalar(select(func.count()).select_from(model)) for model in (Question, Attempt, Answer)]
     assert counts == [0, 0, 0]
@@ -222,3 +223,82 @@ def test_deleting_a_course_removes_everything_under_it(client, app):
         models = (Material, Section, Quiz, Question, Attempt, Answer)
         counts = [session.scalar(select(func.count()).select_from(model)) for model in models]
     assert counts == [0] * 6
+
+
+def test_progress_suggests_rereading_the_parts_of_the_material_behind_the_mistakes(client):
+    course_id, section_id = make_course_and_section(client)
+    quiz = create_quiz(client, section_id).json()
+    q1, q2, q3, q4 = [q["id"] for q in quiz["questions"]]
+    submit(client, quiz, correct_ids={q4})  # q1 and q2 come from "Section 1", q3 from "Section 2"
+
+    progress = client.get(f"/api/courses/{course_id}/progress").json()
+
+    first, second = progress["reread"]
+    assert (first["anchor_section"], first["mistake_count"]) == ("Section 1", 2)
+    assert set(first["excerpts"]) == {"Passage for question 1.", "Passage for question 2."}
+    assert second == {"anchor_section": "Section 2", "mistake_count": 1, "excerpts": ["Passage for question 3."]}
+    assert {m["question_id"]: m["anchor_section"] for m in progress["mistakes"]} == {
+        q1: "Section 1", q2: "Section 1", q3: "Section 2",
+    }
+
+
+def test_a_part_stops_being_suggested_once_its_questions_are_answered_correctly(client):
+    course_id, section_id = make_course_and_section(client)
+    quiz = create_quiz(client, section_id).json()
+    ids = [q["id"] for q in quiz["questions"]]
+    submit(client, quiz)  # everything wrong
+    assert len(client.get(f"/api/courses/{course_id}/progress").json()["reread"]) == 2
+
+    submit(client, quiz, correct_ids=set(ids[:2]))  # Section 1 is now right, Section 2 still wrong
+
+    assert [r["anchor_section"] for r in client.get(f"/api/courses/{course_id}/progress").json()["reread"]] == [
+        "Section 2"
+    ]
+
+
+def test_questions_without_a_source_anchor_are_left_out_of_the_reread_suggestions(client, quiz_generator):
+    course_id, section_id = make_course_and_section(client)
+    original = quiz_generator.generate
+
+    def without_anchors(*args):
+        quiz = original(*args)
+        for question in quiz.questions:
+            question.anchor_section = question.source_excerpt = ""
+        return quiz
+
+    quiz_generator.generate = without_anchors
+    quiz = create_quiz(client, section_id).json()
+    submit(client, quiz)
+
+    progress = client.get(f"/api/courses/{course_id}/progress").json()
+
+    assert len(progress["mistakes"]) == 4 and progress["reread"] == []
+
+
+def test_source_anchors_are_trimmed_to_fit_their_columns(client, quiz_generator):
+    _, section_id = make_course_and_section(client)
+    original = quiz_generator.generate
+
+    def long_anchors(*args):
+        quiz = original(*args)
+        quiz.questions[0].anchor_section = "  " + "s" * 400 + "  "
+        quiz.questions[0].source_excerpt = "e" * 5000
+        return quiz
+
+    quiz_generator.generate = long_anchors
+    quiz = create_quiz(client, section_id).json()
+
+    first = submit(client, quiz).json()["results"][0]
+
+    assert first["anchor_section"] == "s" * 255 and first["source_excerpt"] == "e" * 1000
+
+
+def test_the_next_quiz_prompt_tells_gemini_which_part_of_the_material_a_mistake_came_from(client, quiz_generator):
+    _, section_id = make_course_and_section(client)
+    quiz = create_quiz(client, section_id).json()
+    submit(client, quiz)
+
+    create_quiz(client, section_id)
+
+    mistakes = quiz_generator.calls[1]["mistakes"]
+    assert {m.anchor_section for m in mistakes} == {"Section 1", "Section 2"}

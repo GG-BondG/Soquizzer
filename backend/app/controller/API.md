@@ -134,7 +134,7 @@ In the response, `content` is JSON whose structure Gemini decided by itself, so 
 | GET | `/api/quizzes/{quiz_id}` | One quiz with all its questions |
 | DELETE | `/api/quizzes/{quiz_id}` | Delete a quiz **and** its attempts. Returns 204 |
 
-Questions carry **no answer and no explanation**; those come back when the student submits. `type` is `MULTIPLE_CHOICE` (4 options) or `TRUE_FALSE` (2 options). Options are referred to by their array index, starting at 0.
+Questions carry **no answer, no explanation and no source anchor**; those come back when the student submits. `type` is `MULTIPLE_CHOICE` (4 options) or `TRUE_FALSE` (2 options). Options are referred to by their array index, starting at 0.
 
 ```json
 {
@@ -186,13 +186,13 @@ Response:
   "score": 1,
   "total": 2,
   "results": [
-    { "question_id": "2d1f95a6-...", "selected_index": 1, "is_correct": true,  "answer_index": 1, "explanation": "Mitochondria produce ATP through cellular respiration." },
-    { "question_id": "7a090a84-...", "selected_index": 1, "is_correct": false, "answer_index": 0, "explanation": "The nucleus stores DNA." }
+    { "question_id": "2d1f95a6-...", "selected_index": 1, "is_correct": true,  "answer_index": 1, "explanation": "Mitochondria produce ATP through cellular respiration.", "anchor_section": "2.3 Organelles", "source_excerpt": "Mitochondria produce most of the cell's ATP through respiration." },
+    { "question_id": "7a090a84-...", "selected_index": 1, "is_correct": false, "answer_index": 0, "explanation": "The nucleus stores DNA.", "anchor_section": "2.1 The nucleus", "source_excerpt": "The nucleus stores the cell's DNA." }
   ]
 }
 ```
 
-`score` is the number of correct answers and `total` is the number of questions in the quiz. `answer_index` is the index of the correct option and `explanation` says why.
+`score` is the number of correct answers and `total` is the number of questions in the quiz. `answer_index` is the index of the correct option and `explanation` says why. `anchor_section` and `source_excerpt` say where in the course material the question came from (a heading or page, and a short passage), so the UI can offer "re-read this". Like the answer, they only come back after submitting. Both are `""` for quizzes made before this existed.
 
 ## History
 
@@ -237,6 +237,7 @@ Response:
       "question_id": "2d1f95a6-...", "position": 1, "type": "MULTIPLE_CHOICE",
       "stem": "What is the main job of mitochondria?", "options": ["Making proteins", "Producing ATP", "Storing DNA", "Packaging proteins"],
       "answer_index": 1, "explanation": "Mitochondria produce ATP through cellular respiration.",
+      "anchor_section": "2.3 Organelles", "source_excerpt": "Mitochondria produce most of the cell's ATP through respiration.",
       "selected_index": 1, "is_correct": true
     }
   ]
@@ -262,14 +263,19 @@ For questions the student left unanswered, `selected_index` and `is_correct` are
       "question_id": "7a090a84-...", "quiz_id": "806f05a9-...", "type": "TRUE_FALSE",
       "stem": "The nucleus stores the cell's genetic information.", "options": ["True", "False"],
       "answer_index": 0, "explanation": "The nucleus stores DNA.",
+      "anchor_section": "2.1 The nucleus", "source_excerpt": "The nucleus stores the cell's DNA.",
       "selected_index": 1, "answered_at": "2026-09-19T15:01:15.350252Z"
     }
+  ],
+  "reread": [
+    { "anchor_section": "2.1 The nucleus", "mistake_count": 1, "excerpts": ["The nucleus stores the cell's DNA."] }
   ]
 }
 ```
 
 - `by_type` counts every answer given in the course (answering the same question several times counts several times).
 - `mistakes` are the questions whose latest answer is still wrong, newest first, at most 20. A question drops out once it is answered correctly.
+- `reread` groups the still-wrong questions (up to the 200 newest) by `anchor_section`: the parts of the material the student should read again, the one with the most mistakes first (at most 10 parts, up to 3 different `excerpts` each). Questions without an anchor (older quizzes) are left out. A part disappears once its questions are answered correctly.
 
 ---
 

@@ -16,6 +16,8 @@ class GeneratedQuestion(BaseModel):
     options: list[str]
     answer_index: int  # 0-based index of the correct option
     explanation: str
+    anchor_section: str  # the heading / section / page of the material the question is based on
+    source_excerpt: str  # a short passage of the material the student should re-read after a wrong answer
 
 
 class GeneratedQuiz(BaseModel):
@@ -33,6 +35,7 @@ class PastMistake:
     answer_index: int
     selected_index: int
     explanation: str
+    anchor_section: str = ""
 
 
 @dataclass(frozen=True)
@@ -74,6 +77,12 @@ INSTRUCTIONS = """Write a study quiz from the course material below.
 - Write the whole quiz (questions, options, explanations) in {language}, whatever language the material is in.
 - answer_index is the 0-based index of the correct option.
 - explanation is one or two sentences saying why that option is correct.
+- anchor_section names where in the material the question comes from: the heading, section title or page, in the
+  material's own wording, short (under 100 characters). Use the same wording for questions that come from the same
+  part of the material, so they can be grouped.
+- source_excerpt is the passage of the material the question is based on, copied or very closely paraphrased, at
+  most about 300 characters. A student who got the question wrong is sent back to re-read it, so it must contain
+  what they needed to know. Never leave anchor_section or source_excerpt empty.
 - Mix the question types unless the material only suits one."""
 
 REVIEW_INSTRUCTIONS = """
@@ -97,9 +106,11 @@ def build_prompt(
             parts.append(f"Accuracy so far by question type: {summary}.")
         for number, mistake in enumerate(mistakes, start=1):
             options = "; ".join(f"{i}) {text}" for i, text in enumerate(mistake.options))
+            where = f"Material section: {mistake.anchor_section}\n" if mistake.anchor_section else ""
             parts.append(
                 f"--- Past mistake {number} ---\n"
                 f"Question: {mistake.stem}\n"
+                f"{where}"
                 f"Options: {options}\n"
                 f"Correct answer: {mistake.answer_index}\n"
                 f"Student answered: {mistake.selected_index}\n"

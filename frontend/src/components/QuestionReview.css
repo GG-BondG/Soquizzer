@@ -92,3 +92,21 @@
   line-height: 1.55;
   color: var(--text-2);
 }
+
+.review-source {
+  margin-top: 10px;
+  padding: 10px 16px;
+  border-left: 3px solid rgba(28, 27, 23, 0.18);
+  font-size: 13px;
+  line-height: 1.55;
+  color: var(--text-2);
+}
+
+.review-source-label {
+  font-weight: 600;
+}
+
+.review-source-text {
+  margin-top: 2px;
+  font-style: italic;
+}

@@ -72,6 +72,8 @@ export default function AttemptDetail() {
               selectedIndex={q.selected_index}
               answerIndex={q.answer_index}
               explanation={q.explanation}
+              anchorSection={q.anchor_section}
+              sourceExcerpt={q.source_excerpt}
             />
           ))}
         </div>
