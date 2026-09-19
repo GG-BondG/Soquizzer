@@ -1,7 +1,7 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { api } from '../api.js';
 import Live2DPet from './Live2DPet.jsx';
-import { CORRECT_LINES, pickLine } from './encouragements.js';
+import { CORRECT_LINES, WRONG_LINES, pickLine } from './encouragements.js';
 
 const BUBBLE_MS = 3500;
 const GENERIC_GREETING = 'Hi! I\'m your study assistant. Ask me anything.';
@@ -110,27 +110,30 @@ export function AssistantProvider({ children }) {
     }
   }, [askContext, chatInput, chatSending, messages, showBubble]);
 
-  // Call when the student answers correctly: a random encouraging line, in text and (if the clip exists) voice.
-  const cheer = useCallback(() => {
-    const line = pickLine(CORRECT_LINES, lastLineId.current);
-    lastLineId.current = line.id;
-    showBubble(line.text);
-    assistantRef.current?.perform(`${import.meta.env.BASE_URL}voice/${line.id}.wav`);
-  }, [showBubble]);
+  // Say a random line from `lines`, in text and (if the clip exists) voice. Returns the line.
+  const say = useCallback(
+    (lines) => {
+      const line = pickLine(lines, lastLineId.current);
+      lastLineId.current = line.id;
+      showBubble(line.text);
+      assistantRef.current?.perform(`${import.meta.env.BASE_URL}voice/${line.id}.wav`);
+      return line;
+    },
+    [showBubble]
+  );
 
+  // Call when the student answers correctly: a random encouraging line.
+  const cheer = useCallback(() => say(CORRECT_LINES), [say]);
+
+  // Right or wrong, the assistant answers in voice. A `text` replaces the line in the bubble (used for the quiz score),
+  // but the voice line is still spoken.
   const answerResult = useCallback(
     (correct, text) => {
-      if (correct) {
-        cheer();
-        if (text) showBubble(text);
-        return;
-      }
-
-      const message = text ?? 'Almost there — let\'s review that one.';
-      setMessages((current) => [...current, { role: 'assistant', text: message }]);
-      showBubble(message);
+      const line = say(correct ? CORRECT_LINES : WRONG_LINES);
+      if (text) showBubble(text);
+      if (!correct) setMessages((current) => [...current, { role: 'assistant', text: text ?? line.text }]);
     },
-    [cheer, showBubble]
+    [say, showBubble]
   );
 
   const value = useMemo(

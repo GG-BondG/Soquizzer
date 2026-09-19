@@ -60,10 +60,10 @@ describe('QuizPage in Trivia', () => {
     expect(await screen.findByText('Mitochondria make ATP.')).toBeTruthy();
     expect(screen.getByText('Correct')).toBeTruthy();
     // no text argument: the pet picks one of its own voiced lines
-    expect(assistant.answerResult).toHaveBeenCalledWith(true, undefined);
+    expect(assistant.answerResult).toHaveBeenCalledWith(true);
   });
 
-  it('shows the right option and consoles the student after a wrong pick', async () => {
+  it('shows the right option and lets the pet console the student after a wrong pick', async () => {
     check.mockResolvedValue(graded(0, 1));
     renderQuiz('trivia');
 
@@ -71,7 +71,8 @@ describe('QuizPage in Trivia', () => {
 
     expect(await screen.findByText('Incorrect')).toBeTruthy();
     expect(screen.getByText('Correct answer')).toBeTruthy();
-    expect(assistant.answerResult).toHaveBeenCalledWith(false, expect.stringMatching(/not quite/i));
+    // no text argument: the assistant consoles with one of its own voiced lines
+    expect(assistant.answerResult).toHaveBeenCalledWith(false);
   });
 
   it('makes the pick final: the answer stays on screen and is not graded twice', async () => {

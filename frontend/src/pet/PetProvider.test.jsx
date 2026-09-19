@@ -1,16 +1,23 @@
 import { act, fireEvent, render, screen } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { useEffect } from 'react';
+import { useEffect, useImperativeHandle } from 'react';
 import { api } from '../api.js';
 import { PetProvider, usePet } from './PetProvider.jsx';
+import { CORRECT_LINES, WRONG_LINES } from './encouragements.js';
 
-vi.mock('./Live2DPet.jsx', () => ({
-  default: ({ bubble, onTap }) => (
-    <button type="button" onClick={onTap} data-testid="pet-button">
-      {bubble ?? 'no-bubble'}
-    </button>
-  ),
-}));
+const perform = vi.hoisted(() => vi.fn());
+
+vi.mock('./Live2DPet.jsx', () => {
+  function FakePet({ ref, bubble, onTap }) {
+    useImperativeHandle(ref, () => ({ perform }));
+    return (
+      <button type="button" onClick={onTap} data-testid="pet-button">
+        {bubble ?? 'no-bubble'}
+      </button>
+    );
+  }
+  return { default: FakePet };
+});
 
 vi.mock('../api.js', () => ({
   api: { chat: { ask: vi.fn() } },
@@ -43,6 +50,8 @@ async function send(text) {
 }
 
 describe('PetProvider', () => {
+  beforeEach(() => perform.mockClear());
+
   it('opens the assistant chat when the pet is tapped', () => {
     render(
       <PetProvider>
@@ -102,6 +111,39 @@ describe('PetProvider', () => {
 
     fireEvent.click(screen.getByTestId('probe'));
     expect(screen.getByText('Not quite. Try again!')).toBeTruthy();
+  });
+
+  it('speaks a voiced comforting line after a wrong answer, and a cheering one after a correct answer', () => {
+    render(
+      <PetProvider>
+        <PetProbe onClick={(pet) => pet.answerResult(false)} />
+        <PetProbe onClick={(pet) => pet.answerResult(true)} />
+      </PetProvider>
+    );
+
+    const [wrong, correct] = screen.getAllByTestId('probe');
+    fireEvent.click(wrong);
+    const wrongLine = WRONG_LINES.find((line) => screen.queryByText(line.text));
+    expect(wrongLine).toBeTruthy();
+    expect(perform).toHaveBeenLastCalledWith(expect.stringContaining(`voice/${wrongLine.id}.wav`));
+
+    fireEvent.click(correct);
+    const correctLine = CORRECT_LINES.find((line) => screen.queryByText(line.text));
+    expect(correctLine).toBeTruthy();
+    expect(perform).toHaveBeenLastCalledWith(expect.stringContaining(`voice/${correctLine.id}.wav`));
+  });
+
+  it('still speaks the voice line on a wrong answer when a score text replaces the bubble', () => {
+    render(
+      <PetProvider>
+        <PetProbe onClick={(pet) => pet.answerResult(false, '1 out of 5.')} />
+      </PetProvider>
+    );
+
+    fireEvent.click(screen.getByTestId('probe'));
+
+    expect(screen.getByText('1 out of 5.')).toBeTruthy();
+    expect(perform).toHaveBeenCalledWith(expect.stringMatching(/voice\/wrong-\d+\.wav$/));
   });
 
   describe('asking about the question on screen', () => {
