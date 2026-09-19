@@ -9,8 +9,8 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.entity.base import Base, UtcDateTime
 
 if TYPE_CHECKING:
+    from app.entity.group import QuizGroup
     from app.entity.material import Material
-    from app.entity.quiz import Quiz
 
 
 class Subject(str, enum.Enum):
@@ -37,6 +37,6 @@ class Course(Base):
     materials: Mapped[list["Material"]] = relationship(
         back_populates="course", cascade="all, delete-orphan", order_by="Material.created_at.desc()"
     )
-    quizzes: Mapped[list["Quiz"]] = relationship(
-        back_populates="course", cascade="all, delete-orphan", order_by="Quiz.created_at.desc()"
+    groups: Mapped[list["QuizGroup"]] = relationship(
+        back_populates="course", cascade="all, delete-orphan", order_by="QuizGroup.created_at"
     )

@@ -1,10 +1,12 @@
 from app.exception.errors import (
     AppError,
+    AttemptNotFoundError,
     ConfigurationError,
     CourseNotFoundError,
     DuplicateTextbookError,
     EmptyDocumentError,
     FileTooLargeError,
+    GroupNotFoundError,
     InvalidSubmissionError,
     LlmError,
     MaterialNotFoundError,
@@ -17,11 +19,13 @@ from app.exception.handlers import register_exception_handlers
 
 __all__ = [
     "AppError",
+    "AttemptNotFoundError",
     "ConfigurationError",
     "CourseNotFoundError",
     "DuplicateTextbookError",
     "EmptyDocumentError",
     "FileTooLargeError",
+    "GroupNotFoundError",
     "InvalidSubmissionError",
     "LlmError",
     "MaterialNotFoundError",

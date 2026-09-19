@@ -42,6 +42,10 @@ def fake_app(settings):
     return create_app(settings, DeterministicFakeEmbedding(size=32), FakePdfConverter(), FakeQuizGenerator())
 
 
+def make_group(client: TestClient, course: dict) -> dict:
+    return client.post(f"/api/courses/{course['id']}/groups", json={"name": "Chapter 1"}).json()
+
+
 def upload_material(client: TestClient, pdf: bytes, filename: str):
     course = client.post("/api/courses", json={"name": "Biology 101", "subject": "BIOLOGY"}).json()
     response = client.post(f"/api/courses/{course['id']}/materials", files={"file": (filename, pdf)})
@@ -50,7 +54,10 @@ def upload_material(client: TestClient, pdf: bytes, filename: str):
 
 def answer_everything_wrong(client: TestClient, quiz: dict):
     """Answer option 0 everywhere (the API hides the answers); whatever turns out wrong becomes a mistake."""
-    first = {"answers": [{"question_id": q["id"], "selected_index": 0} for q in quiz["questions"]]}
+    first = {
+        "answers": [{"question_id": q["id"], "selected_index": 0} for q in quiz["questions"]],
+        "time_spent_seconds": 42,
+    }
     graded = client.post(f"/api/quizzes/{quiz['id']}/submissions", json=first).json()
     wrong_now = {r["question_id"] for r in graded["results"] if not r["is_correct"]}
     return graded, wrong_now
@@ -64,7 +71,7 @@ def test_database_is_created_and_pdf_json_is_stored_as_material(tmp_path):
     client = TestClient(fake_app(settings))
 
     tables = {row[0] for row in read_rows(db_file, "select name from sqlite_master where type = 'table'")}
-    assert {"courses", "materials", "quizzes", "questions", "answers", "textbooks"} <= tables
+    assert {"courses", "materials", "quiz_groups", "quizzes", "questions", "attempts", "answers", "textbooks"} <= tables
 
     course, response = upload_material(client, make_pdf([SAMPLE_SLIDES]), "slides.pdf")
 
@@ -80,17 +87,24 @@ def test_quiz_questions_answers_and_mistakes_are_stored_in_the_tables(tmp_path):
     db_file = settings.data_dir / "soquizzer.db"
     client = TestClient(fake_app(settings))
     course, _ = upload_material(client, make_pdf([SAMPLE_SLIDES]), "slides.pdf")
+    group = make_group(client, course)
 
-    quiz = client.post(f"/api/courses/{course['id']}/quizzes", params={"num_questions": 4}).json()
-    _, wrong = answer_everything_wrong(client, quiz)
+    quiz = client.post(f"/api/groups/{group['id']}/quizzes").json()
+    graded, wrong = answer_everything_wrong(client, quiz)
+
+    assert read_rows(db_file, "select name, course_id from quiz_groups") == [("Chapter 1", course["id"])]
+    assert read_rows(db_file, "select group_id from quizzes") == [(group["id"],)]
+    assert read_rows(db_file, "select quiz_id, score, total, time_spent_seconds from attempts") == [(quiz["id"], 10, 20, 42)]
+    assert read_rows(db_file, "select count(*) from answers where attempt_id = ?", graded["attempt_id"]) == [(20,)]
 
     questions = read_rows(db_file, "select position, type, options, answer_index from questions order by position")
-    assert [(q[0], q[1], q[3]) for q in questions] == [
+    assert len(questions) == 20  # a quiz has 20 questions by default
+    assert [(q[0], q[1], q[3]) for q in questions[:4]] == [
         (1, "MULTIPLE_CHOICE", 1), (2, "TRUE_FALSE", 0), (3, "MULTIPLE_CHOICE", 1), (4, "TRUE_FALSE", 0),
     ]
     assert json.loads(questions[1][2]) == ["True", "False"]  # options are stored as a JSON list
     answers = read_rows(db_file, "select selected_index, is_correct from answers order by selected_index, is_correct")
-    assert len(answers) == 4 and sum(is_correct for _, is_correct in answers) == 2  # option 0 is right for true/false
+    assert len(answers) == 20 and sum(is_correct for _, is_correct in answers) == 10  # option 0 is right for true/false
     still_wrong = client.get(f"/api/courses/{course['id']}/progress").json()["mistakes"]
     assert {m["question_id"] for m in still_wrong} == wrong
 
@@ -99,14 +113,18 @@ def test_everything_is_still_there_after_the_app_is_restarted(tmp_path):
     settings = Settings(_env_file=None, data_dir=tmp_path / "data")
     first = TestClient(fake_app(settings))
     course, _ = upload_material(first, make_pdf([SAMPLE_SLIDES]), "slides.pdf")
-    quiz = first.post(f"/api/courses/{course['id']}/quizzes", params={"num_questions": 2}).json()
+    group = make_group(first, course)
+    quiz = first.post(f"/api/groups/{group['id']}/quizzes").json()
     answer_everything_wrong(first, quiz)
     progress = first.get(f"/api/courses/{course['id']}/progress").json()
+    history = first.get("/api/history").json()
 
     second = TestClient(fake_app(settings))
 
     assert second.get(f"/api/quizzes/{quiz['id']}").json() == quiz
     assert second.get(f"/api/courses/{course['id']}/progress").json() == progress
+    assert second.get("/api/history").json() == history
+    assert second.get(f"/api/courses/{course['id']}/groups").json()[0]["id"] == group["id"]
     assert len(second.get(f"/api/courses/{course['id']}/materials").json()) == 1
 
 
@@ -126,8 +144,9 @@ def test_real_gemini_full_flow_pdf_to_quiz_to_mistakes_to_next_quiz(tmp_path):
     print(f"\nDatabase: {db_file}\nMaterial JSON from Gemini:\n{json.dumps(material, ensure_ascii=False, indent=2)}")
     assert isinstance(material, (dict, list)) and material
 
-    quiz_url = f"/api/courses/{course['id']}/quizzes"
-    first = client.post(quiz_url, params={"num_questions": 4})
+    group = make_group(client, course)
+    quiz_url = f"/api/groups/{group['id']}/quizzes"
+    first = client.post(quiz_url)
     assert first.status_code == 201, first.text
     quiz = first.json()
     assert quiz["questions"] and all(len(q["options"]) >= 2 for q in quiz["questions"])
@@ -138,7 +157,7 @@ def test_real_gemini_full_flow_pdf_to_quiz_to_mistakes_to_next_quiz(tmp_path):
     stored = read_rows(db_file, "select answer_index, explanation from questions")
     assert len(stored) == len(quiz["questions"]) and all(explanation for _, explanation in stored)
 
-    second = client.post(quiz_url, params={"num_questions": 4})
+    second = client.post(quiz_url)
     assert second.status_code == 201, second.text
     print("\nSecond quiz, generated after re-reading the mistakes:\n" + json.dumps(second.json()["questions"], ensure_ascii=False, indent=2))
     assert second.json()["questions"]

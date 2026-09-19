@@ -8,6 +8,7 @@ class AnswerInput(BaseModel):
 
 class SubmissionRequest(BaseModel):
     answers: list[AnswerInput] = Field(min_length=1)
+    time_spent_seconds: int | None = Field(default=None, ge=0)  # how long the student took, measured by the frontend
 
 
 class AnswerResult(BaseModel):
@@ -19,6 +20,7 @@ class AnswerResult(BaseModel):
 
 
 class SubmissionResponse(BaseModel):
+    attempt_id: str
     score: int  # correct answers
     total: int  # questions in the quiz; unanswered ones are not recorded
     results: list[AnswerResult]

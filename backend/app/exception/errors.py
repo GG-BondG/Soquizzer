@@ -52,3 +52,11 @@ class NoMaterialError(AppError):
 
 class InvalidSubmissionError(AppError):
     status_code = 422
+
+
+class GroupNotFoundError(AppError):
+    status_code = 404
+
+
+class AttemptNotFoundError(AppError):
+    status_code = 404

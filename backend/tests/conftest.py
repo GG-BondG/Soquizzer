@@ -13,7 +13,14 @@ from app.main import create_app
 
 @pytest.fixture
 def settings(tmp_path):
-    return Settings(data_dir=tmp_path / "data", chunk_size=200, chunk_overlap=40, max_upload_bytes=20_000)
+    return Settings(
+        _env_file=None,
+        data_dir=tmp_path / "data",
+        chunk_size=200,
+        chunk_overlap=40,
+        max_upload_bytes=20_000,
+        questions_per_quiz=4,
+    )
 
 
 class FakePdfConverter:

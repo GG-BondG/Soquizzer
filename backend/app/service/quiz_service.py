@@ -1,9 +1,10 @@
 from app.dto import AnswerResult, Mistake, ProgressResponse, SubmissionRequest, SubmissionResponse, TypeStat
-from app.entity import Answer, Question, Quiz
+from app.entity import Answer, Attempt, Question, Quiz
 from app.exception import FileTooLargeError, InvalidSubmissionError, NoMaterialError, QuizNotFoundError
 from app.llm import PastMistake, QuizGenerator, TypeAccuracy
-from app.repository import AnswerRepository, MaterialRepository, QuizRepository
+from app.repository import AnswerRepository, AttemptRepository, MaterialRepository, QuizRepository
 from app.service.course_service import CourseService
+from app.service.group_service import GroupService
 
 
 class QuizService:
@@ -11,24 +12,31 @@ class QuizService:
         self,
         quizzes: QuizRepository,
         answers: AnswerRepository,
+        attempts: AttemptRepository,
         materials: MaterialRepository,
         courses: CourseService,
+        groups: GroupService,
         generator: QuizGenerator,
+        questions_per_quiz: int,
         mistake_review_limit: int,
         max_material_chars: int,
     ):
         self._quizzes = quizzes
         self._answers = answers
+        self._attempts = attempts
         self._materials = materials
         self._courses = courses
+        self._groups = groups
         self._generator = generator
+        self._questions_per_quiz = questions_per_quiz
         self._mistake_review_limit = mistake_review_limit
         self._max_material_chars = max_material_chars
 
-    def generate(self, course_id: str, num_questions: int) -> Quiz:
-        """Ask Gemini for a quiz from the course material, re-reading the student's current mistakes."""
-        course = self._courses.get(course_id)
-        materials = [(m.source_filename, m.content) for m in self._materials.list_by_course(course.id)]
+    def generate(self, group_id: str) -> Quiz:
+        """Add a new round to the group. Callers only get questions back; whether earlier rounds shaped them is
+        this method's business: the mistakes still open in this group are re-read and handed to Gemini."""
+        group = self._groups.get(group_id)
+        materials = [(m.source_filename, m.content) for m in self._materials.list_by_course(group.course_id)]
         if not materials:
             raise NoMaterialError("Upload course material before generating a quiz")
         if sum(len(content) for _, content in materials) > self._max_material_chars:
@@ -36,10 +44,12 @@ class QuizService:
 
         mistakes = [
             PastMistake(q.stem, q.options, q.answer_index, a.selected_index, q.explanation)
-            for q, a in self._answers.still_wrong(course.id, self._mistake_review_limit)
+            for q, a in self._answers.still_wrong(self._mistake_review_limit, group_id=group.id)
         ]
-        accuracy = [TypeAccuracy(kind, total, correct) for kind, total, correct in self._answers.stats_by_type(course.id)]
-        generated = self._generator.generate(materials, mistakes, accuracy, num_questions)
+        accuracy = [
+            TypeAccuracy(kind, total, correct) for kind, total, correct in self._answers.stats_by_type(group_id=group.id)
+        ]
+        generated = self._generator.generate(materials, mistakes, accuracy, self._questions_per_quiz)
 
         questions = [
             Question(
@@ -52,7 +62,7 @@ class QuizService:
             )
             for position, item in enumerate(generated.questions, start=1)
         ]
-        return self._quizzes.add(Quiz(course_id=course.id, questions=questions))
+        return self._quizzes.add(Quiz(group_id=group.id, questions=questions))
 
     def get(self, quiz_id: str) -> Quiz:
         quiz = self._quizzes.get(quiz_id)
@@ -60,9 +70,9 @@ class QuizService:
             raise QuizNotFoundError(f"Quiz {quiz_id} not found")
         return quiz
 
-    def list_by_course(self, course_id: str) -> list[Quiz]:
-        course = self._courses.get(course_id)
-        return self._quizzes.list_by_course(course.id)
+    def list_by_group(self, group_id: str) -> list[Quiz]:
+        group = self._groups.get(group_id)
+        return self._quizzes.list_by_group(group.id)
 
     def delete(self, quiz_id: str) -> None:
         self._quizzes.delete(self.get(quiz_id))
@@ -92,13 +102,25 @@ class QuizService:
                     explanation=question.explanation,
                 )
             )
-        self._answers.add_many(answers)
-        return SubmissionResponse(score=sum(a.is_correct for a in answers), total=len(questions), results=results)
+        score = sum(a.is_correct for a in answers)
+        attempt = self._attempts.add(
+            Attempt(
+                quiz_id=quiz.id,
+                time_spent_seconds=request.time_spent_seconds,
+                score=score,
+                total=len(questions),
+                answers=answers,
+            )
+        )
+        return SubmissionResponse(attempt_id=attempt.id, score=score, total=len(questions), results=results)
 
     def progress(self, course_id: str) -> ProgressResponse:
         course = self._courses.get(course_id)
         return ProgressResponse(
-            by_type=[TypeStat(type=kind, total=total, correct=correct) for kind, total, correct in self._answers.stats_by_type(course.id)],
+            by_type=[
+                TypeStat(type=kind, total=total, correct=correct)
+                for kind, total, correct in self._answers.stats_by_type(course_id=course.id)
+            ],
             mistakes=[
                 Mistake(
                     question_id=q.id,
@@ -111,6 +133,6 @@ class QuizService:
                     selected_index=a.selected_index,
                     answered_at=a.answered_at,
                 )
-                for q, a in self._answers.still_wrong(course.id, self._mistake_review_limit)
+                for q, a in self._answers.still_wrong(self._mistake_review_limit, course_id=course.id)
             ],
         )

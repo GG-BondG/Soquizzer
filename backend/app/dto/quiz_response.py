@@ -21,6 +21,18 @@ class QuizResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
     id: str
-    course_id: str
+    group_id: str
     created_at: datetime
     questions: list[QuestionResponse]
+
+
+class QuizSummaryResponse(BaseModel):
+    """A quiz in a list: no questions."""
+
+    model_config = ConfigDict(from_attributes=True)
+
+    id: str
+    group_id: str
+    created_at: datetime
+    question_count: int
+    attempt_count: int

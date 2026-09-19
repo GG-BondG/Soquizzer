@@ -16,8 +16,8 @@ class QuizRepository:
     def get(self, quiz_id: str) -> Quiz | None:
         return self._session.get(Quiz, quiz_id)
 
-    def list_by_course(self, course_id: str) -> list[Quiz]:
-        query = select(Quiz).where(Quiz.course_id == course_id).order_by(Quiz.created_at.desc())
+    def list_by_group(self, group_id: str) -> list[Quiz]:
+        query = select(Quiz).where(Quiz.group_id == group_id).order_by(Quiz.created_at.desc())
         return list(self._session.scalars(query))
 
     def delete(self, quiz: Quiz) -> None:
