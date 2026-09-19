@@ -13,17 +13,20 @@ uvicorn app.main:create_app --factory --reload
 pytest
 ```
 
-The app refuses to start without `GOOGLE_API_KEY` (used for Gemini embeddings). Tests use fake embeddings and need no key.
+The app refuses to start without `GOOGLE_API_KEY` (Gemini embeddings and quiz generation). Tests use fakes and need no key.
+
+Data lives under `DATA_DIR` (default `./data`): `soquizzer.db` (SQLite: textbooks, courses, quizzes) and `chroma/` (vectors). Both are local files, no Docker or database server needed.
 
 ## Layout
 
 ```
 app/
 ├── controller/   HTTP layer: routing, no business logic
-├── service/      TextbookService (upload/list/delete), IngestionService (load -> chunk -> embed)
-├── repository/   TextbookRepository (SQLite via SQLAlchemy), ChunkRepository (ChromaDB)
-├── entity/       Database models (Textbook)
-├── dto/          Response schemas
+├── service/      TextbookService, IngestionService (load -> chunk -> embed), CourseService, QuizService
+├── repository/   Textbook/Course/Quiz repositories (SQLite via SQLAlchemy), ChunkRepository (ChromaDB)
+├── entity/       Database models (Textbook, Course, Quiz)
+├── dto/          Request/response schemas, QuizContent (the quiz JSON shape)
+├── llm/          GeminiQuizGenerator (native Google GenAI SDK)
 ├── rag/          Loaders, chunking, embeddings
 ├── storage/      LocalStorage for raw uploads
 ├── config/       Settings (env vars / .env)
@@ -69,6 +72,22 @@ Other endpoints: `GET /api/textbooks`, `GET /api/textbooks/{id}`, `DELETE /api/t
 - Textbook records (status, hash, chunk count) live in SQLite, vectors in ChromaDB under `DATA_DIR`.
 - Scanned PDFs without a text layer end up `FAILED` ("No extractable text"); OCR is not supported.
 
-### Next: retrieval and generation
+### Next: retrieval and generation over the textbook chunks
 
-`ChunkRepository.search()` already does filtered similarity search. The generation step (join retrieved chunks into a context string, call the native Google GenAI SDK's `generate_content`) is not built yet.
+`ChunkRepository.search()` already does filtered similarity search. Answering questions from retrieved chunks (join them into a context string, call the native Google GenAI SDK's `generate_content`) is not built yet.
+
+## Courses and quizzes
+
+`Course` (`name`, `subject`) has many `Quiz` rows. `subject` is the `Subject` enum in `entity/course.py`: MATH, PHYSICS, CHEMISTRY, BIOLOGY, COMPUTER_SCIENCE, ENGLISH, HISTORY, GEOGRAPHY, ECONOMICS, OTHER. `Quiz.content` is a JSON text column holding `QuizContent`:
+
+```json
+{"title": "...", "questions": [{"question": "...", "options": ["...", "...", "...", "..."], "answer_index": 1, "explanation": "..."}]}
+```
+
+Endpoints:
+
+- `POST /api/courses` `{name, subject}`, `GET /api/courses`, `GET /api/courses/{id}`, `DELETE /api/courses/{id}` (also deletes its quizzes)
+- `POST /api/courses/{id}/quizzes` multipart `file` (PDF) + optional `num_questions` (1-50, default 10) -> 201 with the quiz
+- `GET /api/courses/{id}/quizzes`, `GET /api/quizzes/{id}`, `DELETE /api/quizzes/{id}`
+
+Upload flow: `QuizController` -> `QuizService.create_from_pdf` (check PDF, max 20 MB) -> `GeminiQuizGenerator` (PDF sent to Gemini as a native PDF part, response constrained to the `QuizContent` JSON schema, then validated) -> `QuizRepository.add` (JSON text into SQLite). The call is synchronous and can take several seconds; the PDF itself is not stored. If Gemini fails or returns an invalid quiz the request returns 502 and nothing is saved. This path does not use ChromaDB.

@@ -28,3 +28,15 @@ class UnsupportedFileTypeError(AppError):
 
 class EmptyDocumentError(AppError):
     status_code = 422
+
+
+class CourseNotFoundError(AppError):
+    status_code = 404
+
+
+class QuizNotFoundError(AppError):
+    status_code = 404
+
+
+class QuizGenerationError(AppError):
+    status_code = 502

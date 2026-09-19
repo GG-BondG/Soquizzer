@@ -71,3 +71,9 @@ def test_delete_removes_record_file_and_chunks(client, chunks, settings):
 def test_unknown_textbook_returns_404(client):
     assert client.get("/api/textbooks/nope").status_code == 404
     assert client.delete("/api/textbooks/nope").status_code == 404
+
+
+def test_created_at_is_the_same_before_and_after_reading_back(client):
+    created = upload(client).json()
+
+    assert client.get(f"/api/textbooks/{created['id']}").json()["created_at"] == created["created_at"]
