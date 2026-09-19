@@ -141,6 +141,7 @@
   word-break: break-word;
 }
 
+.pet-chat-message-assistant,
 .pet-chat-message-pet {
   align-self: flex-start;
   background: #f3f4f6;

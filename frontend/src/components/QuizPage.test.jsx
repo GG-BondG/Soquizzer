@@ -3,7 +3,7 @@ import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import QuizPage from './QuizPage.jsx';
 
-const pet = vi.hoisted(() => ({
+const assistant = vi.hoisted(() => ({
   answerResult: vi.fn(),
   loading: vi.fn(),
   error: vi.fn(),
@@ -11,7 +11,7 @@ const pet = vi.hoisted(() => ({
 }));
 const check = vi.hoisted(() => vi.fn());
 
-vi.mock('../pet/PetProvider.jsx', () => ({ usePet: () => pet }));
+vi.mock('../pet/PetProvider.jsx', () => ({ useAssistant: () => assistant }));
 vi.mock('../api.js', () => ({ api: { quizzes: { check, get: vi.fn(), submit: vi.fn() } } }));
 
 const quiz = {
@@ -58,7 +58,7 @@ describe('QuizPage in Trivia', () => {
     expect(await screen.findByText('Mitochondria make ATP.')).toBeTruthy();
     expect(screen.getByText('Correct')).toBeTruthy();
     // no text argument: the pet picks one of its own voiced lines
-    expect(pet.answerResult).toHaveBeenCalledWith(true, undefined);
+    expect(assistant.answerResult).toHaveBeenCalledWith(true, undefined);
   });
 
   it('shows the right option and consoles the student after a wrong pick', async () => {
@@ -69,7 +69,7 @@ describe('QuizPage in Trivia', () => {
 
     expect(await screen.findByText('Incorrect')).toBeTruthy();
     expect(screen.getByText('Correct answer')).toBeTruthy();
-    expect(pet.answerResult).toHaveBeenCalledWith(false, expect.stringMatching(/not quite/i));
+    expect(assistant.answerResult).toHaveBeenCalledWith(false, expect.stringMatching(/not quite/i));
   });
 
   it('makes the pick final: the answer stays on screen and is not graded twice', async () => {
@@ -93,7 +93,7 @@ describe('QuizPage in Trivia', () => {
     fireEvent.click(screen.getByText('Mitochondria'));
 
     expect(await screen.findByText('Network down')).toBeTruthy();
-    expect(pet.error).toHaveBeenCalled();
+    expect(assistant.error).toHaveBeenCalled();
     await waitFor(() => expect(screen.getAllByRole('radio').every((r) => r.getAttribute('aria-checked') === 'false')).toBe(true));
   });
 });
@@ -107,7 +107,7 @@ describe('QuizPage in Mock Test', () => {
     fireEvent.click(screen.getByText('Mitochondria'));
 
     expect(check).not.toHaveBeenCalled();
-    expect(pet.answerResult).not.toHaveBeenCalled();
+    expect(assistant.answerResult).not.toHaveBeenCalled();
     expect(screen.getAllByRole('radio')[1].getAttribute('aria-checked')).toBe('true');
   });
 });

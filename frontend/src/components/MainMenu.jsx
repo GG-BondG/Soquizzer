@@ -3,7 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { api, SUBJECTS, subjectLabel } from '../api.js';
 import { formatDate } from '../format.js';
 import { useApi } from '../useApi.js';
-import { usePet } from '../pet/PetProvider.jsx';
+import { useAssistant } from '../pet/PetProvider.jsx';
 import { PlusIcon, ClockIcon, DocIcon, CloseIcon } from './Icons.jsx';
 import FloatingWindow from './FloatingWindow.jsx';
 import ActivityHeatmap from './ActivityHeatmap.jsx';
@@ -15,7 +15,7 @@ const EMPTY_FORM = { name: '', subject: 'OTHER' };
 export default function MainMenu() {
   const { data: courses, error: loadError, loading, reload } = useApi(() => api.courses.list(), []);
   const navigate = useNavigate();
-  const pet = usePet();
+  const assistant = useAssistant();
   const createCardRef = useRef(null);
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState(EMPTY_FORM);
@@ -38,11 +38,11 @@ export default function MainMenu() {
     setBusy(true);
     try {
       const course = await api.courses.create(form);
-      pet.success(`${course.name} is ready. Upload a PDF next!`);
+      assistant.success(`${course.name} is ready. Upload a PDF next!`);
       navigate(`/course/${course.id}`);
     } catch (err) {
       setError(err.message);
-      pet.error('That did not work.');
+      assistant.error('That did not work.');
     } finally {
       setBusy(false);
     }

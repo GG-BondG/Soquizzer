@@ -20,7 +20,7 @@ function PetProbe({ onClick }) {
 }
 
 describe('PetProvider', () => {
-  it('opens the pet chat when the pet is tapped', () => {
+  it('opens the assistant chat when the pet is tapped', () => {
     render(
       <PetProvider>
         <div>page</div>
@@ -29,7 +29,7 @@ describe('PetProvider', () => {
 
     fireEvent.click(screen.getByTestId('pet-button'));
 
-    expect(screen.getByRole('dialog', { name: 'Pet chat' })).toBeTruthy();
+    expect(screen.getByRole('dialog', { name: 'Assistant chat' })).toBeTruthy();
   });
 
   it('opens a chat panel and lets the user send a message', () => {
@@ -40,7 +40,7 @@ describe('PetProvider', () => {
     );
 
     fireEvent.click(screen.getByTestId('pet-button'));
-    fireEvent.change(screen.getByPlaceholderText('Ask your pet...'), { target: { value: 'hello' } });
+    fireEvent.change(screen.getByPlaceholderText('Ask your assistant...'), { target: { value: 'hello' } });
     fireEvent.click(screen.getByText('Send'));
 
     expect(screen.getByText('hello')).toBeTruthy();
@@ -56,7 +56,7 @@ describe('PetProvider', () => {
 
     fireEvent.click(screen.getByTestId('pet-button'));
 
-    expect(screen.getByRole('dialog', { name: 'Pet chat' })).toBeTruthy();
+    expect(screen.getByRole('dialog', { name: 'Assistant chat' })).toBeTruthy();
     expect(screen.queryByText(/I'm here when you need me/i)).toBeNull();
   });
 

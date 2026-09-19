@@ -4,7 +4,7 @@ import { api } from '../api.js';
 import { formatClock, formatDuration, formatPercent, typeLabel } from '../format.js';
 import { QUIZ_MODES } from '../quizModes.js';
 import { useApi } from '../useApi.js';
-import { usePet } from '../pet/PetProvider.jsx';
+import { useAssistant } from '../pet/PetProvider.jsx';
 import { BackIcon, ClockIcon } from './Icons.jsx';
 import QuestionReview from './QuestionReview.jsx';
 import './QuizPage.css';
@@ -19,7 +19,7 @@ function randomItem(items) {
 export default function QuizPage() {
   const { quizId } = useParams();
   const location = useLocation();
-  const pet = usePet();
+  const assistant = useAssistant();
 
   // Coming from "New quiz" the questions arrive in router state; otherwise fetch them.
   const seeded = location.state?.quiz?.id === quizId ? location.state.quiz : null;
@@ -98,7 +98,7 @@ export default function QuizPage() {
 
     setSubmitting(true);
     setSubmitError('');
-    pet.loading('Checking your answers…');
+    assistant.loading('Checking your answers…');
     try {
       const graded = await api.quizzes.submit(quiz.id, { answers: payload, timeSpentSeconds });
       setDisplayedScore(0);
@@ -106,13 +106,13 @@ export default function QuizPage() {
       setResult({ ...graded, timeSpentSeconds });
       const ratio = graded.total ? graded.score / graded.total : 0;
       if (ratio >= 0.6) {
-        pet.answerResult(true, `Nice! ${graded.score} out of ${graded.total} correct.`);
+        assistant.answerResult(true, `Nice! ${graded.score} out of ${graded.total} correct.`);
       } else {
-        pet.answerResult(false, `${graded.score} out of ${graded.total}. Almost there — check the explanations and try again!`);
+        assistant.answerResult(false, `${graded.score} out of ${graded.total}. Almost there — check the explanations and try again!`);
       }
     } catch (err) {
       setSubmitError(err.message);
-      pet.error('I could not submit that.');
+      assistant.error('I could not submit that.');
     } finally {
       setSubmitting(false);
     }
@@ -134,7 +134,7 @@ export default function QuizPage() {
       .check(quiz.id, question.id, i)
       .then((graded) => {
         setRevealed((r) => ({ ...r, [question.id]: graded }));
-        pet.answerResult(graded.is_correct, graded.is_correct ? undefined : 'Not quite — read the explanation, then on to the next one!');
+        assistant.answerResult(graded.is_correct, graded.is_correct ? undefined : 'Not quite — read the explanation, then on to the next one!');
       })
       .catch((err) => {
         setAnswers((a) => {
@@ -143,7 +143,7 @@ export default function QuizPage() {
           return rest;
         });
         setSubmitError(err.message);
-        pet.error('I could not check that one.');
+        assistant.error('I could not check that one.');
       })
       .finally(() => checking.current.delete(question.id));
   }
@@ -154,7 +154,7 @@ export default function QuizPage() {
     setIndex(0);
     setSubmitError('');
     setResult(null);
-    pet.idle();
+    assistant.idle();
   }
 
   if (fetched.error) {
