@@ -1,3 +1,4 @@
+from app.dto.chat import ChatRequest, ChatResponse, ChatTurnInput
 from app.dto.course_request import CourseCreateRequest
 from app.dto.course_response import CourseResponse
 from app.dto.section_request import SectionCreateRequest
@@ -20,6 +21,9 @@ __all__ = [
     "AttemptDetail",
     "AttemptQuestion",
     "AttemptSummary",
+    "ChatRequest",
+    "ChatResponse",
+    "ChatTurnInput",
     "CourseCreateRequest",
     "CourseResponse",
     "SectionCreateRequest",

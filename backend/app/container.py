@@ -3,7 +3,7 @@ from sqlalchemy.orm import sessionmaker
 
 from app.config import Settings
 from app.entity import Base, add_missing_columns
-from app.llm import GeminiQuizGenerator, PdfJsonConverter, QuizGenerator
+from app.llm import GeminiPetTutor, GeminiQuizGenerator, PdfJsonConverter, PetTutor, QuizGenerator
 from app.rag import GeminiPageOcr, LocalPdfJsonConverter, PageOcr
 
 
@@ -16,6 +16,7 @@ class Container:
         pdf_converter: PdfJsonConverter | None = None,
         quiz_generator: QuizGenerator | None = None,
         ocr: PageOcr | None = None,
+        pet_tutor: PetTutor | None = None,
     ):
         settings.data_dir.mkdir(parents=True, exist_ok=True)
         self.settings = settings
@@ -26,3 +27,4 @@ class Container:
         self.ocr = ocr or (GeminiPageOcr(settings) if settings.ocr_enabled else None)
         self.pdf_converter = pdf_converter or LocalPdfJsonConverter(self.ocr)
         self.quiz_generator = quiz_generator or GeminiQuizGenerator(settings)
+        self.pet_tutor = pet_tutor or GeminiPetTutor(settings)
