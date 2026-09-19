@@ -62,3 +62,10 @@ without needing a timestamp.
 把结果存进这里，不要只打印到终端。/ Any future experiment script that
 generates a quiz should call `save_output.save(script_name, pdf_name, data)`
 to persist the result here, instead of only printing it to the console.
+
+## 提示词版本 / Prompt versions
+
+每一版出题提示词（V1~V6，Codex 的 C1~C2）的命名规则、内容差异和当前生产
+环境用的是哪一版，见 `PROMPT-VERSIONS.md`。/ For the naming scheme, what
+changed between versions (V1-V6, Codex's C1-C2), and which one is currently
+live in production, see `PROMPT-VERSIONS.md`.
