@@ -3,7 +3,7 @@ import { Link, useNavigate, useParams } from 'react-router-dom';
 import { api, subjectLabel } from '../api.js';
 import { formatDate, formatPercent, typeLabel } from '../format.js';
 import { useApi } from '../useApi.js';
-import { usePet } from '../pet/PetProvider.jsx';
+import { useAssistant } from '../pet/PetProvider.jsx';
 import { BackIcon, ChevronIcon, CloseIcon, PlusIcon } from './Icons.jsx';
 import ConfirmDialog from './ConfirmDialog.jsx';
 import FloatingWindow from './FloatingWindow.jsx';
@@ -23,7 +23,7 @@ const DELETE_COPY = {
 export default function CourseDetail() {
   const { courseId } = useParams();
   const navigate = useNavigate();
-  const pet = usePet();
+  const assistant = useAssistant();
 
   const course = useApi(() => api.courses.get(courseId), [courseId]);
   const sections = useApi(() => api.sections.list(courseId), [courseId]);
@@ -66,7 +66,7 @@ export default function CourseDetail() {
     try {
       if (target.kind === 'course') {
         await api.courses.remove(target.id);
-        pet.success('Course deleted.');
+        assistant.success('Course deleted.');
         navigate('/');
         return;
       }
