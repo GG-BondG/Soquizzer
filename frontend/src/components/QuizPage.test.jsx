@@ -8,6 +8,8 @@ const pet = vi.hoisted(() => ({
   loading: vi.fn(),
   error: vi.fn(),
   idle: vi.fn(),
+  askAbout: vi.fn(),
+  stopAsking: vi.fn(),
 }));
 const check = vi.hoisted(() => vi.fn());
 
