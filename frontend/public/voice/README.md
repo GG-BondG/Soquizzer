@@ -4,19 +4,18 @@ The pet plays `<id>.wav` from this folder when the student answers correctly, an
 The ids and the text are in `src/pet/encouragements.js` (`correct-01` ... `correct-08`). A missing clip is fine:
 the pet just shows the text.
 
-## Making the clips
+## How the clips are made
 
-1. Record or synthesise each line from `encouragements.js` as plain speech (for example with a TTS voice).
-2. Convert it with the RVC v2 voice model, using `seren2.pth` and `trained_IVF1668_Flat_nprobe_1_seren2_v2.index`.
-3. Save the result as `<id>.wav` here, for example `correct-01.wav`. Short clips (1 to 4 seconds) are best.
-
-Only load RVC model files (`.pth` is a pickle file and can run code) from sources you trust.
+`tools/voice/make_voice.py` speaks each line with a text-to-speech voice and converts that speech to the target voice
+with an RVC v2 model. Setup and the exact command are in [`tools/voice/README.md`](../../../tools/voice/README.md).
+After changing a line in `encouragements.js`, run it again to regenerate the clips.
 
 ## Credit and terms
 
-The voice is an AI voice model of 東雪蓮 (Seren Azuma), not the real artist:
+The voice is an AI voice model of Seren Azuma, not the real artist:
 [Chisato4664/RVC_V2_azuma_seren_seren2](https://huggingface.co/Chisato4664/RVC_V2_azuma_seren_seren2), CC-BY-4.0.
 Its README states: "For entertainment and learning purposes only. Do not use for commercial purposes, impersonation,
 publishing inappropriate content, or other platform policy violations." The voice rights belong to the original artist.
+The source speech comes from Microsoft Edge's online text-to-speech voices, through the `edge-tts` package.
 
 So: keep the lines friendly, do not present the voice as the real person, and do not ship it in a commercial product.
