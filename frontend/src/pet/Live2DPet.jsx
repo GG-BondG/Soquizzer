@@ -13,6 +13,12 @@ const FORCE = 3; // MotionPriority.FORCE
 // Haru's "TapBody" motions carry her own voice lines, so the reaction uses the silent Idle motion instead.
 const REACTION_MOTION = { group: 'Idle', index: 1 };
 
+// The pet's reaction: a motion and a random expression.
+function react(model) {
+  model.motion(REACTION_MOTION.group, REACTION_MOTION.index, FORCE).catch(() => {});
+  model.expression()?.catch?.(() => {});
+}
+
 // Plays a voice clip and moves the model's mouth with its loudness. Calls onError if the clip cannot be played
 // (for example when it does not exist yet). The AudioContext is created right away so the click that triggered
 // this counts as the user gesture browsers require before playing sound.
@@ -65,6 +71,7 @@ export default function Live2DPet({ ref, bubble }) {
   useEffect(() => {
     let cancelled = false;
     let app = null;
+    let onPointerDown = null;
     const canvas = document.createElement('canvas');
     hostRef.current.appendChild(canvas);
 
@@ -92,6 +99,14 @@ export default function Live2DPet({ ref, bubble }) {
         model.position.set(WIDTH / 2, HEIGHT);
         app.stage.addChild(model);
         modelRef.current = model;
+
+        // Tapping the pet makes it react. The pet sits over the page with pointer-events off so it never blocks
+        // what is underneath, so this listens on the window and asks the model whether the tap landed on it.
+        onPointerDown = (event) => {
+          const box = canvas.getBoundingClientRect();
+          if (model.hitTest(event.clientX - box.left, event.clientY - box.top).length > 0) react(model);
+        };
+        window.addEventListener('pointerdown', onPointerDown);
       } catch (error) {
         console.warn('Live2D pet unavailable, showing the text bubble only:', error);
         if (!cancelled) setFailed(true);
@@ -100,6 +115,7 @@ export default function Live2DPet({ ref, bubble }) {
 
     return () => {
       cancelled = true;
+      if (onPointerDown) window.removeEventListener('pointerdown', onPointerDown);
       modelRef.current = null;
       app?.destroy(false, { children: true });
       canvas.remove();
@@ -111,8 +127,7 @@ export default function Live2DPet({ ref, bubble }) {
     perform(audioUrl) {
       const model = modelRef.current;
       if (!model) return;
-      model.motion(REACTION_MOTION.group, REACTION_MOTION.index, FORCE).catch(() => {});
-      model.expression()?.catch?.(() => {});
+      react(model);
       playWithLipSync(model, audioUrl, () => console.debug(`No voice clip at ${audioUrl}, showing the text only`));
     },
   }));
