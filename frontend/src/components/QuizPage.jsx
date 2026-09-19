@@ -149,7 +149,8 @@ export default function QuizPage() {
       .check(quiz.id, question.id, i)
       .then((graded) => {
         setRevealed((r) => ({ ...r, [question.id]: graded }));
-        assistant.answerResult(graded.is_correct, graded.is_correct ? undefined : 'Not quite — read the explanation, then on to the next one!');
+        // no text argument: the assistant picks one of its own voiced lines, cheering or consoling
+        assistant.answerResult(graded.is_correct);
       })
       .catch((err) => {
         setAnswers((a) => {

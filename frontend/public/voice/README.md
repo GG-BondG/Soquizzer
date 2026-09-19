@@ -1,7 +1,8 @@
 # Pet voice clips
 
-The pet plays `<id>.wav` from this folder when the student answers correctly, and moves its mouth with the sound.
-The ids and the text are in `src/pet/encouragements.js` (`correct-01` ... `correct-08`). A missing clip is fine:
+The pet plays `<id>.wav` from this folder when the student answers, and moves its mouth with the sound: a cheer
+after a correct answer (`correct-01` ... `correct-08`) and a comforting, slightly cheeky line after a wrong one
+(`wrong-01` ... `wrong-08`). The ids and the text are in `src/pet/encouragements.js`. A missing clip is fine:
 the pet just shows the text.
 
 ## How the clips are made

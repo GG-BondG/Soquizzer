@@ -1,9 +1,16 @@
-import { CORRECT_LINES, pickLine } from './encouragements.js';
+import { CORRECT_LINES, WRONG_LINES, pickLine } from './encouragements.js';
 
 describe('CORRECT_LINES', () => {
   it('has unique ids and some text for each line', () => {
     expect(new Set(CORRECT_LINES.map((l) => l.id)).size).toBe(CORRECT_LINES.length);
     expect(CORRECT_LINES.every((l) => l.text.trim().length > 0)).toBe(true);
+  });
+});
+
+describe('WRONG_LINES', () => {
+  it('has unique ids named wrong-NN and some text for each line', () => {
+    expect(new Set(WRONG_LINES.map((l) => l.id)).size).toBe(WRONG_LINES.length);
+    expect(WRONG_LINES.every((l) => /^wrong-\d+$/.test(l.id) && l.text.trim().length > 0)).toBe(true);
   });
 });
 
