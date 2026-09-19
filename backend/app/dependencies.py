@@ -51,6 +51,7 @@ def get_ingestion_service(container: Container = Depends(get_container)) -> Inge
         container.chunks,
         container.storage,
         container.settings,
+        container.ocr,
     )
 
 

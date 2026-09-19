@@ -7,6 +7,7 @@ from app.container import Container
 from app.controller import course_router, section_router, history_router, material_router, quiz_router, textbook_router
 from app.exception import register_exception_handlers
 from app.llm import PdfJsonConverter, QuizGenerator
+from app.rag import PageOcr
 
 
 def create_app(
@@ -14,9 +15,10 @@ def create_app(
     embeddings: Embeddings | None = None,
     pdf_converter: PdfJsonConverter | None = None,
     quiz_generator: QuizGenerator | None = None,
+    ocr: PageOcr | None = None,
 ) -> FastAPI:
     app = FastAPI(title="Soquizzer")
-    container = Container(settings or Settings(), embeddings, pdf_converter, quiz_generator)
+    container = Container(settings or Settings(), embeddings, pdf_converter, quiz_generator, ocr)
     app.state.container = container
     app.add_middleware(
         CORSMiddleware,

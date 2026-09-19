@@ -5,7 +5,7 @@ from sqlalchemy.orm import sessionmaker
 from app.config import Settings
 from app.entity import Base
 from app.llm import GeminiPdfJsonConverter, GeminiQuizGenerator, PdfJsonConverter, QuizGenerator
-from app.rag import build_embeddings
+from app.rag import GeminiPageOcr, PageOcr, build_embeddings
 from app.repository import ChunkRepository
 from app.storage import LocalStorage
 
@@ -19,6 +19,7 @@ class Container:
         embeddings: Embeddings | None = None,
         pdf_converter: PdfJsonConverter | None = None,
         quiz_generator: QuizGenerator | None = None,
+        ocr: PageOcr | None = None,
     ):
         settings.data_dir.mkdir(parents=True, exist_ok=True)
         self.settings = settings
@@ -33,3 +34,4 @@ class Container:
         )
         self.pdf_converter = pdf_converter or GeminiPdfJsonConverter(settings)
         self.quiz_generator = quiz_generator or GeminiQuizGenerator(settings)
+        self.ocr = ocr or (GeminiPageOcr(settings) if settings.ocr_enabled else None)

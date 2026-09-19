@@ -1,3 +1,4 @@
+from app.exception import LlmError
 from tests.conftest import make_blank_pdf, make_pdf
 
 TEXT = ("Mitochondria are the powerhouse of the cell. They produce ATP through respiration. " * 12).encode()
@@ -77,3 +78,44 @@ def test_created_at_is_the_same_before_and_after_reading_back(client):
     created = upload(client).json()
 
     assert client.get(f"/api/textbooks/{created['id']}").json()["created_at"] == created["created_at"]
+
+
+SCANNED_TEXT = "Mitochondria are the powerhouse of the cell. They produce ATP through respiration. " * 6
+
+
+def test_scanned_pdf_is_read_with_ocr(client, chunks, ocr):
+    ocr.pages = [SCANNED_TEXT, "", SCANNED_TEXT]
+
+    textbook_id = upload(client, "scan.pdf", make_blank_pdf(3)).json()["id"]
+
+    textbook = client.get(f"/api/textbooks/{textbook_id}").json()
+    assert textbook["status"] == "READY"
+    assert textbook["chunk_count"] > 0
+    assert len(ocr.calls) == 1
+    pages = {doc.metadata["page"] for doc in chunks.search("powerhouse", k=20, textbook_id=textbook_id)}
+    assert pages == {1, 3}  # page 2 was blank
+
+
+def test_pdf_with_a_text_layer_does_not_use_ocr(client, ocr):
+    upload(client, "notes.pdf", make_pdf(["Cells are the basic unit of life. " * 5]))
+
+    assert ocr.calls == []
+
+
+def test_scanned_pdf_that_ocr_cannot_read_is_marked_failed(client, ocr):
+    textbook_id = upload(client, "scan.pdf", make_blank_pdf(2)).json()["id"]
+
+    textbook = client.get(f"/api/textbooks/{textbook_id}").json()
+    assert textbook["status"] == "FAILED"
+    assert "even after OCR" in textbook["error"]
+
+
+def test_ocr_failure_marks_the_textbook_failed(client, chunks, ocr):
+    ocr.error = LlmError("Gemini OCR request failed: quota")
+
+    textbook_id = upload(client, "scan.pdf", make_blank_pdf(2)).json()["id"]
+
+    textbook = client.get(f"/api/textbooks/{textbook_id}").json()
+    assert textbook["status"] == "FAILED"
+    assert "quota" in textbook["error"]
+    assert chunks.search("anything", k=5, textbook_id=textbook_id) == []
