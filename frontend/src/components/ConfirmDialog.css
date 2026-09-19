@@ -1,0 +1,33 @@
+.confirm-dialog {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  z-index: 40;
+  transform: translate(-50%, -50%);
+  width: min(440px, calc(100vw - 32px));
+  padding: 28px;
+  border-radius: 14px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  box-shadow: 0 32px 80px rgba(20, 20, 19, 0.22);
+}
+
+.confirm-title {
+  font-family: var(--serif);
+  font-size: 22px;
+  font-weight: 600;
+}
+
+.confirm-body {
+  margin-top: 10px;
+  font-size: 14px;
+  line-height: 1.55;
+  color: var(--text-2);
+}
+
+.confirm-actions {
+  margin-top: 24px;
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+}

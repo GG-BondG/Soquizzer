@@ -117,3 +117,254 @@ button {
   display: flex;
   flex-direction: column;
 }
+
+.btn:disabled {
+  opacity: 0.55;
+  cursor: default;
+  pointer-events: none;
+}
+
+.btn-small {
+  height: 32px;
+  padding: 0 12px;
+  font-size: 12px;
+}
+
+.btn-danger {
+  color: var(--exam);
+}
+
+.btn-danger:hover {
+  border-color: var(--exam-border);
+  background: var(--exam-tint);
+}
+
+.btn-danger-solid {
+  border: none;
+  background: var(--exam);
+  color: #fff;
+  font-weight: 600;
+}
+
+.btn-danger-solid:hover {
+  background: #732f2f;
+  border: none;
+}
+
+/* ---- shared page blocks: headers, lists, notices ---- */
+
+.block {
+  margin-top: 36px;
+}
+
+.block-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.block-label {
+  font-size: 13px;
+  font-weight: 500;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-2);
+}
+
+.block-count {
+  font-size: 12px;
+  color: var(--text-3);
+}
+
+.row-list {
+  margin-top: 8px;
+  border-top: 1px solid var(--border);
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 14px 4px;
+  border-bottom: 1px solid var(--border);
+  font-size: 14px;
+}
+
+.row-link {
+  flex-grow: 1;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  min-width: 0;
+  border-radius: 6px;
+  transition: background 0.15s ease;
+}
+
+.row-link:hover {
+  background: rgba(28, 27, 23, 0.025);
+}
+
+.row-index {
+  width: 22px;
+  flex-shrink: 0;
+  font-family: var(--mono);
+  font-size: 13px;
+  color: var(--text-3);
+}
+
+.row-title {
+  flex-grow: 1;
+  min-width: 0;
+  font-size: 15px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.row-meta {
+  font-size: 12px;
+  color: var(--text-3);
+  white-space: nowrap;
+}
+
+.row-mono {
+  font-family: var(--mono);
+  font-size: 13px;
+  color: var(--text-2);
+  white-space: nowrap;
+}
+
+.row-action {
+  flex-shrink: 0;
+  padding: 6px 10px;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-3);
+  cursor: pointer;
+  transition: color 0.15s ease, background 0.15s ease;
+}
+
+.row-action:hover {
+  color: var(--exam);
+  background: var(--exam-tint);
+}
+
+.empty-note,
+.status-note {
+  margin-top: 12px;
+  font-size: 13px;
+  color: var(--text-3);
+}
+
+.error-note {
+  margin-top: 12px;
+  padding: 10px 14px;
+  border-radius: 8px;
+  border: 1px solid var(--exam-border);
+  background: var(--exam-tint);
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--exam);
+}
+
+.error-note .btn {
+  margin-top: 10px;
+}
+
+.error-note a {
+  text-decoration: underline;
+}
+
+.info-note {
+  margin-top: 12px;
+  padding: 10px 14px;
+  border-radius: 8px;
+  border: 1px solid var(--trivia-border);
+  background: var(--trivia-tint);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.info-note a {
+  text-decoration: underline;
+}
+
+.add-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  height: 52px;
+  margin-top: 12px;
+  padding: 0;
+  border: 1px dashed var(--border-strong);
+  border-radius: 12px;
+  background: transparent;
+  color: var(--text-3);
+  font: inherit;
+  font-size: 14px;
+  cursor: pointer;
+  transition: color 0.15s ease, background 0.15s ease;
+}
+
+.add-row:hover {
+  color: var(--text-2);
+  background: rgba(28, 27, 23, 0.025);
+}
+
+.detail-page {
+  max-width: 1312px;
+  margin: 0 auto;
+  width: 100%;
+}
+
+.detail-title-row {
+  margin-top: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+
+.detail-title {
+  display: flex;
+  align-items: baseline;
+  gap: 16px;
+  min-width: 0;
+}
+
+.detail-code {
+  font-family: var(--serif);
+  font-size: 36px;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+.detail-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+/* form controls shared by the floating windows */
+.field select {
+  height: 44px;
+  padding: 0 10px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  font-size: 15px;
+  color: var(--text);
+  font-family: var(--sans);
+  outline: none;
+}
+
+.field select:focus {
+  border-color: var(--accent);
+}
