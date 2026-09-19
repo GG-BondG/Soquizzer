@@ -3,20 +3,20 @@ from tests.conftest import make_pdf
 PDF = make_pdf(["Cells are the basic unit of life."])
 
 
-def make_course(client, with_material=True, name="Biology 101") -> str:
-    course_id = client.post("/api/courses", json={"name": name, "subject": "BIOLOGY"}).json()["id"]
+def make_course(client, name="Biology 101") -> str:
+    return client.post("/api/courses", json={"name": name, "subject": "BIOLOGY"}).json()["id"]
+
+
+def make_section(client, course_id, name="Chapter 1", with_material=True) -> str:
+    section_id = client.post(f"/api/courses/{course_id}/sections", json={"name": name}).json()["id"]
     if with_material:
-        client.post(f"/api/courses/{course_id}/materials", files={"file": ("cells.pdf", PDF)})
-    return course_id
-
-
-def make_section(client, course_id, name="Chapter 1") -> str:
-    return client.post(f"/api/courses/{course_id}/sections", json={"name": name}).json()["id"]
+        client.post(f"/api/sections/{section_id}/materials", files={"file": ("cells.pdf", PDF)})
+    return section_id
 
 
 def make_course_and_section(client, with_material=True):
-    course_id = make_course(client, with_material)
-    return course_id, make_section(client, course_id)
+    course_id = make_course(client)
+    return course_id, make_section(client, course_id, with_material=with_material)
 
 
 def create_quiz(client, section_id):

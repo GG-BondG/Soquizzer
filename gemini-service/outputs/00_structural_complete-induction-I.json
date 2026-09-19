@@ -1,0 +1,41 @@
+{
+  "reading_title": "Complete Induction, Part I",
+  "questions": [
+    {
+      "id": "q1",
+      "type": "restate_concept",
+      "anchor_section": "Introduction to Complete Induction (CI)",
+      "source_excerpt": "Assume (IH): P is true for each natural natural less than n that is at least b, i.e., ∀ k ∈ N, b ≤ k < n ⇒ P (k) .",
+      "prompt": "In your own words, explain how the Inductive Hypothesis (IH) in Complete Induction differs from the assumption made in standard (simple) mathematical induction. What exactly does the phrase 'each natural less than n' allow us to do?",
+      "answer": "In standard induction, we only assume the statement holds for the immediate predecessor (n-1). In Complete Induction, we assume it holds for all integers from the base case up to n-1, giving us a much wider pool of smaller instances to use in our proof.",
+      "hint_on_wrong": "Compare the symbolic notation 'b ≤ k < n' with what you usually assume in standard induction. Does standard induction give you information about all k down to b, or only for k = n - 1?"
+    },
+    {
+      "id": "q2",
+      "type": "predict_next",
+      "anchor_section": "Change-Making Revisited",
+      "source_excerpt": "Case n = 12: 4, 0 ∈ N and 12 = 12 + 0 = 4 · 3 + 0 · 7.\nCase n = 13: 2, 1 ∈ N and 13 = 6 + 7 = 2 · 3 + 1 · 7.\nCase n = 14: 0, 2 ∈ N and 14 = 0 + 14 = 0 · 3 + 2 · 7.\nOtherwise:\nThen n ≥ 15",
+      "prompt": "The author explicitly checks the base cases for 12, 13, and 14. Before reading the rest of the 'Otherwise' block, predict how the proof will reduce a general amount n (where n ≥ 15) to a smaller amount so that it can use the Inductive Hypothesis.",
+      "answer": "The proof will subtract 3 (or 7) from n. Because n ≥ 15, the reduced amount (n - 3) is guaranteed to be at least 12, which safely falls within the range covered by the Inductive Hypothesis, allowing us to add one more 3-cent coin to the result.",
+      "hint_on_wrong": "The algorithm uses 3-cent and 7-cent coins. If you need to make change for a large amount n, how can you relate it to a slightly smaller amount that you already know how to make change for?"
+    },
+    {
+      "id": "q3",
+      "type": "restate_concept",
+      "anchor_section": "Phrasing the Inductive Hypothesis",
+      "source_excerpt": "Keep in mind that '. . .' notation for sequences can be a bit misleading if taken literally: '12, 13, . . ., n − 1' doesn't necessarily include 12, 13, and n − 1.",
+      "prompt": "The casual phrasing 'P is true for 12, 13, ..., n-1' seems intuitive for a generically large n. Explain in your own words what specific logical problem occurs when this notation is applied to the edge case where n = 12.",
+      "answer": "When n = 12, the upper bound (n - 1) is 11, which is strictly less than the starting value of 12. The sequence is actually empty and provides no usable assumptions, but the '...' format misleadingly implies that a sequence of numbers always exists.",
+      "hint_on_wrong": "Try plugging n = 12 directly into the expression '12, 13, ..., n - 1'. What is the start of the list, and what is the end of the list? Does this list contain any valid numbers?"
+    },
+    {
+      "id": "q4",
+      "type": "why_generalize",
+      "anchor_section": "Prime Factorization Revisited",
+      "source_excerpt": "We again rely on the fact that if a natural is at least two and not prime then it's the non-trivial product of two naturals:\n∀ n ∈ N, n ≥ 2 ∧ ¬prime (n) ⇒ ∃ a, b ∈ N, 2 ≤ a, b < n ∧ n = a · b.",
+      "prompt": "Consider the helper fact that a non-prime n splits into two factors a and b. Why does this specific factorization structure force us to use Complete Induction (the generalized method) instead of standard simple induction (the simpler method)? What problem would standard induction encounter here?",
+      "answer": "Because the factors a and b are strictly less than n, but they are not necessarily n - 1. Standard induction only allows us to assume the claim for n - 1, which wouldn't help us factor a and b. Complete induction lets us assume the claim for all smaller values, accommodating whatever a and b happen to be.",
+      "hint_on_wrong": "If n = 15, its non-trivial factors are 3 and 5. If you only used simple induction, you would only know that the claim is true for 14. Does knowing the prime factorization of 14 help you factor 3 and 5?"
+    }
+  ]
+}

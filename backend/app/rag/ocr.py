@@ -3,7 +3,6 @@ from typing import Protocol
 
 from google import genai
 from google.genai import types
-from langchain_core.documents import Document
 from pydantic import BaseModel
 from pypdf import PdfReader, PdfWriter
 
@@ -30,13 +29,6 @@ class PageOcr(Protocol):
     def transcribe(self, pdf: bytes) -> list[str]:
         """Return the text of each page of a scanned PDF, one string per page (blank for an empty page)."""
         ...
-
-
-def looks_scanned(documents: list[Document]) -> bool:
-    """True for a PDF (one Document per page) that has almost no extractable text."""
-    if not documents or "page" not in documents[0].metadata:
-        return False
-    return sum(len(d.page_content.strip()) for d in documents) < MIN_CHARS_PER_PAGE * len(documents)
 
 
 class GeminiPageOcr:

@@ -2,7 +2,7 @@ from tests.helpers import create_quiz, make_course, make_section, submit
 
 
 def test_create_list_get_and_delete_section(client):
-    course_id = make_course(client, with_material=False)
+    course_id = make_course(client)
 
     response = client.post(f"/api/courses/{course_id}/sections", json={"name": "  Chapter 1  "})
 
@@ -19,7 +19,7 @@ def test_create_list_get_and_delete_section(client):
 
 
 def test_section_needs_a_name_and_an_existing_course(client):
-    course_id = make_course(client, with_material=False)
+    course_id = make_course(client)
 
     assert client.post(f"/api/courses/{course_id}/sections", json={"name": "   "}).status_code == 422
     assert client.post(f"/api/courses/{course_id}/sections", json={}).status_code == 422
@@ -29,7 +29,7 @@ def test_section_needs_a_name_and_an_existing_course(client):
 
 
 def test_sections_of_different_courses_are_separate(client):
-    first, second = make_course(client, False, "A"), make_course(client, False, "B")
+    first, second = make_course(client, "A"), make_course(client, "B")
     section = make_section(client, first)
 
     assert client.get(f"/api/courses/{first}/sections").json()[0]["id"] == section

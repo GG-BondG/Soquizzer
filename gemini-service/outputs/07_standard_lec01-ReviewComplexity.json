@@ -1,0 +1,118 @@
+{
+  "questions": [
+    {
+      "type": "MULTIPLE_CHOICE",
+      "stem": "What does the worst-case time complexity of an algorithm intuitively represent?",
+      "options": [
+        "The average number of steps an algorithm takes on inputs of size n.",
+        "The minimum number of steps an algorithm takes on inputs of size n.",
+        "The maximum number of steps an algorithm takes on inputs of size n.",
+        "The exact number of steps an algorithm takes for a specific constant input."
+      ],
+      "answer_index": 2,
+      "explanation": "According to the slides, worst-case time complexity intuitively represents the maximum number of 'steps' an algorithm takes on inputs of 'size' n."
+    },
+    {
+      "type": "TRUE_FALSE",
+      "stem": "In running time analysis, each arithmetic, comparison, or data movement operation is considered to take a constant amount of time.",
+      "options": [
+        "True",
+        "False"
+      ],
+      "answer_index": 0,
+      "explanation": "The material states that arithmetic operations (+, -, *, /), comparison operations (>, <, =), and data movement operations (load, store, copy) each take a constant amount of time."
+    },
+    {
+      "type": "MULTIPLE_CHOICE",
+      "stem": "Which of the following is NOT typically used as a measure of input 'size' n in algorithm analysis?",
+      "options": [
+        "The number of elements in an input array.",
+        "The number of edges and vertices of an input graph.",
+        "The physical memory capacity of the computer running the algorithm.",
+        "The number of bits used to represent the input."
+      ],
+      "answer_index": 2,
+      "explanation": "Input size typically refers to properties of the input data (such as array elements, graph vertices/edges, or the number of bits), not the hardware's physical memory capacity."
+    },
+    {
+      "type": "MULTIPLE_CHOICE",
+      "stem": "If t(x) is the number of steps taken by algorithm A on input x, how is the worst-case time complexity function T(n) formally defined?",
+      "options": [
+        "T(n) = min { t(x) | x is an input of size n }",
+        "T(n) = max { t(x) | x is an input of size n }",
+        "T(n) = sum { t(x) | x is an input of size n }",
+        "T(n) = average { t(x) | x is an input of size n }"
+      ],
+      "answer_index": 1,
+      "explanation": "The slides define T(n) as the maximum number of steps taken by the algorithm across all inputs of size n, which is max { t(x) | x is an input of size n }."
+    },
+    {
+      "type": "MULTIPLE_CHOICE",
+      "stem": "What does the upper bound statement 'T(n) <= 7n^3' imply about algorithm A?",
+      "options": [
+        "For some input of size n, A takes at least 7n^3 steps.",
+        "For some input of size n, A takes at most 7n^3 steps.",
+        "For every input of size n, A takes at least 7n^3 steps.",
+        "For every input of size n, A takes at most 7n^3 steps."
+      ],
+      "answer_index": 3,
+      "explanation": "Since T(n) represents the maximum steps for any input of size n, T(n) <= 7n^3 means that for EVERY input of size n, the algorithm takes at most 7n^3 steps."
+    },
+    {
+      "type": "TRUE_FALSE",
+      "stem": "The lower bound statement 'T(n) >= 3n^2' implies that for EVERY input of size n, the algorithm takes at least 3n^2 steps.",
+      "options": [
+        "True",
+        "False"
+      ],
+      "answer_index": 1,
+      "explanation": "Because T(n) is the maximum over all inputs of size n, T(n) >= 3n^2 only means that for SOME input of size n (the worst-case input), the algorithm takes at least 3n^2 steps, not necessarily for every input."
+    },
+    {
+      "type": "MULTIPLE_CHOICE",
+      "stem": "Formally, saying T(n) is O(g(n)) means that there exists c > 0 and n0 > 0 such that for all n >= n0:",
+      "options": [
+        "T(n) <= c * g(n)",
+        "T(n) >= c * g(n)",
+        "T(n) = c * g(n)",
+        "T(n) < g(n)"
+      ],
+      "answer_index": 0,
+      "explanation": "The formal definition of Big O notation is that T(n) <= c * g(n) for all n >= n0, meaning it acts as an upper bound."
+    },
+    {
+      "type": "MULTIPLE_CHOICE",
+      "stem": "What is the intuitive meaning of the Big Omega notation, T(n) is Ω(g(n))?",
+      "options": [
+        "For every input of size n, the algorithm takes at most c * g(n) steps.",
+        "For some input of size n, the algorithm takes at least c * g(n) steps.",
+        "For every input of size n, the algorithm takes exactly c * g(n) steps.",
+        "For some input of size n, the algorithm takes at most c * g(n) steps."
+      ],
+      "answer_index": 1,
+      "explanation": "Big Omega provides a lower bound on the worst-case time complexity, meaning that for some worst-case input of size n, the algorithm takes at least c * g(n) steps."
+    },
+    {
+      "type": "TRUE_FALSE",
+      "stem": "T(n) is Θ(g(n)) if and only if T(n) is O(g(n)) AND T(n) is Ω(g(n)).",
+      "options": [
+        "True",
+        "False"
+      ],
+      "answer_index": 0,
+      "explanation": "Big Theta notation signifies a tight bound, meaning the function is bounded both above (Big O) and below (Big Omega) by the same function g(n) within constant factors."
+    },
+    {
+      "type": "MULTIPLE_CHOICE",
+      "stem": "If the worst-case time complexity of Bubble Sort is Θ(n^2), which of the following is true for sufficiently large n?",
+      "options": [
+        "The algorithm takes at most c1 * n^2 steps for some input, and at least c2 * n^2 steps for every input.",
+        "The algorithm takes at most c1 * n^2 steps for every input, and at least c2 * n^2 steps for some input.",
+        "The algorithm takes exactly c1 * n^2 steps for every input.",
+        "The algorithm takes at least c2 * n^2 steps for every input."
+      ],
+      "answer_index": 1,
+      "explanation": "The Θ(n^2) bound combines an upper bound O(n^2) meaning it takes at most c1 * n^2 steps for EVERY input, and a lower bound Ω(n^2) meaning it takes at least c2 * n^2 steps for SOME input."
+    }
+  ]
+}

@@ -1,0 +1,118 @@
+{
+  "questions": [
+    {
+      "type": "MULTIPLE_CHOICE",
+      "stem": "Imagine you are building a software system that frequently merges large priority queues. According to the text, why would you choose binomial heaps over standard binary heaps?",
+      "options": [
+        "Binary heap UNION operations run in worst-case time O(lg n), whereas binomial heaps perform UNION in Theta(1) time.",
+        "Binary heap UNION operations take Theta(n) time in the worst case, whereas binomial heaps can merge two heaps of total size n in O(lg n) time.",
+        "Binary heaps do not support the UNION operation at all, making binomial heaps the only choice for mergeable priority queues.",
+        "Binary heaps perform poorly on MINIMUM operations, taking O(lg n) time compared to the binomial heap's Theta(1) time."
+      ],
+      "answer_index": 1,
+      "explanation": "The text states that concatenating two arrays for binary heaps and running MIN-HEAPIFY takes Theta(n) time, whereas a binomial heap performs UNION in O(lg n) time."
+    },
+    {
+      "type": "MULTIPLE_CHOICE",
+      "stem": "According to Lemma 19.1, what is the exact number of nodes located at depth i in a binomial tree Bk?",
+      "options": [
+        "Exactly 2^i nodes",
+        "Exactly k - i nodes",
+        "Exactly the binomial coefficient (k choose i) nodes",
+        "Exactly 2^(k - i) nodes"
+      ],
+      "answer_index": 2,
+      "explanation": "Lemma 19.1 explicitly states that there are exactly (k choose i) nodes at depth i for i = 0, 1, ..., k."
+    },
+    {
+      "type": "TRUE_FALSE",
+      "stem": "This sounds plausible, but is it true? True or False: In a binomial heap with 13 nodes, it is possible to have two separate binomial trees of degree 2 (B2) as long as both strictly obey the min-heap property.",
+      "options": [
+        "True, as long as both trees are min-heap-ordered, the binomial heap is valid.",
+        "False, a binomial heap can have at most one binomial tree whose root has degree k for any nonnegative integer k."
+      ],
+      "answer_index": 1,
+      "explanation": "The second binomial-heap property dictates that for any nonnegative integer k, there is at most one binomial tree in the heap whose root has degree k."
+    },
+    {
+      "type": "MULTIPLE_CHOICE",
+      "stem": "How are binomial trees within a binomial heap represented in memory to efficiently support operations?",
+      "options": [
+        "Each node contains pointers to its parent, its leftmost child, and its immediate right sibling.",
+        "Each node is stored in a standard contiguous array utilizing implicit index calculations similar to a binary heap.",
+        "Each node contains a dynamic array of pointers to all of its children, plus a parent pointer.",
+        "Each node contains pointers to its parent, its left sibling, and its right sibling, forming a doubly linked list of children."
+      ],
+      "answer_index": 0,
+      "explanation": "The text explains that binomial trees are stored in the 'left-child, right-sibling' representation, containing pointers p[x] to the parent, child[x] to the leftmost child, and sibling[x] to the right sibling."
+    },
+    {
+      "type": "MULTIPLE_CHOICE",
+      "stem": "When uniting two binomial heaps, the BINOMIAL-LINK procedure makes one Bk-1 tree the child of another to form a Bk tree. What is the time complexity of this specific linking procedure?",
+      "options": [
+        "O(lg n), because it must update the sibling pointers of all existing children to append the new node.",
+        "O(k), because it needs to update the degree field of all children in the tree.",
+        "O(1), because the left-child, right-sibling representation allows making a node the new head of a linked list in constant time.",
+        "O(lg n), because it must bubble the newly linked node down to maintain the min-heap property."
+      ],
+      "answer_index": 2,
+      "explanation": "The text states that BINOMIAL-LINK makes node y the new head of the linked list of node z's children in O(1) time."
+    },
+    {
+      "type": "MULTIPLE_CHOICE",
+      "stem": "During the while loop of BINOMIAL-HEAP-UNION, what action is taken in 'Case 2', where the current root (x), the next root (next-x), and the sibling of the next root all have the exact same degree?",
+      "options": [
+        "The procedure links x and next-x immediately, creating a root of higher degree.",
+        "The pointers are simply marched one position farther down the root list without linking any roots in this iteration.",
+        "The procedure stops and throws an error, because a valid binomial heap operation should never encounter three roots of the same degree.",
+        "The procedure links next-x and its sibling, removing the sibling from the root list."
+      ],
+      "answer_index": 1,
+      "explanation": "In Case 2, when x is the first of three roots of equal degree, the algorithm just marches the pointers one position farther down the list to defer the linking to the next iteration."
+    },
+    {
+      "type": "TRUE_FALSE",
+      "stem": "True or False: To perform BINOMIAL-HEAP-EXTRACT-MIN, the algorithm extracts the root with the minimum key, reverses the order of the linked list of that root's children to form a new binomial heap, and then unites this new heap with the remaining original heap.",
+      "options": [
+        "True, reversing the children creates a valid binomial heap H' that is then united with the original heap H.",
+        "False, the children of the extracted root are inserted one by one back into the original heap using BINOMIAL-HEAP-INSERT."
+      ],
+      "answer_index": 0,
+      "explanation": "BINOMIAL-HEAP-EXTRACT-MIN explicitly removes the minimum root, reverses the linked list of its children to form a new heap H', and calls BINOMIAL-HEAP-UNION on H and H'."
+    },
+    {
+      "type": "MULTIPLE_CHOICE",
+      "stem": "How does the BINOMIAL-HEAP-DECREASE-KEY procedure ensure that the min-heap property is maintained after a node's key is reduced to a new value?",
+      "options": [
+        "It 'bubbles down' the key by exchanging it with the smallest of its children until it is less than or equal to all of its children.",
+        "It removes the node from the heap entirely and inserts a new node with the decreased key using BINOMIAL-HEAP-INSERT.",
+        "It 'bubbles up' the key by repeatedly exchanging it with its parent's key until it is greater than or equal to its parent's key or it becomes a root.",
+        "It links the node directly to the root list, treating it as a new binomial tree of degree zero."
+      ],
+      "answer_index": 2,
+      "explanation": "The text explains that BINOMIAL-HEAP-DECREASE-KEY works similarly to a binary min-heap by 'bubbling up' the key, exchanging it with its parent until min-heap ordering is restored."
+    },
+    {
+      "type": "MULTIPLE_CHOICE",
+      "stem": "You are tasked with implementing the DELETE operation to remove a specific node x from a binomial heap. According to the text, what is the correct sequence of operations to accomplish this in O(lg n) time?",
+      "options": [
+        "Call BINOMIAL-HEAP-EXTRACT-MIN repeatedly until node x is returned, then rebuild the heap.",
+        "Replace node x's key with the key of the last node in the heap, then delete the last node and bubble down.",
+        "Unlink node x from its parent and append all of x's children directly to the root list.",
+        "Decrease the key of node x to negative infinity and then call BINOMIAL-HEAP-EXTRACT-MIN."
+      ],
+      "answer_index": 3,
+      "explanation": "BINOMIAL-HEAP-DELETE makes node x have the unique minimum key by decreasing it to negative infinity, bubbling it up to a root, and then extracting it via BINOMIAL-HEAP-EXTRACT-MIN."
+    },
+    {
+      "type": "TRUE_FALSE",
+      "stem": "A common misconception is that Fibonacci heaps are strictly better than binomial heaps in every regard. Based on the chapter introduction, why is this not entirely true?",
+      "options": [
+        "True, Fibonacci heaps are strictly superior because they guarantee O(1) worst-case time bounds for every operation.",
+        "False, the impressive O(1) running times for Fibonacci heaps in Figure 19.1 are amortized time bounds, not worst-case per-operation bounds."
+      ],
+      "answer_index": 1,
+      "explanation": "The text explicitly notes that while Fibonacci heaps have better bounds for some operations, they are amortized time bounds, not worst-case per-operation bounds like those of binomial heaps."
+    }
+  ]
+}

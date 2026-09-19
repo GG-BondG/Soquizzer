@@ -64,8 +64,16 @@ overwrites from 4 people editing `main` at the same time.
   测试 `npm test`（Vitest），检查 `npm run lint`（ESLint）。/
   frontend (Vite + React + Electron); run `npm` commands from inside this
   directory. Tests: `npm test` (Vitest); lint: `npm run lint` (ESLint).
-- `gemini-service/` — Gemini API IO 模块的 Python 最小示例（烟雾测试），
-  独立成自己的目录，不参与后端运行。/ Standalone Python minimal example
-  (smoke test) for the Gemini API; the backend does not depend on it.
+- `gemini-service/` — Gemini API 出题提示词的实验区，不参与后端运行，
+  产出的好 prompt 会手动移植进 `backend/app/llm/quiz_generator.py`。
+  `fundamental/` 是最小可运行 demo，`claude-experiment/`/`codex-experiment/`
+  是两边各自的提示词实验，`outputs/` 存历次生成结果（命名：
+  `<序号>_<脚本名>_<材料名>.json`）。详见 `gemini-service/README.md`。/
+  Experiment area for Gemini quiz-prompt engineering; the backend does not
+  depend on it, but validated prompts get manually ported into
+  `backend/app/llm/quiz_generator.py`. `fundamental/` is the minimal runnable
+  demo, `claude-experiment/`/`codex-experiment/` hold each side's prompt
+  experiments, `outputs/` archives generated results (named
+  `<seq>_<script>_<material>.json`). See `gemini-service/README.md`.
 - `start.sh` — 一键启动后端 + 桌面应用（`./start.sh --web` 用浏览器）。/
   One-click launcher for backend + desktop app (`./start.sh --web` for the browser).

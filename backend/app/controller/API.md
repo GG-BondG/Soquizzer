@@ -25,8 +25,8 @@ Base URL: `http://localhost:8000`.
 |---|---|
 | 200 / 201 / 204 | OK / created / deleted (no body) |
 | 404 | The course, section, quiz, material or attempt does not exist |
-| 409 | The course has no material and no ready textbook yet, so no quiz can be made |
-| 413 | The PDF is too large (over 20 MB), or the course's material is too long |
+| 409 | The section has no PDF yet, so no quiz can be made |
+| 413 | The PDF is too large (over 20 MB), or the section's PDF text is too long |
 | 415 | The uploaded file is not a PDF |
 | 422 | Invalid input (empty name, option index out of range, the same question answered twice, ...), or a PDF that is corrupted, password-protected or has no readable text |
 | 502 | Gemini failed or returned something invalid. Nothing was saved; retrying is fine |
@@ -39,8 +39,8 @@ Base URL: `http://localhost:8000`.
 
 ```
 Course
-├── Material (an uploaded PDF)
 └── Section
+    ├── Material (the section's uploaded PDF, converted to JSON)
     └── Quiz (one round in a section, 20 questions each)
         └── Attempt (one submission of answers, with score and time spent)
 ```
@@ -48,8 +48,8 @@ Course
 ## Typical flow
 
 1. `POST /api/courses` creates a course
-2. `POST /api/courses/{id}/materials` uploads the course's material PDF (needed before any quiz can be made)
-3. `POST /api/courses/{id}/sections` creates a section
+2. `POST /api/courses/{id}/sections` creates a section
+3. `POST /api/sections/{id}/materials` uploads the section's PDF (needed before any quiz can be made; quizzes are written from this PDF only)
 4. `POST /api/sections/{id}/quizzes` creates a quiz; the response already contains the 20 questions
 5. The student answers (the frontend times it), then `POST /api/quizzes/{id}/submissions`; the response has what was right, the correct answers and the explanations
 6. `GET /api/history` shows the history, accuracy and time spent
@@ -67,7 +67,7 @@ Creating another quiz gives the next round in the same section. The backend take
 | POST | `/api/courses` | Create a course. Body `{"name": "Biology 101", "subject": "BIOLOGY"}`; `name` is 1 to 100 characters, surrounding spaces are trimmed. Returns 201 |
 | GET | `/api/courses` | List courses, newest first |
 | GET | `/api/courses/{course_id}` | One course |
-| DELETE | `/api/courses/{course_id}` | Delete a course **and** its materials, sections, quizzes and attempts. Returns 204 |
+| DELETE | `/api/courses/{course_id}` | Delete a course **and** its sections (with their PDFs), quizzes and attempts. Returns 204 |
 
 ```json
 {
@@ -102,15 +102,15 @@ A PDF the user uploads (slides, lecture notes, ...). The backend extracts its te
 
 | Method | Path | Description |
 |---|---|---|
-| POST | `/api/courses/{course_id}/materials` | Upload a PDF as `multipart/form-data`, field name `file`, at most 20 MB. Returns 201. Slow only for scanned PDFs |
-| GET | `/api/courses/{course_id}/materials` | The course's materials |
+| POST | `/api/sections/{section_id}/materials` | Upload a PDF as `multipart/form-data`, field name `file`, at most 20 MB. Returns 201. Slow only for scanned PDFs |
+| GET | `/api/sections/{section_id}/materials` | The section's materials |
 | GET | `/api/materials/{material_id}` | One material |
 | DELETE | `/api/materials/{material_id}` | Delete a material. Returns 204 |
 
 ```js
 const form = new FormData();
 form.append("file", pdfFile);
-await fetch(`${BASE}/api/courses/${courseId}/materials`, { method: "POST", body: form });
+await fetch(`${BASE}/api/sections/${sectionId}/materials`, { method: "POST", body: form });
 ```
 
 In the response, `content` is the extracted text: `page_count`, `pages` (each `{page, text}`, only pages that have text) and, when the PDF has bookmarks, `outline` (each `{title, page, level}`). The frontend normally only needs to show `source_filename` and should not depend on `content`.
@@ -119,6 +119,7 @@ In the response, `content` is the extracted text: `page_count`, `pages` (each `{
 {
   "id": "3cde0873-5e47-4a60-acc1-591d488d3c6c",
   "course_id": "9da23c53-b719-4893-aba2-19b297cdb949",
+  "section_id": "b1c0a7d2-3f4e-4c55-9a01-6f2d8e7a1c33",
   "source_filename": "slides.pdf",
   "content": { "page_count": 2, "pages": [{ "page": 1, "text": "..." }, { "page": 2, "text": "..." }] },
   "created_at": "2026-09-19T15:01:15.337293Z"
@@ -129,7 +130,7 @@ In the response, `content` is the extracted text: `page_count`, `pages` (each `{
 
 | Method | Path | Description |
 |---|---|---|
-| POST | `/api/sections/{section_id}/quizzes` | Create the section's next quiz. **The response is the 20 questions**, and no parameters are needed. Returns 201. **Slow endpoint.** Returns 409 if the course has no material and no ready textbook |
+| POST | `/api/sections/{section_id}/quizzes` | Create the section's next quiz. **The response is the 20 questions**, and no parameters are needed. Returns 201. **Slow endpoint.** Returns 409 if the section has no PDF |
 | GET | `/api/sections/{section_id}/quizzes` | The section's quizzes (without questions), newest first |
 | GET | `/api/quizzes/{quiz_id}` | One quiz with all its questions |
 | DELETE | `/api/quizzes/{quiz_id}` | Delete a quiz **and** its attempts. Returns 204 |
@@ -276,29 +277,3 @@ For questions the student left unanswered, `selected_index` and `is_correct` are
 - `by_type` counts every answer given in the course (answering the same question several times counts several times).
 - `mistakes` are the questions whose latest answer is still wrong, newest first, at most 20. A question drops out once it is answered correctly.
 - `reread` groups the still-wrong questions (up to the 200 newest) by `anchor_section`: the parts of the material the student should read again, the one with the most mistakes first (at most 10 parts, up to 3 different `excerpts` each). Questions without an anchor (older quizzes) are left out. A part disappears once its questions are answered correctly.
-
----
-
-## Textbooks
-
-A textbook is a big reference PDF or text file (`.pdf`, `.txt`, `.md`). It is split into chunks and stored for search in the background; a scanned PDF is read with OCR. Once a textbook is **attached to a course**, that course's quizzes are written from the passages closest to the section (and to the student's open mistakes), in addition to the uploaded material.
-
-| Method | Path | Description |
-|---|---|---|
-| POST | `/api/textbooks` | Upload (multipart `file`). Returns 202 with `status: "PROCESSING"`; a duplicate file is 409 |
-| GET | `/api/textbooks/{textbook_id}` | Poll it until `status` is `READY` (or `FAILED`, with `error`). OCR of a long scan can take minutes |
-| GET | `/api/textbooks` | All textbooks, newest first |
-| DELETE | `/api/textbooks/{textbook_id}` | Delete the textbook, its chunks and its course links. Returns 204 |
-| PUT | `/api/courses/{course_id}/textbooks/{textbook_id}` | Attach it to the course (repeating it is fine). Returns 204 |
-| DELETE | `/api/courses/{course_id}/textbooks/{textbook_id}` | Detach it. Returns 204 |
-| GET | `/api/courses/{course_id}/textbooks` | The course's attached textbooks, in the order they were attached |
-
-```json
-{
-  "id": "4f3a6c1e-...", "original_name": "biology-textbook.pdf", "size_bytes": 4821337,
-  "sha256": "9b2f...", "status": "READY", "chunk_count": 812, "error": null,
-  "created_at": "2026-09-19T15:01:15.328228Z"
-}
-```
-
-Only `READY` textbooks are used for quizzes, so attaching one that is still `PROCESSING` is fine: it starts to count once it is ready. A course needs uploaded material, a ready textbook, or both; with neither, `POST /api/sections/{id}/quizzes` returns 409.

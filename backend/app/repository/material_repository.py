@@ -16,8 +16,8 @@ class MaterialRepository:
     def get(self, material_id: str) -> Material | None:
         return self._session.get(Material, material_id)
 
-    def list_by_course(self, course_id: str) -> list[Material]:
-        query = select(Material).where(Material.course_id == course_id).order_by(Material.created_at)
+    def list_by_section(self, section_id: str) -> list[Material]:
+        query = select(Material).where(Material.section_id == section_id).order_by(Material.created_at)
         return list(self._session.scalars(query))
 
     def delete(self, material: Material) -> None:
