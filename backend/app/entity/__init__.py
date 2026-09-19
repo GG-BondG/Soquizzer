@@ -2,6 +2,7 @@ from app.entity.answer import Answer
 from app.entity.attempt import Attempt
 from app.entity.base import Base
 from app.entity.course import Course, Subject
+from app.entity.course_textbook import CourseTextbook
 from app.entity.section import Section
 from app.entity.material import Material
 from app.entity.question import Question, QuestionType
@@ -15,6 +16,7 @@ __all__ = [
     "Attempt",
     "Base",
     "Course",
+    "CourseTextbook",
     "Material",
     "Question",
     "QuestionType",

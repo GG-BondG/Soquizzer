@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { api, friendlyError, subjectLabel } from '../api.js';
 import { formatDate, formatPercent, typeLabel } from '../format.js';
@@ -18,6 +18,10 @@ const DELETE_COPY = {
     title: (name) => `Remove “${name}”?`,
     body: 'This removes the material from the course.',
   },
+  textbook: {
+    title: (name) => `Remove “${name}”?`,
+    body: 'This removes the textbook from this course. The file stays uploaded and can be added to other courses.',
+  },
   section: {
     title: (name) => `Delete section “${name}”?`,
     body: 'This also deletes its quizzes and their attempt history.',
@@ -31,12 +35,26 @@ export default function CourseDetail() {
 
   const course = useApi(() => api.courses.get(courseId), [courseId]);
   const materials = useApi(() => api.materials.list(courseId), [courseId]);
+  const textbooks = useApi(() => api.textbooks.list(courseId), [courseId]);
   const sections = useApi(() => api.sections.list(courseId), [courseId]);
   const progress = useApi(() => api.courses.progress(courseId), [courseId]);
 
   const fileInputRef = useRef(null);
   const [uploading, setUploading] = useState(null); // filename while an upload is in flight
   const [uploadError, setUploadError] = useState('');
+
+  const textbookInputRef = useRef(null);
+  const [textbookUploading, setTextbookUploading] = useState(null); // filename while an upload is in flight
+  const [textbookError, setTextbookError] = useState('');
+
+  // A textbook is read in the background after upload; keep checking until none is still processing.
+  const textbookReload = textbooks.reload;
+  const stillProcessing = textbooks.data?.some((t) => t.status === 'PROCESSING');
+  useEffect(() => {
+    if (!stillProcessing) return undefined;
+    const timer = setTimeout(textbookReload, 3000);
+    return () => clearTimeout(timer);
+  }, [stillProcessing, textbooks.data, textbookReload]);
 
   const addSectionRef = useRef(null);
   const [sectionOpen, setSectionOpen] = useState(false);
@@ -64,6 +82,25 @@ export default function CourseDetail() {
       pet.error('I could not read that file.');
     } finally {
       setUploading(null);
+    }
+  }
+
+  async function handleTextbookUpload(e) {
+    const file = e.target.files[0];
+    e.target.value = '';
+    if (!file) return;
+    setTextbookUploading(file.name);
+    setTextbookError('');
+    pet.loading('Uploading your textbook…');
+    try {
+      await api.textbooks.upload(courseId, file);
+      pet.success('Got it! I will read the textbook in the background.');
+      textbooks.reload();
+    } catch (err) {
+      setTextbookError(friendlyError(err, { 415: 'Textbooks can be PDF, TXT or Markdown files.', 413: 'That file is too large.' }));
+      pet.error('I could not take that textbook.');
+    } finally {
+      setTextbookUploading(null);
     }
   }
 
@@ -101,6 +138,9 @@ export default function CourseDetail() {
       if (target.kind === 'material') {
         await api.materials.remove(target.id);
         materials.reload();
+      } else if (target.kind === 'textbook') {
+        await api.textbooks.detach(courseId, target.id);
+        textbooks.reload();
       } else {
         await api.sections.remove(target.id);
         sections.reload();
@@ -210,6 +250,69 @@ export default function CourseDetail() {
         )}
         {materials.data && materials.data.length === 0 && !uploading && (
           <div className="empty-note">Upload your slides or notes as a PDF. Quizzes are generated from them.</div>
+        )}
+      </div>
+
+      <div className="block">
+        <div className="block-header">
+          <div className="block-label">Textbooks</div>
+          <button
+            type="button"
+            className="btn btn-small"
+            onClick={() => textbookInputRef.current.click()}
+            disabled={!!textbookUploading}
+          >
+            <UploadIcon />
+            {textbookUploading ? 'Uploading…' : 'Add textbook'}
+          </button>
+          <input
+            ref={textbookInputRef}
+            type="file"
+            accept=".pdf,.txt,.md,application/pdf,text/plain,text/markdown"
+            hidden
+            onChange={handleTextbookUpload}
+          />
+        </div>
+
+        {textbookError && <div className="error-note">{textbookError}</div>}
+        {textbooks.error && (
+          <div className="error-note">
+            {textbooks.error.message}
+            <div>
+              <button type="button" className="btn btn-small" onClick={textbooks.reload}>
+                Try again
+              </button>
+            </div>
+          </div>
+        )}
+
+        {textbooks.data && textbooks.data.length > 0 && (
+          <div className="row-list">
+            {textbooks.data.map((t) => (
+              <div className="row" key={t.id}>
+                <DocIcon />
+                <span className="row-title">{t.original_name}</span>
+                <span className="row-meta">
+                  {t.status === 'PROCESSING' && 'Reading…'}
+                  {t.status === 'READY' && 'Ready'}
+                  {t.status === 'FAILED' && `Failed${t.error ? `: ${t.error}` : ''}`}
+                </span>
+                <button
+                  type="button"
+                  className="row-action"
+                  onClick={() => setPendingDelete({ kind: 'textbook', id: t.id, name: t.original_name })}
+                >
+                  Remove
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+        {textbooks.data && textbooks.data.length === 0 && !textbookUploading && (
+          <div className="empty-note">
+            Optional: add a textbook (PDF, TXT or Markdown). Quizzes then also draw on the passages that match each
+            section. A scanned PDF works too, but takes longer to read.
+          </div>
         )}
       </div>
 

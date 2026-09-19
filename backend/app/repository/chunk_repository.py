@@ -33,3 +33,9 @@ class ChunkRepository:
     def search(self, query: str, k: int = 4, textbook_id: str | None = None) -> list[Document]:
         where = {"textbook_id": textbook_id} if textbook_id else None
         return self._store.similarity_search(query, k=k, filter=where)
+
+    def search_in(self, query: str, textbook_ids: list[str], k: int = 4) -> list[Document]:
+        """Similarity search restricted to the chunks of these textbooks."""
+        if not textbook_ids:
+            return []
+        return self._store.similarity_search(query, k=k, filter={"textbook_id": {"$in": textbook_ids}})

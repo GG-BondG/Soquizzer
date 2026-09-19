@@ -9,6 +9,7 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.entity.base import Base, UtcDateTime
 
 if TYPE_CHECKING:
+    from app.entity.course_textbook import CourseTextbook
     from app.entity.section import Section
     from app.entity.material import Material
 
@@ -40,3 +41,4 @@ class Course(Base):
     sections: Mapped[list["Section"]] = relationship(
         back_populates="course", cascade="all, delete-orphan", order_by="Section.created_at"
     )
+    textbook_links: Mapped[list["CourseTextbook"]] = relationship(cascade="all, delete-orphan")
