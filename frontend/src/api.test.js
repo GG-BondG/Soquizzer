@@ -146,6 +146,19 @@ describe('requests', () => {
     await api.history.list({ courseId: 'c1', limit: 5 });
     expect(called(fetch).url).toBe('http://localhost:8000/api/history?course_id=c1&limit=5');
   });
+
+  it('asks the pet about a question, sending the transcript so far', async () => {
+    const fetch = mockFetch({ body: { reply: 'Think about what each organelle does.' } });
+    const history = [{ role: 'student', text: 'hi' }, { role: 'pet', text: 'what have you tried?' }];
+
+    const result = await api.chat.ask('q1', 'a1', { message: 'still stuck', history });
+
+    expect(result).toEqual({ reply: 'Think about what each organelle does.' });
+    const request = called(fetch);
+    expect(request.url).toBe('http://localhost:8000/api/quizzes/q1/questions/a1/chat');
+    expect(request.method).toBe('POST');
+    expect(JSON.parse(request.body)).toEqual({ message: 'still stuck', history });
+  });
 });
 
 describe('materials (a section\'s PDF)', () => {
