@@ -79,9 +79,29 @@ def quiz_generator():
     return FakeQuizGenerator()
 
 
+class FakeOcr:
+    """Returns the text set in `pages` (one string per page); by default every page is blank."""
+
+    def __init__(self):
+        self.calls: list[bytes] = []
+        self.pages: list[str] | None = None
+        self.error: Exception | None = None
+
+    def transcribe(self, pdf: bytes) -> list[str]:
+        self.calls.append(pdf)
+        if self.error:
+            raise self.error
+        return self.pages if self.pages is not None else [""]
+
+
 @pytest.fixture
-def app(settings, converter, quiz_generator):
-    return create_app(settings, DeterministicFakeEmbedding(size=32), converter, quiz_generator)
+def ocr():
+    return FakeOcr()
+
+
+@pytest.fixture
+def app(settings, converter, quiz_generator, ocr):
+    return create_app(settings, DeterministicFakeEmbedding(size=32), converter, quiz_generator, ocr)
 
 
 @pytest.fixture
@@ -125,9 +145,10 @@ def make_pdf(pages: list[str]) -> bytes:
     return out.getvalue()
 
 
-def make_blank_pdf() -> bytes:
+def make_blank_pdf(pages: int = 1) -> bytes:
     writer = PdfWriter()
-    writer.add_blank_page(width=612, height=792)
+    for _ in range(pages):
+        writer.add_blank_page(width=612, height=792)
     out = io.BytesIO()
     writer.write(out)
     return out.getvalue()

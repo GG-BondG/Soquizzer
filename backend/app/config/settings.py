@@ -18,6 +18,9 @@ class Settings(BaseSettings):
     generation_model: str = Field("gemini-2.5-flash", validation_alias=AliasChoices("GEMINI_MODEL", "GENERATION_MODEL"))
     generation_timeout_seconds: int = 120
     max_material_pdf_bytes: int = 20 * 1024 * 1024  # Gemini inline PDF limit
+    ocr_enabled: bool = True  # scanned textbook PDFs (no text layer) are read by Gemini instead of failing
+    ocr_pages_per_request: int = 10
+    ocr_max_pages: int = 300
     max_material_chars: int = 400_000  # all of a course's material JSON goes into one quiz prompt
     mistake_review_limit: int = 20
     questions_per_quiz: int = 20

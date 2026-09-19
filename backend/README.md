@@ -70,7 +70,7 @@ Other endpoints: `GET /api/textbooks`, `GET /api/textbooks/{id}`, `DELETE /api/t
 
 - Raw files are saved under a generated name, never the user's filename; the original name is kept only as metadata.
 - Textbook records (status, hash, chunk count) live in SQLite, vectors in ChromaDB under `DATA_DIR`.
-- Scanned PDFs without a text layer end up `FAILED` ("No extractable text"); OCR is not supported.
+- **Scanned PDFs (no text layer):** when a PDF averages under 20 characters per page, Gemini reads the page images (OCR) instead. Pages go in batches of `OCR_PAGES_PER_REQUEST` (default 10, split further if a batch exceeds the inline PDF limit), and each page keeps its page number in the chunk metadata. PDFs over `OCR_MAX_PAGES` (default 300) are refused, and a scan Gemini cannot read ends up `FAILED` ("No extractable text found, even after OCR"). Set `OCR_ENABLED=false` to skip OCR and fail such PDFs right away. OCR calls Gemini, so it is slow and uses quota; text PDFs never trigger it.
 
 ### Next: retrieval and generation over the textbook chunks
 
