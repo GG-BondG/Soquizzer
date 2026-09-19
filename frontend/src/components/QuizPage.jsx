@@ -91,15 +91,19 @@ export default function QuizPage() {
   }
 
   // Lets the pet answer questions about whichever question is on screen; stops once graded or on leaving the page.
+  // Depend on the two callbacks, not on `pet`: `pet` is a new object whenever the chat state changes (every
+  // keystroke), and the cleanup below resets the context first, so `askAbout` would set a fresh object each time
+  // and re-render the pet context forever.
+  const { askAbout, stopAsking } = pet;
   useEffect(() => {
     const current = quiz?.questions?.[index];
     if (!current || result) {
-      pet.stopAsking();
+      stopAsking();
       return undefined;
     }
-    pet.askAbout(quiz.id, current.id);
-    return () => pet.stopAsking();
-  }, [quiz, index, result, pet]);
+    askAbout(quiz.id, current.id);
+    return () => stopAsking();
+  }, [quiz, index, result, askAbout, stopAsking]);
 
   async function submit() {
     const timeSpentSeconds = Math.round((Date.now() - startedAt.current) / 1000);
