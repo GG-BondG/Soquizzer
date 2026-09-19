@@ -103,9 +103,38 @@ def ocr():
     return FakeOcr()
 
 
+class FakePetTutor:
+    """Echoes back the inputs it was given so tests can assert on the context the service assembled."""
+
+    def __init__(self):
+        self.calls: list[dict] = []
+        self.error: Exception | None = None
+        self.reply_text = "Think about it this way..."
+
+    def reply(self, question, own_attempts, mistakes, accuracy, history, message):
+        self.calls.append(
+            {
+                "question": question,
+                "own_attempts": own_attempts,
+                "mistakes": mistakes,
+                "accuracy": accuracy,
+                "history": history,
+                "message": message,
+            }
+        )
+        if self.error:
+            raise self.error
+        return self.reply_text
+
+
 @pytest.fixture
-def app(settings, converter, quiz_generator, ocr):
-    return create_app(settings, converter, quiz_generator, ocr)
+def pet_tutor():
+    return FakePetTutor()
+
+
+@pytest.fixture
+def app(settings, converter, quiz_generator, ocr, pet_tutor):
+    return create_app(settings, converter, quiz_generator, ocr, pet_tutor)
 
 
 @pytest.fixture

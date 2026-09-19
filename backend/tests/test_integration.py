@@ -17,7 +17,7 @@ from fastapi.testclient import TestClient
 
 from app.config import Settings
 from app.main import create_app
-from tests.conftest import FakeOcr, FakePdfConverter, FakeQuizGenerator, make_pdf
+from tests.conftest import FakeOcr, FakePdfConverter, FakePetTutor, FakeQuizGenerator, make_pdf
 
 pytestmark = pytest.mark.integration
 
@@ -38,7 +38,7 @@ def read_rows(db_file: Path, sql: str, *params) -> list[tuple]:
 
 
 def fake_app(settings):
-    return create_app(settings, FakePdfConverter(), FakeQuizGenerator(), FakeOcr())
+    return create_app(settings, FakePdfConverter(), FakeQuizGenerator(), FakeOcr(), FakePetTutor())
 
 
 def make_section(client: TestClient, course: dict) -> dict:
