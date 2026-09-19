@@ -127,17 +127,17 @@ export const api = {
     },
     remove: (materialId) => request(`/api/materials/${id(materialId)}`, { method: 'DELETE' }),
   },
-  groups: {
-    list: (courseId) => request(`/api/courses/${id(courseId)}/groups`),
-    get: (groupId) => request(`/api/groups/${id(groupId)}`),
-    create: (courseId, name) => request(`/api/courses/${id(courseId)}/groups`, { method: 'POST', json: { name } }),
-    remove: (groupId) => request(`/api/groups/${id(groupId)}`, { method: 'DELETE' }),
+  sections: {
+    list: (courseId) => request(`/api/courses/${id(courseId)}/sections`),
+    get: (sectionId) => request(`/api/sections/${id(sectionId)}`),
+    create: (courseId, name) => request(`/api/courses/${id(courseId)}/sections`, { method: 'POST', json: { name } }),
+    remove: (sectionId) => request(`/api/sections/${id(sectionId)}`, { method: 'DELETE' }),
   },
   quizzes: {
-    list: (groupId) => request(`/api/groups/${id(groupId)}/quizzes`),
+    list: (sectionId) => request(`/api/sections/${id(sectionId)}/quizzes`),
     get: (quizId) => request(`/api/quizzes/${id(quizId)}`),
     // Takes no parameters: the backend picks the questions itself.
-    create: (groupId) => request(`/api/groups/${id(groupId)}/quizzes`, { method: 'POST', timeout: LONG_TIMEOUT_MS }),
+    create: (sectionId) => request(`/api/sections/${id(sectionId)}/quizzes`, { method: 'POST', timeout: LONG_TIMEOUT_MS }),
     submit: (quizId, { answers, timeSpentSeconds }) =>
       request(`/api/quizzes/${id(quizId)}/submissions`, {
         method: 'POST',
@@ -145,8 +145,8 @@ export const api = {
       }),
   },
   history: {
-    list: ({ courseId, groupId, limit } = {}) =>
-      request('/api/history', { params: { course_id: courseId, group_id: groupId, limit } }),
+    list: ({ courseId, sectionId, limit } = {}) =>
+      request('/api/history', { params: { course_id: courseId, section_id: sectionId, limit } }),
     attempt: (attemptId) => request(`/api/attempts/${id(attemptId)}`),
   },
 };

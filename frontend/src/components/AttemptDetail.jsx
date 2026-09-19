@@ -56,7 +56,7 @@ export default function AttemptDetail() {
       </div>
 
       <div className="attempt-meta">
-        {a.course_name} · {a.group_name} · {formatDate(a.submitted_at, { time: true })} · {formatDuration(a.time_spent_seconds)}
+        {a.course_name} · {a.section_name} · {formatDate(a.submitted_at, { time: true })} · {formatDuration(a.time_spent_seconds)}
       </div>
 
       <div className="block">

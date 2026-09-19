@@ -91,7 +91,7 @@ export default function QuizPage() {
     );
   }
 
-  const backTo = `/group/${quiz.group_id}`;
+  const backTo = `/section/${quiz.section_id}`;
 
   if (result) {
     const byQuestion = new Map(result.results.map((r) => [r.question_id, r]));

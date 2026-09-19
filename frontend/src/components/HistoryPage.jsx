@@ -8,16 +8,16 @@ import './HistoryPage.css';
 
 export default function HistoryPage() {
   const [courseId, setCourseId] = useState('');
-  const [groupId, setGroupId] = useState('');
+  const [sectionId, setSectionId] = useState('');
 
   const courses = useApi(() => api.courses.list(), []);
-  // the group filter only makes sense within one course
-  const groups = useApi(() => (courseId ? api.groups.list(courseId) : []), [courseId]);
-  const history = useApi(() => api.history.list({ courseId, groupId }), [courseId, groupId]);
+  // the section filter only makes sense within one course
+  const sections = useApi(() => (courseId ? api.sections.list(courseId) : []), [courseId]);
+  const history = useApi(() => api.history.list({ courseId, sectionId }), [courseId, sectionId]);
 
   function pickCourse(id) {
     setCourseId(id);
-    setGroupId('');
+    setSectionId('');
   }
 
   const summary = history.data?.summary;
@@ -43,13 +43,13 @@ export default function HistoryPage() {
             ))}
           </select>
           <select
-            value={groupId}
-            onChange={(e) => setGroupId(e.target.value)}
+            value={sectionId}
+            onChange={(e) => setSectionId(e.target.value)}
             disabled={!courseId}
             aria-label="Filter by section"
           >
             <option value="">All sections</option>
-            {(groups.data ?? []).map((g) => (
+            {(sections.data ?? []).map((g) => (
               <option key={g.id} value={g.id}>
                 {g.name}
               </option>
@@ -106,7 +106,7 @@ export default function HistoryPage() {
                 <Link to={`/attempts/${a.attempt_id}`} className="row-link">
                   <span className="row-title">
                     {a.course_name}
-                    <span className="history-group"> · {a.group_name}</span>
+                    <span className="history-section"> · {a.section_name}</span>
                   </span>
                   <span className="row-meta">{formatDate(a.submitted_at, { time: true })}</span>
                   <span className="row-mono history-col">

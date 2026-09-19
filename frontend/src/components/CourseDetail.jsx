@@ -18,7 +18,7 @@ const DELETE_COPY = {
     title: (name) => `Remove “${name}”?`,
     body: 'This removes the material from the course.',
   },
-  group: {
+  section: {
     title: (name) => `Delete section “${name}”?`,
     body: 'This also deletes its quizzes and their attempt history.',
   },
@@ -31,7 +31,7 @@ export default function CourseDetail() {
 
   const course = useApi(() => api.courses.get(courseId), [courseId]);
   const materials = useApi(() => api.materials.list(courseId), [courseId]);
-  const groups = useApi(() => api.groups.list(courseId), [courseId]);
+  const sections = useApi(() => api.sections.list(courseId), [courseId]);
   const progress = useApi(() => api.courses.progress(courseId), [courseId]);
 
   const fileInputRef = useRef(null);
@@ -77,9 +77,9 @@ export default function CourseDetail() {
     e.preventDefault();
     setSectionBusy(true);
     try {
-      await api.groups.create(courseId, sectionName);
+      await api.sections.create(courseId, sectionName);
       setSectionOpen(false);
-      groups.reload();
+      sections.reload();
     } catch (err) {
       setSectionError(err.message);
     } finally {
@@ -102,8 +102,8 @@ export default function CourseDetail() {
         await api.materials.remove(target.id);
         materials.reload();
       } else {
-        await api.groups.remove(target.id);
-        groups.reload();
+        await api.sections.remove(target.id);
+        sections.reload();
         progress.reload();
       }
       setPendingDelete(null);
@@ -216,14 +216,14 @@ export default function CourseDetail() {
       <div className="block">
         <div className="block-header">
           <div className="block-label">Sections</div>
-          {groups.data && <div className="block-count">{groups.data.length} total</div>}
+          {sections.data && <div className="block-count">{sections.data.length} total</div>}
         </div>
 
-        {groups.error && (
+        {sections.error && (
           <div className="error-note">
-            {groups.error.message}
+            {sections.error.message}
             <div>
-              <button type="button" className="btn btn-small" onClick={groups.reload}>
+              <button type="button" className="btn btn-small" onClick={sections.reload}>
                 Try again
               </button>
             </div>
@@ -231,9 +231,9 @@ export default function CourseDetail() {
         )}
 
         <div className="row-list">
-          {(groups.data ?? []).map((g, i) => (
+          {(sections.data ?? []).map((g, i) => (
             <div className="row" key={g.id}>
-              <Link to={`/group/${g.id}`} className="row-link">
+              <Link to={`/section/${g.id}`} className="row-link">
                 <span className="row-index">{String(i + 1).padStart(2, '0')}</span>
                 <span className="row-title">{g.name}</span>
                 <span className="row-meta">{formatDate(g.created_at)}</span>
@@ -242,7 +242,7 @@ export default function CourseDetail() {
               <button
                 type="button"
                 className="row-action"
-                onClick={() => setPendingDelete({ kind: 'group', id: g.id, name: g.name })}
+                onClick={() => setPendingDelete({ kind: 'section', id: g.id, name: g.name })}
               >
                 Delete
               </button>

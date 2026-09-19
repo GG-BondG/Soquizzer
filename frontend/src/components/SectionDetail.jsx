@@ -6,14 +6,14 @@ import { useApi } from '../useApi.js';
 import { usePet } from '../pet/PetContext.jsx';
 import { BackIcon, ChevronIcon } from './Icons.jsx';
 
-export default function GroupDetail() {
-  const { groupId } = useParams();
+export default function SectionDetail() {
+  const { sectionId } = useParams();
   const navigate = useNavigate();
   const pet = usePet();
 
-  const group = useApi(() => api.groups.get(groupId), [groupId]);
-  const course = useApi(() => (group.data ? api.courses.get(group.data.course_id) : null), [group.data?.course_id]);
-  const quizzes = useApi(() => api.quizzes.list(groupId), [groupId]);
+  const section = useApi(() => api.sections.get(sectionId), [sectionId]);
+  const course = useApi(() => (section.data ? api.courses.get(section.data.course_id) : null), [section.data?.course_id]);
+  const quizzes = useApi(() => api.quizzes.list(sectionId), [sectionId]);
 
   const [creating, setCreating] = useState(false);
   const [createError, setCreateError] = useState(null); // { status, message }
@@ -23,7 +23,7 @@ export default function GroupDetail() {
     setCreateError(null);
     pet.loading('Writing 20 questions for you… hang tight!');
     try {
-      const quiz = await api.quizzes.create(groupId);
+      const quiz = await api.quizzes.create(sectionId);
       pet.success('Your quiz is ready. Good luck!');
       // the response already holds the questions, so hand them over instead of refetching
       navigate(`/quiz/${quiz.id}`, { state: { quiz } });
@@ -34,20 +34,20 @@ export default function GroupDetail() {
     }
   }
 
-  if (group.error) {
+  if (section.error) {
     return (
       <div className="page">
         <Link to="/" className="back-link">
           <BackIcon /> Courses
         </Link>
         <div className="error-note">
-          {group.error.status === 404 ? 'This section does not exist (it may have been deleted).' : group.error.message}
+          {section.error.status === 404 ? 'This section does not exist (it may have been deleted).' : section.error.message}
         </div>
       </div>
     );
   }
 
-  if (!group.data) {
+  if (!section.data) {
     return (
       <div className="page">
         <Link to="/" className="back-link">
@@ -58,7 +58,7 @@ export default function GroupDetail() {
     );
   }
 
-  const g = group.data;
+  const g = section.data;
   const list = quizzes.data ?? [];
 
   return (
