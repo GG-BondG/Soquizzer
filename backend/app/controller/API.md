@@ -284,7 +284,8 @@ For questions the student left unanswered, `selected_index` and `is_correct` are
 
 | Method | Path | Description |
 |---|---|---|
-| GET | `/api/courses/{course_id}/progress` | Accuracy by question type for the course, and the mistakes that are still open |
+| GET | `/api/sections/{section_id}/progress` | Accuracy by question type for the section, and the mistakes that are still open. The app shows this on the section page. Returns 404 for an unknown section |
+| GET | `/api/courses/{course_id}/progress` | The same, added up over every section of the course. The app no longer shows it, but it stays available |
 
 ```json
 {

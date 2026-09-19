@@ -156,11 +156,18 @@ class QuizService:
 
     def progress(self, course_id: str) -> ProgressResponse:
         course = self._courses.get(course_id)
-        still_wrong = self._answers.still_wrong(_REREAD_SCAN_LIMIT, course_id=course.id)
+        return self._progress(course_id=course.id)
+
+    def section_progress(self, section_id: str) -> ProgressResponse:
+        section = self._sections.get(section_id)
+        return self._progress(section_id=section.id)
+
+    def _progress(self, *, section_id: str | None = None, course_id: str | None = None) -> ProgressResponse:
+        still_wrong = self._answers.still_wrong(_REREAD_SCAN_LIMIT, section_id=section_id, course_id=course_id)
         return ProgressResponse(
             by_type=[
                 TypeStat(type=kind, total=total, correct=correct)
-                for kind, total, correct in self._answers.stats_by_type(course_id=course.id)
+                for kind, total, correct in self._answers.stats_by_type(section_id=section_id, course_id=course_id)
             ],
             mistakes=[
                 Mistake(
