@@ -36,14 +36,14 @@ function PetProbe({ onClick }) {
 // Wrapped in an async act() so the promise inside submitChat settles (and is caught) before the test moves on,
 // instead of leaking past a synchronous fireEvent.click into an unhandled rejection.
 async function send(text) {
-  fireEvent.change(screen.getByPlaceholderText('Ask your pet...'), { target: { value: text } });
+  fireEvent.change(screen.getByPlaceholderText('Ask your assistant...'), { target: { value: text } });
   await act(async () => {
     fireEvent.click(screen.getByText('Send'));
   });
 }
 
 describe('PetProvider', () => {
-  it('opens the pet chat when the pet is tapped', () => {
+  it('opens the assistant chat when the pet is tapped', () => {
     render(
       <PetProvider>
         <div>page</div>
@@ -52,7 +52,7 @@ describe('PetProvider', () => {
 
     fireEvent.click(screen.getByTestId('pet-button'));
 
-    expect(screen.getByRole('dialog', { name: 'Pet chat' })).toBeTruthy();
+    expect(screen.getByRole('dialog', { name: 'Assistant chat' })).toBeTruthy();
   });
 
   it('opens a chat panel and lets the user send a message', () => {
@@ -63,7 +63,7 @@ describe('PetProvider', () => {
     );
 
     fireEvent.click(screen.getByTestId('pet-button'));
-    fireEvent.change(screen.getByPlaceholderText('Ask your pet...'), { target: { value: 'hello' } });
+    fireEvent.change(screen.getByPlaceholderText('Ask your assistant...'), { target: { value: 'hello' } });
     fireEvent.click(screen.getByText('Send'));
 
     expect(screen.getByText('hello')).toBeTruthy();
@@ -79,7 +79,7 @@ describe('PetProvider', () => {
 
     fireEvent.click(screen.getByTestId('pet-button'));
 
-    expect(screen.getByRole('dialog', { name: 'Pet chat' })).toBeTruthy();
+    expect(screen.getByRole('dialog', { name: 'Assistant chat' })).toBeTruthy();
     expect(screen.queryByText(/I'm here when you need me/i)).toBeNull();
   });
 
@@ -175,11 +175,11 @@ describe('PetProvider', () => {
 
       fireEvent.click(screen.getByTestId('ask-q1'));
       fireEvent.click(screen.getByTestId('pet-button'));
-      expect(screen.getByRole('dialog', { name: 'Pet chat' })).toBeTruthy();
+      expect(screen.getByRole('dialog', { name: 'Assistant chat' })).toBeTruthy();
 
       fireEvent.click(screen.getByTestId('ask-q2'));
 
-      expect(screen.queryByRole('dialog', { name: 'Pet chat' })).toBeNull();
+      expect(screen.queryByRole('dialog', { name: 'Assistant chat' })).toBeNull();
     });
 
     it('falls back to the canned reply once stopAsking is called', async () => {
