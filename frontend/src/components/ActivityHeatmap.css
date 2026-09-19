@@ -1,0 +1,110 @@
+.activity {
+  margin-top: 32px;
+  padding: 20px 24px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+}
+
+.activity-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.activity .activity-label {
+  margin-top: 0;
+}
+
+.activity-legend {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+  color: var(--text-3);
+}
+
+.activity-legend .activity-cell {
+  margin: 0 1px;
+}
+
+.activity-scroll {
+  margin-top: 14px;
+  overflow-x: auto;
+  padding-bottom: 4px;
+}
+
+.activity-grid {
+  display: flex;
+  gap: 4px;
+  width: max-content;
+}
+
+.activity-week,
+.activity-days {
+  display: grid;
+  grid-template-rows: 16px repeat(7, 12px);
+  gap: 4px;
+}
+
+.activity-week {
+  grid-template-columns: 12px;
+}
+
+.activity-days {
+  margin-right: 4px;
+}
+
+.activity-days span {
+  font-size: 11px;
+  line-height: 12px;
+  color: var(--text-3);
+}
+
+/* the empty first label keeps the day names level with the cells */
+.activity-days::before {
+  content: '';
+}
+
+.activity-month {
+  font-size: 11px;
+  line-height: 16px;
+  color: var(--text-3);
+  white-space: nowrap;
+  /* zero width so a long label spills over the next column instead of widening this one */
+  width: 0;
+  overflow: visible;
+}
+
+.activity-cell {
+  display: block;
+  width: 12px;
+  height: 12px;
+  border-radius: 3px;
+}
+
+.activity-cell.empty {
+  background: transparent;
+}
+
+.activity-cell.level-0 {
+  background: rgba(28, 27, 23, 0.07);
+}
+
+.activity-cell.level-1 {
+  background: rgba(52, 82, 59, 0.3);
+}
+
+.activity-cell.level-2 {
+  background: rgba(52, 82, 59, 0.5);
+}
+
+.activity-cell.level-3 {
+  background: rgba(52, 82, 59, 0.75);
+}
+
+.activity-cell.level-4 {
+  background: var(--accent);
+}
