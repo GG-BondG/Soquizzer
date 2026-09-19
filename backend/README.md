@@ -21,12 +21,12 @@ Data lives under `DATA_DIR` (default `./data`): `soquizzer.db` (SQLite: textbook
 
 ```
 app/
-├── controller/   HTTP layer: routing, no business logic
-├── service/      TextbookService, IngestionService (load -> chunk -> embed), CourseService, QuizService
-├── repository/   Textbook/Course/Quiz repositories (SQLite via SQLAlchemy), ChunkRepository (ChromaDB)
-├── entity/       Database models (Textbook, Course, Quiz)
+├── controller/   HTTP layer: routing, no business logic. API.md documents every endpoint for the frontend
+├── service/      TextbookService, IngestionService (load -> chunk -> embed), CourseService, GroupService, MaterialService, QuizService, HistoryService
+├── repository/   SQLite repositories via SQLAlchemy (textbook, course, group, material, quiz, attempt, answer), ChunkRepository (ChromaDB)
+├── entity/       Database models (Textbook, Course, Material, QuizGroup, Quiz, Question, Attempt, Answer)
 ├── dto/          Request/response schemas
-├── llm/          GeminiPdfJsonConverter (native Google GenAI SDK): PDF in, JSON out
+├── llm/          Native Google GenAI SDK: GeminiPdfJsonConverter (PDF in, JSON out), GeminiQuizGenerator
 ├── rag/          Loaders, chunking, embeddings
 ├── storage/      LocalStorage for raw uploads
 ├── config/       Settings (env vars / .env)
@@ -76,26 +76,49 @@ Other endpoints: `GET /api/textbooks`, `GET /api/textbooks/{id}`, `DELETE /api/t
 
 `ChunkRepository.search()` already does filtered similarity search. Answering questions from retrieved chunks (join them into a context string, call the native Google GenAI SDK's `generate_content`) is not built yet.
 
-## Courses and quizzes
+## Courses, groups, quizzes and memory
 
-`Course` (`name`, `subject`) has many `Quiz` rows. `subject` is the `Subject` enum in `entity/course.py`: MATH, PHYSICS, CHEMISTRY, BIOLOGY, COMPUTER_SCIENCE, ENGLISH, HISTORY, GEOGRAPHY, ECONOMICS, OTHER. `Quiz.content` is a JSON text column.
+The endpoints the frontend uses are documented in [`app/controller/API.md`](app/controller/API.md).
 
-Endpoints:
+```
+courses ─1─∞─ materials
+courses ─1─∞─ quiz_groups ─1─∞─ quizzes ─1─∞─ questions ─1─∞─ answers
+                                   quizzes ─1─∞─ attempts ─1─∞─ answers
+```
 
-- `POST /api/courses` `{name, subject}`, `GET /api/courses`, `GET /api/courses/{id}`, `DELETE /api/courses/{id}` (also deletes its quizzes)
-- `POST /api/courses/{id}/quizzes` multipart `file` (PDF, max 20 MB) -> 201 with the quiz
-- `GET /api/courses/{id}/quizzes`, `GET /api/quizzes/{id}`, `DELETE /api/quizzes/{id}`
+| Table | Columns |
+|---|---|
+| `courses` | name, `subject` (`Subject` enum: MATH, PHYSICS, CHEMISTRY, BIOLOGY, COMPUTER_SCIENCE, ENGLISH, HISTORY, GEOGRAPHY, ECONOMICS, OTHER) |
+| `materials` | course_id, source_filename, `content` (JSON text Gemini wrote from an uploaded PDF) |
+| `quiz_groups` | course_id, name. A section of a course; its quizzes are successive rounds |
+| `quizzes` | group_id, created_at |
+| `questions` | quiz_id, position, `type` (MULTIPLE_CHOICE / TRUE_FALSE), stem, options (JSON list), `answer_index`, explanation |
+| `attempts` | quiz_id, submitted_at, `time_spent_seconds` (sent by the frontend, may be null), score, total |
+| `answers` | attempt_id, question_id, selected_index, is_correct, answered_at |
 
-Upload flow: `QuizController` -> `QuizService.create_from_pdf` (check it is a PDF) -> `GeminiPdfJsonConverter` -> `QuizRepository.add` (JSON text into SQLite).
+The uploaded PDF is course material (slides, notes), not a quiz. The flow:
 
-The LLM layer is just "PDF in, JSON out": the PDF is sent to Gemini as a native PDF part (scanned PDFs work too) with `response_mime_type="application/json"` and no fixed schema, so Gemini works out the document's structure and writes the JSON itself. The result is only checked to be valid, non-empty JSON. The call is synchronous and can take several seconds; the PDF itself is not stored. If Gemini fails, or returns invalid JSON (a very long PDF can be cut off), the request returns 502 and nothing is saved. This path does not use ChromaDB.
+1. `POST /api/courses/{id}/materials` (PDF, max 20 MB): the PDF goes to Gemini as a native PDF part with `response_mime_type="application/json"` and no fixed schema, so Gemini works out the structure and writes the JSON itself. Stored in `materials`. The PDF itself is not kept.
+2. `POST /api/groups/{id}/quizzes`: no parameters. Gemini gets all of the course's material JSON and writes `QUESTIONS_PER_QUIZ` (default 20) questions in a fixed schema, **including the correct answer and an explanation** for each. Only multiple choice and true/false are generated, so grading is a comparison, no LLM needed. The response hides `answer_index` and `explanation`.
+3. `POST /api/quizzes/{id}/submissions`: graded against the stored answer, saved as an `attempt` with its `answers`, and the response reveals the right answers and explanations. Unanswered questions are not recorded. An invalid submission (unknown question, duplicate, option out of range) stores nothing.
+4. `GET /api/history` and `GET /api/attempts/{id}`: every attempt with score, accuracy and time spent, and one attempt in detail. `GET /api/courses/{id}/progress`: accuracy by question type and the mistakes still open.
+
+**Memory is the raw answer history, not a summary.** Every time a quiz is generated, the questions the student still gets wrong **in that group** (stem, options, right answer, their answer, explanation) plus the group's per-type accuracy are re-read from the database and put into the prompt (at most `MISTAKE_REVIEW_LIMIT`, default 20). Gemini is asked to work out what the student probably does not understand and to aim at least half of the new questions there. A question answered wrongly and later correctly drops out. The frontend never sees any of this: it just asks for the next quiz. There are no concept or topic tables: nothing is inferred and stored, so nothing can drift or lose detail.
+
+Deleting a course deletes its materials, groups, quizzes and attempts; deleting a group or a quiz deletes everything below it.
+
+Errors: 409 if the course has no material, 413 if the material JSON is over `MAX_MATERIAL_CHARS`, 502 if Gemini fails or returns an invalid result (nothing is saved). Both Gemini calls are synchronous and can take several seconds. This path does not use ChromaDB.
+
+CORS allows the Vite dev server (`http://localhost:5173`) and Electron's `file://` pages (origin `null`); change it with `CORS_ORIGINS` (a JSON list).
+
+If you already have a `data/soquizzer.db` from an earlier version, delete it: tables are created but never migrated.
 
 ## Tests
 
 ```bash
 pytest                          # everything; unit tests use fakes, no key needed
 pytest -m integration -s        # integration tests only, -s prints the JSON Gemini produced
-QUIZ_PDF_PATH=~/my_quiz.pdf pytest -m integration -s     # try your own PDF
+QUIZ_PDF_PATH=~/my_slides.pdf pytest -m integration -s     # try your own PDF
 ```
 
-The integration tests (`tests/test_integration.py`) start the app on a real SQLite file (created on startup, no server or Docker), inspect it with `sqlite3`, and check the JSON survives an app restart. The last one calls the real Gemini API and is skipped unless `GEMINI_API_KEY` is set (environment or `backend/.env`). It prints the path of the SQLite file so you can open the stored JSON yourself.
+The integration tests (`tests/test_integration.py`) start the app on a real SQLite file (created on startup, no server or Docker), inspect every table with `sqlite3`, and check that materials, groups, quizzes, attempts and mistakes survive an app restart. The last one calls the real Gemini API for the whole flow (PDF -> material -> quiz -> wrong answers -> next quiz) and is skipped unless `GEMINI_API_KEY` is set (environment or `backend/.env`). It prints what Gemini produced and the path of the SQLite file.

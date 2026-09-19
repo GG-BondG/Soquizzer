@@ -4,7 +4,7 @@ from types import SimpleNamespace
 import pytest
 
 from app.config import Settings
-from app.exception import ConfigurationError, QuizGenerationError
+from app.exception import ConfigurationError, LlmError
 from app.llm import GeminiPdfJsonConverter
 
 
@@ -56,7 +56,7 @@ def test_sends_pdf_to_gemini_and_asks_for_free_form_json():
     ],
 )
 def test_bad_model_output_or_api_error_raises_conversion_error(client):
-    with pytest.raises(QuizGenerationError):
+    with pytest.raises(LlmError):
         converter(client).convert(b"%PDF-")
 
 

@@ -4,8 +4,24 @@ from fastapi import Depends, Request
 from sqlalchemy.orm import Session
 
 from app.container import Container
-from app.repository import CourseRepository, QuizRepository, TextbookRepository
-from app.service import CourseService, IngestionService, QuizService, TextbookService
+from app.repository import (
+    AnswerRepository,
+    AttemptRepository,
+    CourseRepository,
+    GroupRepository,
+    MaterialRepository,
+    QuizRepository,
+    TextbookRepository,
+)
+from app.service import (
+    CourseService,
+    GroupService,
+    HistoryService,
+    IngestionService,
+    MaterialService,
+    QuizService,
+    TextbookService,
+)
 
 
 def get_container(request: Request) -> Container:
@@ -42,13 +58,42 @@ def get_course_service(session: Session = Depends(get_session)) -> CourseService
     return CourseService(CourseRepository(session))
 
 
+def get_material_service(
+    container: Container = Depends(get_container),
+    session: Session = Depends(get_session),
+) -> MaterialService:
+    return MaterialService(
+        MaterialRepository(session),
+        CourseService(CourseRepository(session)),
+        container.pdf_converter,
+        container.settings.max_material_pdf_bytes,
+    )
+
+
+def get_group_service(session: Session = Depends(get_session)) -> GroupService:
+    return GroupService(GroupRepository(session), CourseService(CourseRepository(session)))
+
+
 def get_quiz_service(
     container: Container = Depends(get_container),
     session: Session = Depends(get_session),
 ) -> QuizService:
+    courses = CourseService(CourseRepository(session))
+    settings = container.settings
     return QuizService(
         QuizRepository(session),
-        CourseService(CourseRepository(session)),
-        container.pdf_converter,
-        container.settings.max_quiz_pdf_bytes,
+        AnswerRepository(session),
+        AttemptRepository(session),
+        MaterialRepository(session),
+        courses,
+        GroupService(GroupRepository(session), courses),
+        container.quiz_generator,
+        settings.questions_per_quiz,
+        settings.mistake_review_limit,
+        settings.max_material_chars,
     )
+
+
+def get_history_service(session: Session = Depends(get_session)) -> HistoryService:
+    courses = CourseService(CourseRepository(session))
+    return HistoryService(AttemptRepository(session), courses, GroupService(GroupRepository(session), courses))

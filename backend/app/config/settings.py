@@ -17,7 +17,11 @@ class Settings(BaseSettings):
     chroma_collection: str = "textbooks"
     generation_model: str = Field("gemini-2.5-flash", validation_alias=AliasChoices("GEMINI_MODEL", "GENERATION_MODEL"))
     generation_timeout_seconds: int = 120
-    max_quiz_pdf_bytes: int = 20 * 1024 * 1024  # Gemini inline PDF limit
+    max_material_pdf_bytes: int = 20 * 1024 * 1024  # Gemini inline PDF limit
+    max_material_chars: int = 400_000  # all of a course's material JSON goes into one quiz prompt
+    mistake_review_limit: int = 20
+    questions_per_quiz: int = 20
+    cors_origins: list[str] = ["http://localhost:5173", "http://127.0.0.1:5173", "null"]  # Vite dev server, Electron file://
 
     @property
     def upload_dir(self) -> Path:

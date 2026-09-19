@@ -1,20 +1,39 @@
 import uuid
 from datetime import datetime, timezone
+from typing import TYPE_CHECKING
 
-from sqlalchemy import ForeignKey, String, Text
+from sqlalchemy import ForeignKey, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.entity.base import Base, UtcDateTime
-from app.entity.course import Course
+from app.entity.group import QuizGroup
+
+if TYPE_CHECKING:
+    from app.entity.attempt import Attempt
+    from app.entity.question import Question
 
 
 class Quiz(Base):
+    """One round in a group: the questions Gemini wrote for it, and every attempt at them."""
+
     __tablename__ = "quizzes"
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
-    course_id: Mapped[str] = mapped_column(ForeignKey("courses.id"), index=True)
-    source_filename: Mapped[str] = mapped_column(String(255))
-    content: Mapped[str] = mapped_column(Text)  # JSON text produced by Gemini from the PDF
+    group_id: Mapped[str] = mapped_column(ForeignKey("quiz_groups.id"), index=True)
     created_at: Mapped[datetime] = mapped_column(UtcDateTime, default=lambda: datetime.now(timezone.utc))
 
-    course: Mapped[Course] = relationship(back_populates="quizzes")
+    group: Mapped[QuizGroup] = relationship(back_populates="quizzes")
+    questions: Mapped[list["Question"]] = relationship(
+        back_populates="quiz", cascade="all, delete-orphan", order_by="Question.position"
+    )
+    attempts: Mapped[list["Attempt"]] = relationship(
+        back_populates="quiz", cascade="all, delete-orphan", order_by="Attempt.submitted_at.desc()"
+    )
+
+    @property
+    def question_count(self) -> int:
+        return len(self.questions)
+
+    @property
+    def attempt_count(self) -> int:
+        return len(self.attempts)
