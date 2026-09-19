@@ -90,6 +90,17 @@ export default function QuizPage() {
     optionMotionTimer.current = setTimeout(() => setOptionMotion(null), 450);
   }
 
+  // Lets the pet answer questions about whichever question is on screen; stops once graded or on leaving the page.
+  useEffect(() => {
+    const current = quiz?.questions?.[index];
+    if (!current || result) {
+      pet.stopAsking();
+      return undefined;
+    }
+    pet.askAbout(quiz.id, current.id);
+    return () => pet.stopAsking();
+  }, [quiz, index, result, pet]);
+
   async function submit() {
     const timeSpentSeconds = Math.round((Date.now() - startedAt.current) / 1000);
     const payload = quiz.questions

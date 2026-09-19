@@ -1,5 +1,6 @@
 import { act, fireEvent, render, screen } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { useEffect } from 'react';
 import { api } from '../api.js';
 import { PetProvider, usePet } from './PetProvider.jsx';
 
@@ -210,6 +211,28 @@ describe('PetProvider', () => {
 
       expect(api.chat.ask).not.toHaveBeenCalled();
       expect(screen.getAllByText(/hey there|i'm ready to help/i).length).toBeGreaterThan(0);
+    });
+
+    it('does not loop when askAbout is called on every render (QuizPage effect depends on `pet`, whose identity changes on every keystroke)', () => {
+      let calls = 0;
+      function ReAsker() {
+        const pet = usePet();
+        // No dependency array: runs after every render, standing in for an effect that depends on `pet` itself.
+        useEffect(() => {
+          calls += 1;
+          pet.askAbout('quiz1', 'q1');
+        });
+        return null;
+      }
+
+      render(
+        <PetProvider>
+          <ReAsker />
+        </PetProvider>
+      );
+
+      // Unbounded (React throws "Maximum update depth exceeded") if askAbout returned a new object every call.
+      expect(calls).toBeLessThan(10);
     });
   });
 });

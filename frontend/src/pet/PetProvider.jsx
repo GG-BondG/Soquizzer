@@ -64,8 +64,11 @@ export function PetProvider({ children }) {
 
   // The quiz page calls this with the question currently on screen; the pet then answers about that question
   // for real instead of giving a canned reply. A new question starts a fresh conversation.
+  // Bails out to the same object when nothing changed: the caller (QuizPage) re-runs this on every render of
+  // the pet context (e.g. each keystroke in the chat box changes `pet`'s identity), and returning a new object
+  // literal every time here would re-trigger that same context change right back — an infinite loop.
   const askAbout = useCallback((quizId, questionId) => {
-    setAskContext({ quizId, questionId });
+    setAskContext((prev) => (prev?.quizId === quizId && prev?.questionId === questionId ? prev : { quizId, questionId }));
   }, []);
   const stopAsking = useCallback(() => setAskContext(null), []);
 
