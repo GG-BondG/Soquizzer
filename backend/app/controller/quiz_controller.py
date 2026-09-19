@@ -1,7 +1,15 @@
 from fastapi import APIRouter, Depends, Response
 
 from app.dependencies import get_quiz_service
-from app.dto import ProgressResponse, QuizResponse, QuizSummaryResponse, SubmissionRequest, SubmissionResponse
+from app.dto import (
+    AnswerResult,
+    CheckRequest,
+    ProgressResponse,
+    QuizResponse,
+    QuizSummaryResponse,
+    SubmissionRequest,
+    SubmissionResponse,
+)
 from app.service import QuizService
 
 router = APIRouter(tags=["quizzes"])
@@ -27,6 +35,12 @@ def get_quiz(quiz_id: str, service: QuizService = Depends(get_quiz_service)):
 def delete_quiz(quiz_id: str, service: QuizService = Depends(get_quiz_service)):
     service.delete(quiz_id)
     return Response(status_code=204)
+
+
+@router.post("/api/quizzes/{quiz_id}/questions/{question_id}/check", response_model=AnswerResult)
+def check_answer(quiz_id: str, question_id: str, request: CheckRequest, service: QuizService = Depends(get_quiz_service)):
+    """Grades one answer right away and reveals the answer and explanation; nothing is recorded."""
+    return service.check(quiz_id, question_id, request)
 
 
 @router.post("/api/quizzes/{quiz_id}/submissions", status_code=201, response_model=SubmissionResponse)

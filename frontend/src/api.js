@@ -158,6 +158,13 @@ export const api = {
         json: type ? { type } : undefined,
         timeout: LONG_TIMEOUT_MS,
       }),
+    // Grades one answer on the spot and reveals the answer and explanation (Trivia). Records nothing; `submit` still
+    // records the attempt at the end.
+    check: (quizId, questionId, selectedIndex) =>
+      request(`/api/quizzes/${id(quizId)}/questions/${id(questionId)}/check`, {
+        method: 'POST',
+        json: { selected_index: selectedIndex },
+      }),
     submit: (quizId, { answers, timeSpentSeconds }) =>
       request(`/api/quizzes/${id(quizId)}/submissions`, {
         method: 'POST',

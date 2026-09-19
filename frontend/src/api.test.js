@@ -129,6 +129,18 @@ describe('requests', () => {
     });
   });
 
+  it('checks one answer against its question and sends the picked option', async () => {
+    const fetch = mockFetch({ body: { is_correct: true } });
+
+    await api.quizzes.check('q1', 'a', 2);
+
+    expect(called(fetch)).toMatchObject({
+      url: 'http://localhost:8000/api/quizzes/q1/questions/a/check',
+      method: 'POST',
+    });
+    expect(JSON.parse(called(fetch).body)).toEqual({ selected_index: 2 });
+  });
+
   it('leaves out history filters that are not set', async () => {
     const fetch = mockFetch({ body: {} });
     await api.history.list({ courseId: 'c1', limit: 5 });

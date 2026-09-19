@@ -159,6 +159,7 @@ Each item in the list (no `questions`):
 
 | Method | Path | Description |
 |---|---|---|
+| POST | `/api/quizzes/{quiz_id}/questions/{question_id}/check` | Grade one answer right away (for Trivia, which shows the answer after every question). Records nothing |
 | POST | `/api/quizzes/{quiz_id}/submissions` | Submit one attempt. Returns 201 |
 
 Request:
@@ -194,6 +195,8 @@ Response:
 ```
 
 `score` is the number of correct answers and `total` is the number of questions in the quiz. `answer_index` is the index of the correct option and `explanation` says why. `anchor_section` and `source_excerpt` say where in the course material the question came from (a heading or page, and a short passage), so the UI can offer "re-read this". Like the answer, they only come back after submitting. Both are `""` for quizzes made before this existed.
+
+**Checking one answer** (`.../questions/{question_id}/check`): body `{"selected_index": 1}`. The response is one entry of the submission `results` below (`question_id`, `selected_index`, `is_correct`, `answer_index`, `explanation`, `anchor_section`, `source_excerpt`), so the answer is revealed at once. Nothing is stored: the attempt, its score and the history still come from the single `POST .../submissions` at the end. Returns 404 if the quiz or the question does not exist, and 422 if `selected_index` is not one of the question's options.
 
 ## Chat (pet tutor)
 

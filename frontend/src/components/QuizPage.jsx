@@ -30,8 +30,12 @@ export default function QuizPage() {
   const mode = location.state?.mode in QUIZ_MODES ? location.state.mode : null;
   const themeClass = mode ? `quiz-${mode}` : '';
   const modeLabel = mode ? QUIZ_MODES[mode].label : 'Quiz';
+  // Trivia reveals the answer after every question, and the pet reacts to it (in voice) at once.
+  const instant = mode === 'trivia';
 
   const [answers, setAnswers] = useState({}); // question id -> selected option index
+  const [revealed, setRevealed] = useState({}); // Trivia: question id -> the graded answer from the backend
+  const checking = useRef(new Set()); // Trivia: questions whose answer is being fetched
   const [index, setIndex] = useState(0);
   const [elapsed, setElapsed] = useState(0);
   const [submitting, setSubmitting] = useState(false);
@@ -114,8 +118,39 @@ export default function QuizPage() {
     }
   }
 
+  // Picking an option. In Trivia the pick is final: it is graded right away, the answer and explanation replace
+  // the options, and the pet cheers (with its voice clip) or consoles the student.
+  function pick(question, i) {
+    if (!instant) {
+      chooseAnswer(question.id, i);
+      return;
+    }
+    if (revealed[question.id] || checking.current.has(question.id)) return;
+
+    checking.current.add(question.id);
+    chooseAnswer(question.id, i);
+    setSubmitError('');
+    api.quizzes
+      .check(quiz.id, question.id, i)
+      .then((graded) => {
+        setRevealed((r) => ({ ...r, [question.id]: graded }));
+        pet.answerResult(graded.is_correct, graded.is_correct ? undefined : 'Not quite — read the explanation, then on to the next one!');
+      })
+      .catch((err) => {
+        setAnswers((a) => {
+          const rest = { ...a };
+          delete rest[question.id];
+          return rest;
+        });
+        setSubmitError(err.message);
+        pet.error('I could not check that one.');
+      })
+      .finally(() => checking.current.delete(question.id));
+  }
+
   function retake() {
     setAnswers({});
+    setRevealed({});
     setIndex(0);
     setSubmitError('');
     setResult(null);
@@ -254,43 +289,59 @@ export default function QuizPage() {
       </div>
 
       <div className="exam-panel">
-        <div className="quiz-type">
-          Question {index + 1} · {typeLabel(question.type)}
-        </div>
-        <div className="exam-question">{question.stem}</div>
+        {question.id in revealed ? (
+          <QuestionReview
+            number={question.position}
+            type={question.type}
+            stem={question.stem}
+            options={question.options}
+            selectedIndex={revealed[question.id].selected_index}
+            answerIndex={revealed[question.id].answer_index}
+            explanation={revealed[question.id].explanation}
+            anchorSection={revealed[question.id].anchor_section}
+            sourceExcerpt={revealed[question.id].source_excerpt}
+          />
+        ) : (
+          <>
+            <div className="quiz-type">
+              Question {index + 1} · {typeLabel(question.type)}
+            </div>
+            <div className="exam-question">{question.stem}</div>
 
-        <div className="option-list">
-          {question.options.map((text, i) => {
-            const picked = answers[question.id] === i;
-            const motion =
-              optionMotion?.questionId === question.id && optionMotion.optionIndex === i ? optionMotion.name : '';
-            return (
-              <div
-                key={i}
-                role="radio"
-                aria-checked={picked}
-                tabIndex={0}
-                className={`option-row ${picked ? 'is-picked' : ''} ${motion}`}
-                onClick={() => chooseAnswer(question.id, i)}
-                onAnimationEnd={(event) => {
-                  if (event.target === event.currentTarget && motion) {
-                    clearTimeout(optionMotionTimer.current);
-                    setOptionMotion(null);
-                  }
-                }}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter' || e.key === ' ') {
-                    e.preventDefault();
-                    chooseAnswer(question.id, i);
-                  }
-                }}
-              >
-                <span className={`radio ${picked ? 'is-picked' : ''}`} />
-                <span className="option-text">{text}</span>
-              </div>
-            );
-          })}
-        </div>
+            <div className="option-list">
+              {question.options.map((text, i) => {
+                const picked = answers[question.id] === i;
+                const motion =
+                  optionMotion?.questionId === question.id && optionMotion.optionIndex === i ? optionMotion.name : '';
+                return (
+                  <div
+                    key={i}
+                    role="radio"
+                    aria-checked={picked}
+                    tabIndex={0}
+                    className={`option-row ${picked ? 'is-picked' : ''} ${motion}`}
+                    onClick={() => pick(question, i)}
+                    onAnimationEnd={(event) => {
+                      if (event.target === event.currentTarget && motion) {
+                        clearTimeout(optionMotionTimer.current);
+                        setOptionMotion(null);
+                      }
+                    }}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
+                        pick(question, i);
+                      }
+                    }}
+                  >
+                    <span className={`radio ${picked ? 'is-picked' : ''}`} />
+                    <span className="option-text">{text}</span>
+                  </div>
+                );
+              })}
+            </div>
+          </>
+        )}
 
         <div className="q-jump" aria-label="Jump to question">
           {quiz.questions.map((q, i) => (
