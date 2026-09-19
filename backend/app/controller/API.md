@@ -1,71 +1,73 @@
-# Soquizzer 后端 API(给前端)
+# Soquizzer backend API (for the frontend)
 
-这里列的是 `backend/app/controller/` 里目前暴露的全部接口。交互式文档:后端启动后打开 `http://localhost:8000/docs`。
+Every endpoint currently exposed by `backend/app/controller/`. Interactive docs: open `http://localhost:8000/docs` once the backend is running.
 
-## 启动后端
+## Running the backend
 
 ```bash
 cd backend
-source .venv/bin/activate          # 第一次的环境准备见 backend/README.md
+source .venv/bin/activate          # first-time setup: see backend/README.md
 uvicorn app.main:create_app --factory --reload
 ```
 
-基础地址:`http://localhost:8000`。
+Base URL: `http://localhost:8000`.
 
-## 通用约定
+## Conventions
 
-- 请求和响应都是 JSON(上传文件的接口除外,用 `multipart/form-data`)。
-- id 都是字符串(UUID)。时间是 UTC 的 ISO 8601,带 `Z`,比如 `2026-09-19T15:01:15.328228Z`。
-- 允许跨域的来源:`http://localhost:5173`(Vite 开发服务器)、`http://127.0.0.1:5173`、`null`(Electron 用 `loadFile` 加载页面时的来源)。要加别的来源,用环境变量 `CORS_ORIGINS`。
-- 出错时返回 `{"detail": ...}`。**注意 `detail` 有两种形状:**
-  - 业务错误,`detail` 是字符串:`{"detail": "Quiz nope not found"}`
-  - 参数校验失败(422),`detail` 是数组:`{"detail": [{"loc": ["body", "name"], "msg": "String should have at least 1 character", ...}]}`
+- Requests and responses are JSON (except file uploads, which use `multipart/form-data`).
+- Ids are strings (UUIDs). Times are ISO 8601 in UTC with a `Z`, e.g. `2026-09-19T15:01:15.328228Z`.
+- Allowed CORS origins: `http://localhost:5173` (Vite dev server), `http://127.0.0.1:5173`, and `null` (the origin of pages Electron loads with `loadFile`). Add more with the `CORS_ORIGINS` environment variable.
+- Errors return `{"detail": ...}`. **`detail` has two shapes:**
+  - Business errors: `detail` is a string, e.g. `{"detail": "Quiz nope not found"}`
+  - Validation failures (422): `detail` is an array, e.g. `{"detail": [{"loc": ["body", "name"], "msg": "String should have at least 1 character", ...}]}`
 
-| 状态码 | 含义 |
+| Status | Meaning |
 |---|---|
-| 200 / 201 / 204 | 成功 / 创建成功 / 删除成功(无响应体) |
-| 404 | 课程、章节、quiz、教材、作答记录不存在 |
-| 409 | 这门课还没有上传教材,不能出题 |
-| 413 | PDF 太大(超过 20 MB),或这门课的教材内容太长 |
-| 415 | 上传的不是 PDF |
-| 422 | 参数不合法(名字为空、选项下标越界、重复作答同一道题等) |
-| 502 | 调用 Gemini 失败或返回了无效内容,没有保存任何东西,可以重试 |
+| 200 / 201 / 204 | OK / created / deleted (no body) |
+| 404 | The course, section, quiz, material or attempt does not exist |
+| 409 | The course has no material yet, so no quiz can be made |
+| 413 | The PDF is too large (over 20 MB), or the course's material is too long |
+| 415 | The uploaded file is not a PDF |
+| 422 | Invalid input (empty name, option index out of range, the same question answered twice, ...) |
+| 502 | Gemini failed or returned something invalid. Nothing was saved; retrying is fine |
 
-**耗时接口:** `POST .../materials`(Gemini 读 PDF)和 `POST .../quizzes`(Gemini 出 20 道题)各需要几秒到几十秒。请显示加载状态,并把请求超时设成至少 120 秒。
+**Slow endpoints:** `POST .../materials` (Gemini reads the PDF) and `POST .../quizzes` (Gemini writes the questions) each take from a few seconds to tens of seconds. Show a loading state and set the request timeout to at least 120 seconds.
 
-## 数据层级
+**Language:** quizzes (questions, options, explanations) are written in English by default, whatever language the material is in. The backend setting `QUIZ_LANGUAGE` changes that. The frontend does not need to do anything.
+
+## Data hierarchy
 
 ```
-Course(课程)
-├── Material(教材,上传的 PDF)
-└── Section(章节)
-    └── Quiz(章节里一次次的测验,每个 20 道题)
-        └── Attempt(每次提交答案,记录得分和用时)
+Course
+├── Material (an uploaded PDF)
+└── Section
+    └── Quiz (one round in a section, 20 questions each)
+        └── Attempt (one submission of answers, with score and time spent)
 ```
 
-## 典型流程
+## Typical flow
 
-1. `POST /api/courses` 创建课程
-2. `POST /api/courses/{id}/materials` 上传这门课的教材 PDF(出题需要它)
-3. `POST /api/courses/{id}/sections` 创建章节
-4. `POST /api/sections/{id}/quizzes` 创建 quiz,响应里直接是 20 道题
-5. 用户做题,前端计时,然后 `POST /api/quizzes/{id}/submissions` 提交,响应里有对错、正确答案和解析
-6. `GET /api/history` 看历史记录、正确率和用时
+1. `POST /api/courses` creates a course
+2. `POST /api/courses/{id}/materials` uploads the course's material PDF (needed before any quiz can be made)
+3. `POST /api/courses/{id}/sections` creates a section
+4. `POST /api/sections/{id}/quizzes` creates a quiz; the response already contains the 20 questions
+5. The student answers (the frontend times it), then `POST /api/quizzes/{id}/submissions`; the response has what was right, the correct answers and the explanations
+6. `GET /api/history` shows the history, accuracy and time spent
 
-再点一次"创建 quiz",就是这个章节的下一份测验。后端会自己参考用户之前答错的题,**前端不需要传任何参数,也不用关心这件事**。
+Creating another quiz gives the next round in the same section. The backend takes the student's earlier mistakes into account by itself, so **the frontend passes no parameters and does not need to know about it**.
 
 ---
 
-## 课程 Course
+## Course
 
-`subject` 的取值:`MATH` `PHYSICS` `CHEMISTRY` `BIOLOGY` `COMPUTER_SCIENCE` `ENGLISH` `HISTORY` `GEOGRAPHY` `ECONOMICS` `OTHER`
+`subject` is one of: `MATH` `PHYSICS` `CHEMISTRY` `BIOLOGY` `COMPUTER_SCIENCE` `ENGLISH` `HISTORY` `GEOGRAPHY` `ECONOMICS` `OTHER`
 
-| 方法 | 路径 | 说明 |
+| Method | Path | Description |
 |---|---|---|
-| POST | `/api/courses` | 创建课程,body `{"name": "Biology 101", "subject": "BIOLOGY"}`,`name` 1~100 字,首尾空格会去掉。返回 201 |
-| GET | `/api/courses` | 课程列表,新的在前 |
-| GET | `/api/courses/{course_id}` | 单个课程 |
-| DELETE | `/api/courses/{course_id}` | 删除课程,**同时删除**它的教材、章节、quiz 和作答记录。返回 204 |
+| POST | `/api/courses` | Create a course. Body `{"name": "Biology 101", "subject": "BIOLOGY"}`; `name` is 1 to 100 characters, surrounding spaces are trimmed. Returns 201 |
+| GET | `/api/courses` | List courses, newest first |
+| GET | `/api/courses/{course_id}` | One course |
+| DELETE | `/api/courses/{course_id}` | Delete a course **and** its materials, sections, quizzes and attempts. Returns 204 |
 
 ```json
 {
@@ -76,14 +78,14 @@ Course(课程)
 }
 ```
 
-## 章节 Section
+## Section
 
-| 方法 | 路径 | 说明 |
+| Method | Path | Description |
 |---|---|---|
-| POST | `/api/courses/{course_id}/sections` | 在课程下创建章节,body `{"name": "Chapter 1"}`,`name` 1~100 字。返回 201 |
-| GET | `/api/courses/{course_id}/sections` | 课程下的章节,按创建时间从早到晚 |
-| GET | `/api/sections/{section_id}` | 单个章节 |
-| DELETE | `/api/sections/{section_id}` | 删除章节,**同时删除**它的 quiz 和作答记录。返回 204 |
+| POST | `/api/courses/{course_id}/sections` | Create a section in a course. Body `{"name": "Chapter 1"}`; `name` is 1 to 100 characters. Returns 201 |
+| GET | `/api/courses/{course_id}/sections` | The course's sections, oldest first |
+| GET | `/api/sections/{section_id}` | One section |
+| DELETE | `/api/sections/{section_id}` | Delete a section **and** its quizzes and attempts. Returns 204 |
 
 ```json
 {
@@ -94,16 +96,16 @@ Course(课程)
 }
 ```
 
-## 教材 Material
+## Material
 
-用户上传的 PDF(课件、讲义等),后端会让 Gemini 读懂并保存,之后用来出题。PDF 本身不保存。
+A PDF the user uploads (slides, lecture notes, ...). The backend has Gemini read it and stores the result, which is later used to write quizzes. The PDF itself is not kept.
 
-| 方法 | 路径 | 说明 |
+| Method | Path | Description |
 |---|---|---|
-| POST | `/api/courses/{course_id}/materials` | 上传 PDF,`multipart/form-data`,字段名 `file`,最大 20 MB。返回 201。**耗时接口** |
-| GET | `/api/courses/{course_id}/materials` | 课程下的教材 |
-| GET | `/api/materials/{material_id}` | 单个教材 |
-| DELETE | `/api/materials/{material_id}` | 删除教材。返回 204 |
+| POST | `/api/courses/{course_id}/materials` | Upload a PDF as `multipart/form-data`, field name `file`, at most 20 MB. Returns 201. **Slow endpoint** |
+| GET | `/api/courses/{course_id}/materials` | The course's materials |
+| GET | `/api/materials/{material_id}` | One material |
+| DELETE | `/api/materials/{material_id}` | Delete a material. Returns 204 |
 
 ```js
 const form = new FormData();
@@ -111,28 +113,28 @@ form.append("file", pdfFile);
 await fetch(`${BASE}/api/courses/${courseId}/materials`, { method: "POST", body: form });
 ```
 
-响应里 `content` 是 Gemini 自己决定结构写出来的 JSON,每份教材的形状可能不同。前端一般只需要展示 `source_filename`,不要依赖 `content` 的结构。
+In the response, `content` is JSON whose structure Gemini decided by itself, so its shape can differ from one material to the next. The frontend normally only needs to show `source_filename` and should not depend on the structure of `content`.
 
 ```json
 {
   "id": "3cde0873-5e47-4a60-acc1-591d488d3c6c",
   "course_id": "9da23c53-b719-4893-aba2-19b297cdb949",
   "source_filename": "slides.pdf",
-  "content": { "...": "结构由 Gemini 决定" },
+  "content": { "...": "structure decided by Gemini" },
   "created_at": "2026-09-19T15:01:15.337293Z"
 }
 ```
 
-## 测验 Quiz
+## Quiz
 
-| 方法 | 路径 | 说明 |
+| Method | Path | Description |
 |---|---|---|
-| POST | `/api/sections/{section_id}/quizzes` | 创建章节里的下一份 quiz,**响应里直接就是 20 道题**,不需要任何参数。返回 201。**耗时接口**。这门课没有教材时返回 409 |
-| GET | `/api/sections/{section_id}/quizzes` | 章节里的 quiz 列表(不含题目),新的在前 |
-| GET | `/api/quizzes/{quiz_id}` | 一份 quiz 和它的全部题目 |
-| DELETE | `/api/quizzes/{quiz_id}` | 删除 quiz,**同时删除**它的作答记录。返回 204 |
+| POST | `/api/sections/{section_id}/quizzes` | Create the section's next quiz. **The response is the 20 questions**, and no parameters are needed. Returns 201. **Slow endpoint.** Returns 409 if the course has no material |
+| GET | `/api/sections/{section_id}/quizzes` | The section's quizzes (without questions), newest first |
+| GET | `/api/quizzes/{quiz_id}` | One quiz with all its questions |
+| DELETE | `/api/quizzes/{quiz_id}` | Delete a quiz **and** its attempts. Returns 204 |
 
-题目里**没有答案和解析**,提交之后才会给。`type` 有两种:`MULTIPLE_CHOICE`(选择题,4 个选项)和 `TRUE_FALSE`(判断题,2 个选项)。选项都用数组下标(从 0 开始)表示。
+Questions carry **no answer and no explanation**; those come back when the student submits. `type` is `MULTIPLE_CHOICE` (4 options) or `TRUE_FALSE` (2 options). Options are referred to by their array index, starting at 0.
 
 ```json
 {
@@ -140,25 +142,25 @@ await fetch(`${BASE}/api/courses/${courseId}/materials`, { method: "POST", body:
   "section_id": "6caad8ec-b1f4-4298-af15-65d9b0ca87ed",
   "created_at": "2026-09-19T15:01:15.344166Z",
   "questions": [
-    { "id": "2d1f95a6-...", "position": 1, "type": "MULTIPLE_CHOICE", "stem": "线粒体的主要功能是什么?", "options": ["合成蛋白质", "产生 ATP", "储存 DNA", "包装蛋白质"] },
-    { "id": "7a090a84-...", "position": 2, "type": "TRUE_FALSE", "stem": "细胞核储存遗传信息。", "options": ["正确", "错误"] }
+    { "id": "2d1f95a6-...", "position": 1, "type": "MULTIPLE_CHOICE", "stem": "What is the main job of mitochondria?", "options": ["Making proteins", "Producing ATP", "Storing DNA", "Packaging proteins"] },
+    { "id": "7a090a84-...", "position": 2, "type": "TRUE_FALSE", "stem": "The nucleus stores the cell's genetic information.", "options": ["True", "False"] }
   ]
 }
 ```
 
-列表里每项(没有 `questions`):
+Each item in the list (no `questions`):
 
 ```json
 { "id": "806f05a9-...", "section_id": "6caad8ec-...", "created_at": "...", "question_count": 20, "attempt_count": 1 }
 ```
 
-## 提交答案 Submission
+## Submission
 
-| 方法 | 路径 | 说明 |
+| Method | Path | Description |
 |---|---|---|
-| POST | `/api/quizzes/{quiz_id}/submissions` | 提交一次作答,返回 201 |
+| POST | `/api/quizzes/{quiz_id}/submissions` | Submit one attempt. Returns 201 |
 
-请求:
+Request:
 
 ```json
 {
@@ -170,13 +172,13 @@ await fetch(`${BASE}/api/courses/${courseId}/materials`, { method: "POST", body:
 }
 ```
 
-- `answers` 至少 1 项。没答的题可以不带,不会算错也不会被记录。
-- `selected_index` 是用户选的选项下标。
-- `time_spent_seconds` 可选,**由前端计时**(从用户看到题目到点提交)。不传的话历史记录里用时显示为空。
-- 同一道题不能重复出现,下标不能越界,否则返回 422 并且什么都不保存。
-- 同一份 quiz 可以再次提交,每次提交是一条新的作答记录。
+- `answers` needs at least 1 item. Questions left out are neither counted wrong nor recorded.
+- `selected_index` is the index of the option the student picked.
+- `time_spent_seconds` is optional and **measured by the frontend** (from the moment the student sees the questions to the moment they submit). Without it, the time spent shows as empty in the history.
+- A question may appear only once and the index must exist, otherwise the request returns 422 and nothing is saved.
+- The same quiz can be submitted again; every submission is a new attempt.
 
-响应:
+Response:
 
 ```json
 {
@@ -184,22 +186,22 @@ await fetch(`${BASE}/api/courses/${courseId}/materials`, { method: "POST", body:
   "score": 1,
   "total": 2,
   "results": [
-    { "question_id": "2d1f95a6-...", "selected_index": 1, "is_correct": true,  "answer_index": 1, "explanation": "线粒体通过细胞呼吸产生 ATP。" },
-    { "question_id": "7a090a84-...", "selected_index": 1, "is_correct": false, "answer_index": 0, "explanation": "细胞核储存 DNA。" }
+    { "question_id": "2d1f95a6-...", "selected_index": 1, "is_correct": true,  "answer_index": 1, "explanation": "Mitochondria produce ATP through cellular respiration." },
+    { "question_id": "7a090a84-...", "selected_index": 1, "is_correct": false, "answer_index": 0, "explanation": "The nucleus stores DNA." }
   ]
 }
 ```
 
-`score` 是答对的题数,`total` 是这份 quiz 的题数。`answer_index` 是正确选项的下标,`explanation` 是解析。
+`score` is the number of correct answers and `total` is the number of questions in the quiz. `answer_index` is the index of the correct option and `explanation` says why.
 
-## 历史记录 History
+## History
 
-| 方法 | 路径 | 说明 |
+| Method | Path | Description |
 |---|---|---|
-| GET | `/api/history` | 所有作答记录,新的在前。可选参数:`course_id`、`section_id`(按课程或章节筛选)、`limit`(默认 50,1~200) |
-| GET | `/api/attempts/{attempt_id}` | 一次作答的详情:每道题、用户选了什么、正确答案、解析 |
+| GET | `/api/history` | Every attempt, newest first. Optional parameters: `course_id`, `section_id` (filter by course or section) and `limit` (default 50, 1 to 200) |
+| GET | `/api/attempts/{attempt_id}` | One attempt in detail: every question, what the student picked, the correct answer and the explanation |
 
-`GET /api/history` 响应:
+`GET /api/history` response:
 
 ```json
 {
@@ -222,32 +224,32 @@ await fetch(`${BASE}/api/courses/${courseId}/materials`, { method: "POST", body:
 }
 ```
 
-- `summary` 统计的是**所有符合筛选的记录**,不受 `limit` 影响。`accuracy` 是总答对数 / 总题数,没有记录时是 `null`。`total_time_seconds` 里没记录用时的按 0 算。
-- 每条记录的 `accuracy` = `score / total`,范围 0~1。`time_spent_seconds` 可能是 `null`。
+- `summary` covers **every attempt that matches the filters**, not just the ones listed, so `limit` does not affect it. `accuracy` is total correct answers divided by total questions, and `null` when there are no attempts. Attempts without a recorded time count as 0 in `total_time_seconds`.
+- Each attempt's `accuracy` is `score / total`, from 0 to 1. `time_spent_seconds` can be `null`.
 
-`GET /api/attempts/{attempt_id}` 响应,在上面每条记录的字段基础上多一个 `questions`:
+`GET /api/attempts/{attempt_id}` returns the fields above plus `questions`:
 
 ```json
 {
-  "attempt_id": "a9667b02-...", "score": 1, "total": 2, "accuracy": 0.5, "time_spent_seconds": 95, "...": "同上",
+  "attempt_id": "a9667b02-...", "score": 1, "total": 2, "accuracy": 0.5, "time_spent_seconds": 95, "...": "as above",
   "questions": [
     {
       "question_id": "2d1f95a6-...", "position": 1, "type": "MULTIPLE_CHOICE",
-      "stem": "线粒体的主要功能是什么?", "options": ["合成蛋白质", "产生 ATP", "储存 DNA", "包装蛋白质"],
-      "answer_index": 1, "explanation": "线粒体通过细胞呼吸产生 ATP。",
+      "stem": "What is the main job of mitochondria?", "options": ["Making proteins", "Producing ATP", "Storing DNA", "Packaging proteins"],
+      "answer_index": 1, "explanation": "Mitochondria produce ATP through cellular respiration.",
       "selected_index": 1, "is_correct": true
     }
   ]
 }
 ```
 
-用户没答的题,`selected_index` 和 `is_correct` 是 `null`。
+For questions the student left unanswered, `selected_index` and `is_correct` are `null`.
 
-## 学习进度 Progress
+## Progress
 
-| 方法 | 路径 | 说明 |
+| Method | Path | Description |
 |---|---|---|
-| GET | `/api/courses/{course_id}/progress` | 这门课各题型的正确率,以及目前还没改对的错题 |
+| GET | `/api/courses/{course_id}/progress` | Accuracy by question type for the course, and the mistakes that are still open |
 
 ```json
 {
@@ -258,19 +260,19 @@ await fetch(`${BASE}/api/courses/${courseId}/materials`, { method: "POST", body:
   "mistakes": [
     {
       "question_id": "7a090a84-...", "quiz_id": "806f05a9-...", "type": "TRUE_FALSE",
-      "stem": "细胞核储存遗传信息。", "options": ["正确", "错误"],
-      "answer_index": 0, "explanation": "细胞核储存 DNA。",
+      "stem": "The nucleus stores the cell's genetic information.", "options": ["True", "False"],
+      "answer_index": 0, "explanation": "The nucleus stores DNA.",
       "selected_index": 1, "answered_at": "2026-09-19T15:01:15.350252Z"
     }
   ]
 }
 ```
 
-- `by_type` 统计这门课里所有的作答(同一题答多次会算多次)。
-- `mistakes` 是"最近一次作答仍然答错"的题,新的在前,最多 20 道。之后答对了就会消失。
+- `by_type` counts every answer given in the course (answering the same question several times counts several times).
+- `mistakes` are the questions whose latest answer is still wrong, newest first, at most 20. A question drops out once it is answered correctly.
 
 ---
 
-## 暂不需要前端对接
+## Not needed by the frontend yet
 
-`/api/textbooks`(教材分块 + 向量库)目前没有被出题使用,前端可以先不管它。
+`/api/textbooks` (textbook chunks and a vector store) is not used by quiz generation, so the frontend can ignore it for now.

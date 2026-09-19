@@ -62,6 +62,22 @@ def test_later_quiz_prompt_re_reads_the_mistakes_and_type_accuracy():
     assert prompt.index("Past mistake 1") < prompt.index("=== Course material")
 
 
+def test_quizzes_are_written_in_english_by_default_and_in_the_configured_language_otherwise():
+    assert "questions, options, explanations) in English, whatever" in build_prompt(MATERIALS, [], [], 3)
+    assert "one saying it is false, in English)" in build_prompt(MATERIALS, [], [], 3)
+
+    client = StubClient(parsed=quiz())
+    settings = Settings(_env_file=None, generation_model="test-model", quiz_language="Spanish")
+    GeminiQuizGenerator(settings, client=client).generate(MATERIALS, [], [], 3)
+
+    assert "in Spanish, whatever language the material is in" in client.kwargs["contents"]
+    assert "in English" not in client.kwargs["contents"]
+
+
+def test_the_default_quiz_language_setting_is_english():
+    assert Settings(_env_file=None).quiz_language == "English"
+
+
 def test_asks_gemini_for_schema_shaped_json_and_returns_the_parsed_quiz():
     result = quiz(question(), question(QuestionType.TRUE_FALSE, ("True", "False"), 0))
     client = StubClient(parsed=result)

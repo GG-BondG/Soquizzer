@@ -21,6 +21,7 @@ class Settings(BaseSettings):
     max_material_chars: int = 400_000  # all of a course's material JSON goes into one quiz prompt
     mistake_review_limit: int = 20
     questions_per_quiz: int = 20
+    quiz_language: str = "English"  # the language Gemini writes quizzes in, whatever language the material is in
     cors_origins: list[str] = ["http://localhost:5173", "http://127.0.0.1:5173", "null"]  # Vite dev server, Electron file://
 
     @property
