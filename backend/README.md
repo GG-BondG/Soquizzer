@@ -69,12 +69,19 @@ Other endpoints: `GET /api/textbooks`, `GET /api/textbooks/{id}`, `DELETE /api/t
 ### Storage
 
 - Raw files are saved under a generated name, never the user's filename; the original name is kept only as metadata.
-- Textbook records (status, hash, chunk count) live in SQLite, vectors in ChromaDB under `DATA_DIR`.
+- Textbook records (status, hash, chunk count) and the course-textbook links live in SQLite, vectors in ChromaDB under `DATA_DIR`.
 - **Scanned PDFs (no text layer):** when a PDF averages under 20 characters per page, Gemini reads the page images (OCR) instead. Pages go in batches of `OCR_PAGES_PER_REQUEST` (default 10, split further if a batch exceeds the inline PDF limit), and each page keeps its page number in the chunk metadata. PDFs over `OCR_MAX_PAGES` (default 300) are refused, and a scan Gemini cannot read ends up `FAILED` ("No extractable text found, even after OCR"). Set `OCR_ENABLED=false` to skip OCR and fail such PDFs right away. OCR calls Gemini, so it is slow and uses quota; text PDFs never trigger it.
 
-### Next: retrieval and generation over the textbook chunks
+### Using textbooks for quizzes
 
-`ChunkRepository.search()` already does filtered similarity search. Answering questions from retrieved chunks (join them into a context string, call the native Google GenAI SDK's `generate_content`) is not built yet.
+A textbook only helps a course once it is attached to it: `PUT /api/courses/{id}/textbooks/{textbook_id}` (idempotent), `DELETE` the same path to detach, `GET /api/courses/{id}/textbooks` to list. The link is a `course_textbooks` row (course_id, textbook_id), so one textbook can serve several courses, and deleting a course or a textbook removes its links.
+
+When a quiz is generated, `TextbookContextService` searches the chunks of the course's attached textbooks **that are `READY`** (PROCESSING and FAILED ones are skipped):
+
+- **Queries:** `"<course name>: <section name>"`, plus the stems of the (up to 3) newest mistakes still open in the section, so a repeat round pulls in the passages behind what the student got wrong. Each query fetches `RAG_TOP_K` chunks (default 8).
+- **Merging:** duplicates are dropped, chunks are put back in reading order per textbook, and the total is capped at `MAX_TEXTBOOK_CHARS` (default 30000; results of the first query win). Each passage starts with a `[file, p.N]` label, which Gemini uses as the question's `anchor_section`.
+- **Prompt:** the excerpts go in next to the uploaded material's JSON, so a course can have material, textbooks, or both. With neither, generating is refused (409).
+- **If the search fails** (for example an embedding quota error), the quiz is still written from the uploaded material; if the textbooks are all the course has, the request fails with 502.
 
 ## Courses, sections, quizzes and memory
 
