@@ -9,12 +9,24 @@
     "preview": "vite preview",
     "start": "electron .",
     "desktop": "concurrently \"npm run dev\" \"wait-on http://localhost:5173 && npx electron .\"",
-    "live2d:download": "node scripts/download-live2d.mjs"
+    "live2d:download": "node scripts/download-live2d.mjs",
+    "lint": "eslint .",
+    "test": "vitest run",
+    "test:watch": "vitest"
   },
   "devDependencies": {
+    "@eslint/js": "^9.39.5",
+    "@testing-library/react": "^16.3.3",
+    "@testing-library/user-event": "^14.6.7",
     "concurrently": "^10.0.5",
     "electron": "^44.4.3",
+    "eslint": "^9.39.5",
+    "eslint-plugin-react": "^7.37.5",
+    "eslint-plugin-react-hooks": "^7.1.1",
+    "globals": "^17.12.0",
+    "jsdom": "^30.1.0",
     "vite": "^8.3.0",
+    "vitest": "^5.0.1",
     "wait-on": "^9.1.0"
   },
   "description": "",
