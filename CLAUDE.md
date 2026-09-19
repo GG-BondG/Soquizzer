@@ -55,18 +55,16 @@ overwrites from 4 people editing `main` at the same time.
 
 ## 项目结构 / Project Structure
 
-- `backend/` — Java (Spring) 后端服务 / Java (Spring) backend service
+- `backend/` — Python (FastAPI) 后端，直接调用 Gemini 出题，详见
+  `backend/README.md`；接口文档在 `backend/app/controller/API.md`。测试：
+  `cd backend && .venv/bin/python -m pytest`。/ Python (FastAPI) backend that
+  calls Gemini directly to write quizzes; see `backend/README.md`, and the API
+  doc at `backend/app/controller/API.md`. Tests: `cd backend && .venv/bin/python -m pytest`.
 - `frontend/` — 前端 (Vite + React + Electron)，`npm` 命令都在这个目录下运行 /
   frontend (Vite + React + Electron); run `npm` commands from inside this
   directory
-- `gemini-service/` — Gemini API IO 模块的 Python 最小示例，独立成自己的
-  目录（详见根目录 README）。/ Python minimal example for the Gemini API
-  IO module, kept in its own directory (see the root README for details).
-
-如果 Python 的 Gemini 模块之后要和 Java 后端集成，建议在 PR 里讨论清楚
-调用方式（比如 Python 起一个独立服务被 Java 调用，还是把逻辑用 Java 重写），
-避免后期返工。
-If the Python Gemini module needs to integrate with the Java backend
-later, discuss the integration approach in a PR (e.g. Python as a
-separate service called by Java, vs. porting the logic to Java) to avoid
-rework.
+- `gemini-service/` — Gemini API IO 模块的 Python 最小示例（烟雾测试），
+  独立成自己的目录，不参与后端运行。/ Standalone Python minimal example
+  (smoke test) for the Gemini API; the backend does not depend on it.
+- `start.sh` — 一键启动后端 + 桌面应用（`./start.sh --web` 用浏览器）。/
+  One-click launcher for backend + desktop app (`./start.sh --web` for the browser).
