@@ -11,7 +11,7 @@ class MaterialResponse(BaseModel):
     id: str
     course_id: str
     source_filename: str
-    content: Any  # the JSON Gemini produced; its structure is decided by the model
+    content: Any  # {page_count, outline?, pages: [{page, text}]}
     created_at: datetime
 
     @field_validator("content", mode="before")

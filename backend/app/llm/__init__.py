@@ -1,4 +1,4 @@
-from app.llm.pdf_json_converter import GeminiPdfJsonConverter, PdfJsonConverter
+from app.llm.pdf_json_converter import PdfJsonConverter
 from app.llm.quiz_generator import (
     GeminiQuizGenerator,
     GeneratedQuestion,
@@ -9,7 +9,6 @@ from app.llm.quiz_generator import (
 )
 
 __all__ = [
-    "GeminiPdfJsonConverter",
     "GeminiQuizGenerator",
     "GeneratedQuestion",
     "GeneratedQuiz",
