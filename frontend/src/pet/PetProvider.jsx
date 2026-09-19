@@ -1,8 +1,11 @@
-import { createContext, useCallback, useContext, useMemo, useRef, useState } from 'react';
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
+import { api } from '../api.js';
 import Live2DPet from './Live2DPet.jsx';
 import { CORRECT_LINES, pickLine } from './encouragements.js';
 
 const BUBBLE_MS = 3500;
+const GENERIC_GREETING = 'Hi! I\'m your study buddy. Ask me anything.';
+const QUESTION_GREETING = 'Stuck on this one? Ask me anything about it.';
 const PET_REPLIES = [
   'I can help you break it down step by step.',
   'Nice question. Let\'s tackle it together.',
@@ -18,8 +21,12 @@ const PetContext = createContext({
   error: noop,
   idle: noop,
   answerResult: noop,
+  askAbout: noop,
+  stopAsking: noop,
 });
 
+// Used only when no question is on screen (e.g. the student taps the pet on another page): a light, local
+// canned reply. Once a question is active, submitChat calls the real Gemini-backed endpoint instead.
 function pickReply(message) {
   const text = (message || '').trim();
   if (!text) return 'I\'m listening. Tell me what you\'re stuck on.';
@@ -38,9 +45,10 @@ export function PetProvider({ children }) {
   const [bubble, setBubble] = useState(null);
   const [chatOpen, setChatOpen] = useState(false);
   const [chatInput, setChatInput] = useState('');
-  const [messages, setMessages] = useState([
-    { role: 'pet', text: 'Hi! I\'m your study buddy. Ask me anything.' },
-  ]);
+  const [chatSending, setChatSending] = useState(false);
+  const [messages, setMessages] = useState([{ role: 'pet', text: GENERIC_GREETING }]);
+  // Which question (if any) the quiz page currently has on screen; set via askAbout/stopAsking below.
+  const [askContext, setAskContext] = useState(null); // { quizId, questionId } | null
 
   // Show `text` in the bubble; it fades after BUBBLE_MS unless `sticky` (used while waiting on the backend).
   const showBubble = useCallback((text, { sticky = false } = {}) => {
@@ -54,16 +62,49 @@ export function PetProvider({ children }) {
     setBubble(null);
   }, []);
 
-  const submitChat = useCallback(() => {
+  // The quiz page calls this with the question currently on screen; the pet then answers about that question
+  // for real instead of giving a canned reply. A new question starts a fresh conversation.
+  const askAbout = useCallback((quizId, questionId) => {
+    setAskContext({ quizId, questionId });
+  }, []);
+  const stopAsking = useCallback(() => setAskContext(null), []);
+
+  useEffect(() => {
+    setMessages([{ role: 'pet', text: askContext ? QUESTION_GREETING : GENERIC_GREETING }]);
+    setChatOpen(false);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [askContext?.quizId, askContext?.questionId]);
+
+  const submitChat = useCallback(async () => {
     const trimmed = chatInput.trim();
-    if (!trimmed) return;
+    if (!trimmed || chatSending) return;
 
     const userMessage = { role: 'user', text: trimmed };
-    const petMessage = { role: 'pet', text: pickReply(trimmed) };
-    setMessages((current) => [...current, userMessage, petMessage]);
     setChatInput('');
-    showBubble(petMessage.text);
-  }, [chatInput, showBubble]);
+
+    if (!askContext) {
+      const petMessage = { role: 'pet', text: pickReply(trimmed) };
+      setMessages((current) => [...current, userMessage, petMessage]);
+      showBubble(petMessage.text);
+      return;
+    }
+
+    // The backend keeps no state between calls, so the transcript so far goes along on every turn.
+    const history = messages.map((m) => ({ role: m.role === 'user' ? 'student' : 'pet', text: m.text }));
+    setMessages((current) => [...current, userMessage]);
+    setChatSending(true);
+    try {
+      const { reply } = await api.chat.ask(askContext.quizId, askContext.questionId, { message: trimmed, history });
+      setMessages((current) => [...current, { role: 'pet', text: reply }]);
+      showBubble(reply);
+    } catch (err) {
+      const text = `I couldn't reach the server: ${err.message}`;
+      setMessages((current) => [...current, { role: 'pet', text }]);
+      showBubble(text);
+    } finally {
+      setChatSending(false);
+    }
+  }, [askContext, chatInput, chatSending, messages, showBubble]);
 
   // Call when the student answers correctly: a random encouraging line, in text and (if the clip exists) voice.
   const cheer = useCallback(() => {
@@ -97,10 +138,21 @@ export function PetProvider({ children }) {
       error: (text) => showBubble(text),
       idle: (text) => (text ? showBubble(text) : showBubble(null, { sticky: true })),
       answerResult,
+      askAbout,
+      stopAsking,
       openChat: () => setChatOpen(true),
-      chat: { open: chatOpen, setOpen: setChatOpen, messages, setMessages, input: chatInput, setInput: setChatInput, send: submitChat },
+      chat: {
+        open: chatOpen,
+        setOpen: setChatOpen,
+        messages,
+        setMessages,
+        input: chatInput,
+        setInput: setChatInput,
+        send: submitChat,
+        sending: chatSending,
+      },
     }),
-    [answerResult, chatInput, chatOpen, cheer, messages, showBubble, submitChat]
+    [answerResult, askAbout, chatInput, chatOpen, chatSending, cheer, messages, showBubble, stopAsking, submitChat]
   );
 
   return (
@@ -121,6 +173,7 @@ export function PetProvider({ children }) {
                   {msg.text}
                 </div>
               ))}
+              {chatSending && <div className="pet-chat-message pet-chat-message-pet pet-chat-message-thinking">…</div>}
             </div>
             <div className="pet-chat-form">
               <input
@@ -135,8 +188,11 @@ export function PetProvider({ children }) {
                 }}
                 placeholder="Ask your pet..."
                 aria-label="Message the pet"
+                disabled={chatSending}
               />
-              <button type="button" onClick={submitChat}>Send</button>
+              <button type="button" onClick={submitChat} disabled={chatSending || !chatInput.trim()}>
+                Send
+              </button>
             </div>
           </div>
         )}
