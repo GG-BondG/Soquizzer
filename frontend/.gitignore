@@ -1,0 +1,3 @@
+# Live2D files downloaded by `npm run live2d:download`: not ours to redistribute
+public/live2d/*
+!public/live2d/README.md

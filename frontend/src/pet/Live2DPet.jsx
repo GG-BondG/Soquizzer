@@ -1,16 +1,10 @@
 import { useEffect, useImperativeHandle, useRef, useState } from 'react';
 import * as PIXI from 'pixi.js';
-import { Live2DModel } from 'pixi-live2d-display/cubism4';
+import { loadCubismCore, resolveModelUrl } from './live2dAssets.js';
 import './Live2DPet.css';
 
 // pixi-live2d-display finds the ticker through window.PIXI.
 window.PIXI = PIXI;
-
-// Live2D's official sample model "Haru", served from Live2D's own repository. It is only a stand-in:
-// set VITE_LIVE2D_MODEL_URL to a .model3.json of your own to replace it (mind that model's license).
-const DEFAULT_MODEL_URL =
-  'https://cdn.jsdelivr.net/gh/Live2D/CubismWebSamples@develop/Samples/Resources/Haru/Haru.model3.json';
-const MODEL_URL = import.meta.env.VITE_LIVE2D_MODEL_URL || DEFAULT_MODEL_URL;
 
 const WIDTH = 260;
 const HEIGHT = 340;
@@ -76,7 +70,9 @@ export default function Live2DPet({ ref, bubble }) {
 
     (async () => {
       try {
-        if (!window.Live2DCubismCore) throw new Error('Live2D Cubism Core did not load (are you offline?)');
+        await loadCubismCore();
+        // The Cubism 4 runtime needs the Core to exist, so it is imported only now.
+        const { Live2DModel } = await import('pixi-live2d-display/cubism4');
         app = new PIXI.Application({
           view: canvas,
           width: WIDTH,
@@ -86,7 +82,7 @@ export default function Live2DPet({ ref, bubble }) {
           autoDensity: true,
           resolution: window.devicePixelRatio || 1,
         });
-        const model = await Live2DModel.from(MODEL_URL, { autoInteract: false });
+        const model = await Live2DModel.from(await resolveModelUrl(), { autoInteract: false });
         if (cancelled) {
           model.destroy();
           return;

@@ -8,7 +8,8 @@
     "build": "vite build",
     "preview": "vite preview",
     "start": "electron .",
-    "desktop": "concurrently \"npm run dev\" \"wait-on http://localhost:5173 && npx electron .\""
+    "desktop": "concurrently \"npm run dev\" \"wait-on http://localhost:5173 && npx electron .\"",
+    "live2d:download": "node scripts/download-live2d.mjs"
   },
   "devDependencies": {
     "concurrently": "^10.0.5",
