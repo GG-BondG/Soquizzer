@@ -8,12 +8,12 @@ Python 3.11+ / FastAPI. Layered architecture: controller -> service -> repositor
 cd backend
 python3.11 -m venv .venv && source .venv/bin/activate
 pip install -r requirements-dev.txt
-cp .env.example .env          # set GOOGLE_API_KEY
+cp .env.example .env          # set GEMINI_API_KEY
 uvicorn app.main:create_app --factory --reload
 pytest
 ```
 
-The app refuses to start without `GOOGLE_API_KEY` (Gemini embeddings and quiz generation). Tests use fakes and need no key.
+The app refuses to start without `GEMINI_API_KEY` (Gemini embeddings and PDF-to-JSON conversion; `GOOGLE_API_KEY` also works). Unit tests use fakes and need no key.
 
 Data lives under `DATA_DIR` (default `./data`): `soquizzer.db` (SQLite: textbooks, courses, quizzes) and `chroma/` (vectors). Both are local files, no Docker or database server needed.
 
@@ -25,8 +25,8 @@ app/
 ├── service/      TextbookService, IngestionService (load -> chunk -> embed), CourseService, QuizService
 ├── repository/   Textbook/Course/Quiz repositories (SQLite via SQLAlchemy), ChunkRepository (ChromaDB)
 ├── entity/       Database models (Textbook, Course, Quiz)
-├── dto/          Request/response schemas, QuizContent (the quiz JSON shape)
-├── llm/          GeminiQuizGenerator (native Google GenAI SDK)
+├── dto/          Request/response schemas
+├── llm/          GeminiPdfJsonConverter (native Google GenAI SDK): PDF in, JSON out
 ├── rag/          Loaders, chunking, embeddings
 ├── storage/      LocalStorage for raw uploads
 ├── config/       Settings (env vars / .env)
@@ -78,16 +78,24 @@ Other endpoints: `GET /api/textbooks`, `GET /api/textbooks/{id}`, `DELETE /api/t
 
 ## Courses and quizzes
 
-`Course` (`name`, `subject`) has many `Quiz` rows. `subject` is the `Subject` enum in `entity/course.py`: MATH, PHYSICS, CHEMISTRY, BIOLOGY, COMPUTER_SCIENCE, ENGLISH, HISTORY, GEOGRAPHY, ECONOMICS, OTHER. `Quiz.content` is a JSON text column holding `QuizContent`:
-
-```json
-{"title": "...", "questions": [{"question": "...", "options": ["...", "...", "...", "..."], "answer_index": 1, "explanation": "..."}]}
-```
+`Course` (`name`, `subject`) has many `Quiz` rows. `subject` is the `Subject` enum in `entity/course.py`: MATH, PHYSICS, CHEMISTRY, BIOLOGY, COMPUTER_SCIENCE, ENGLISH, HISTORY, GEOGRAPHY, ECONOMICS, OTHER. `Quiz.content` is a JSON text column.
 
 Endpoints:
 
 - `POST /api/courses` `{name, subject}`, `GET /api/courses`, `GET /api/courses/{id}`, `DELETE /api/courses/{id}` (also deletes its quizzes)
-- `POST /api/courses/{id}/quizzes` multipart `file` (PDF) + optional `num_questions` (1-50, default 10) -> 201 with the quiz
+- `POST /api/courses/{id}/quizzes` multipart `file` (PDF, max 20 MB) -> 201 with the quiz
 - `GET /api/courses/{id}/quizzes`, `GET /api/quizzes/{id}`, `DELETE /api/quizzes/{id}`
 
-Upload flow: `QuizController` -> `QuizService.create_from_pdf` (check PDF, max 20 MB) -> `GeminiQuizGenerator` (PDF sent to Gemini as a native PDF part, response constrained to the `QuizContent` JSON schema, then validated) -> `QuizRepository.add` (JSON text into SQLite). The call is synchronous and can take several seconds; the PDF itself is not stored. If Gemini fails or returns an invalid quiz the request returns 502 and nothing is saved. This path does not use ChromaDB.
+Upload flow: `QuizController` -> `QuizService.create_from_pdf` (check it is a PDF) -> `GeminiPdfJsonConverter` -> `QuizRepository.add` (JSON text into SQLite).
+
+The LLM layer is just "PDF in, JSON out": the PDF is sent to Gemini as a native PDF part (scanned PDFs work too) with `response_mime_type="application/json"` and no fixed schema, so Gemini works out the document's structure and writes the JSON itself. The result is only checked to be valid, non-empty JSON. The call is synchronous and can take several seconds; the PDF itself is not stored. If Gemini fails, or returns invalid JSON (a very long PDF can be cut off), the request returns 502 and nothing is saved. This path does not use ChromaDB.
+
+## Tests
+
+```bash
+pytest                          # everything; unit tests use fakes, no key needed
+pytest -m integration -s        # integration tests only, -s prints the JSON Gemini produced
+QUIZ_PDF_PATH=~/my_quiz.pdf pytest -m integration -s     # try your own PDF
+```
+
+The integration tests (`tests/test_integration.py`) start the app on a real SQLite file (created on startup, no server or Docker), inspect it with `sqlite3`, and check the JSON survives an app restart. The last one calls the real Gemini API and is skipped unless `GEMINI_API_KEY` is set (environment or `backend/.env`). It prints the path of the SQLite file so you can open the stored JSON yourself.

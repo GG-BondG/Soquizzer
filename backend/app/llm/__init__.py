@@ -1,3 +1,3 @@
-from app.llm.quiz_generator import GeminiQuizGenerator, QuizGenerator
+from app.llm.pdf_json_converter import GeminiPdfJsonConverter, PdfJsonConverter
 
-__all__ = ["GeminiQuizGenerator", "QuizGenerator"]
+__all__ = ["GeminiPdfJsonConverter", "PdfJsonConverter"]

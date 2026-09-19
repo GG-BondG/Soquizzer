@@ -49,6 +49,6 @@ def get_quiz_service(
     return QuizService(
         QuizRepository(session),
         CourseService(CourseRepository(session)),
-        container.quiz_generator,
+        container.pdf_converter,
         container.settings.max_quiz_pdf_bytes,
     )

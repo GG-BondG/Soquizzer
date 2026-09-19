@@ -1,6 +1,4 @@
-from typing import Annotated
-
-from fastapi import APIRouter, Depends, Form, Response, UploadFile
+from fastapi import APIRouter, Depends, Response, UploadFile
 
 from app.dependencies import get_quiz_service
 from app.dto import QuizResponse
@@ -10,13 +8,8 @@ router = APIRouter(tags=["quizzes"])
 
 
 @router.post("/api/courses/{course_id}/quizzes", status_code=201, response_model=QuizResponse)
-def create_quiz(
-    course_id: str,
-    file: UploadFile,
-    num_questions: Annotated[int, Form(ge=1, le=50)] = 10,
-    service: QuizService = Depends(get_quiz_service),
-):
-    return service.create_from_pdf(course_id, file.filename or "", file.file, num_questions)
+def create_quiz(course_id: str, file: UploadFile, service: QuizService = Depends(get_quiz_service)):
+    return service.create_from_pdf(course_id, file.filename or "", file.file)
 
 
 @router.get("/api/courses/{course_id}/quizzes", response_model=list[QuizResponse])

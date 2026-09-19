@@ -1,4 +1,5 @@
 import io
+import json
 
 import pytest
 from fastapi.testclient import TestClient
@@ -6,7 +7,6 @@ from langchain_core.embeddings import DeterministicFakeEmbedding
 from pypdf import PdfWriter
 
 from app.config import Settings
-from app.dto import QuizContent, QuizQuestion
 from app.main import create_app
 
 
@@ -15,30 +15,28 @@ def settings(tmp_path):
     return Settings(data_dir=tmp_path / "data", chunk_size=200, chunk_overlap=40, max_upload_bytes=20_000)
 
 
-class FakeQuizGenerator:
+class FakePdfConverter:
+    RESULT = {"title": "Cell biology quiz", "questions": [{"question": "What is the powerhouse of the cell?", "answer": "Mitochondria"}]}
+
     def __init__(self):
-        self.calls: list[tuple[bytes, int]] = []
+        self.calls: list[bytes] = []
         self.error: Exception | None = None
 
-    def generate(self, pdf: bytes, num_questions: int) -> QuizContent:
-        self.calls.append((pdf, num_questions))
+    def convert(self, pdf: bytes) -> str:
+        self.calls.append(pdf)
         if self.error:
             raise self.error
-        questions = [
-            QuizQuestion(question=f"Question {i}?", options=["a", "b", "c", "d"], answer_index=1, explanation="Because.")
-            for i in range(1, num_questions + 1)
-        ]
-        return QuizContent(title="Cell biology quiz", questions=questions)
+        return json.dumps(self.RESULT)
 
 
 @pytest.fixture
-def generator():
-    return FakeQuizGenerator()
+def converter():
+    return FakePdfConverter()
 
 
 @pytest.fixture
-def app(settings, generator):
-    return create_app(settings, DeterministicFakeEmbedding(size=32), generator)
+def app(settings, converter):
+    return create_app(settings, DeterministicFakeEmbedding(size=32), converter)
 
 
 @pytest.fixture
@@ -52,7 +50,7 @@ def chunks(app):
 
 
 def make_pdf(pages: list[str]) -> bytes:
-    """Minimal text PDF: one page per string, Helvetica, xref table computed by hand."""
+    """Minimal text PDF: one page per string (newlines start a new line), Helvetica, hand-built xref table."""
     objects: list[bytes] = []
     page_ids = [4 + 2 * i for i in range(len(pages))]
     objects.append(b"<< /Type /Catalog /Pages 2 0 R >>")
@@ -60,8 +58,9 @@ def make_pdf(pages: list[str]) -> bytes:
     objects.append(f"<< /Type /Pages /Kids [{kids}] /Count {len(pages)} >>".encode())
     objects.append(b"<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>")
     for pid, text in zip(page_ids, pages):
-        safe = text.replace("\\", "\\\\").replace("(", "\\(").replace(")", "\\)")
-        stream = f"BT /F1 12 Tf 50 700 Td ({safe}) Tj ET".encode()
+        lines = [line.replace("\\", "\\\\").replace("(", "\\(").replace(")", "\\)") for line in text.split("\n")]
+        shown = " T* ".join(f"({line}) Tj" for line in lines)
+        stream = f"BT /F1 12 Tf 16 TL 50 700 Td {shown} ET".encode()
         objects.append(
             f"<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] "
             f"/Resources << /Font << /F1 3 0 R >> >> /Contents {pid + 1} 0 R >>".encode()

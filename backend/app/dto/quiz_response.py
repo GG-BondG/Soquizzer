@@ -1,9 +1,8 @@
 import json
 from datetime import datetime
+from typing import Any
 
 from pydantic import BaseModel, ConfigDict, field_validator
-
-from app.dto.quiz_content import QuizContent
 
 
 class QuizResponse(BaseModel):
@@ -12,7 +11,7 @@ class QuizResponse(BaseModel):
     id: str
     course_id: str
     source_filename: str
-    content: QuizContent
+    content: Any  # the JSON Gemini produced; its structure is decided by the model
     created_at: datetime
 
     @field_validator("content", mode="before")
