@@ -14,7 +14,7 @@ node_modules/
 dist/
 dist-ssr/
 
-# Local environment files
+# Local environment files（前端 + 后端 + Python 共用 / shared by frontend, backend, and Python）
 *.local
 .env
 .env.*
@@ -32,3 +32,10 @@ dist-ssr/
 *.njsproj
 *.sln
 *.sw?
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+*.egg-info/
