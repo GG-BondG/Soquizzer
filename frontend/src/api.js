@@ -176,4 +176,13 @@ export const api = {
       request('/api/history', { params: { course_id: courseId, section_id: sectionId, limit } }),
     attempt: (attemptId) => request(`/api/attempts/${id(attemptId)}`),
   },
+  // The pet's answer about one question while the quiz is still unsubmitted. Stateless: `history` is the
+  // conversation so far (oldest first, `role` is 'student' or 'pet') and is resent in full every call.
+  chat: {
+    ask: (quizId, questionId, { message, history }) =>
+      request(`/api/quizzes/${id(quizId)}/questions/${id(questionId)}/chat`, {
+        method: 'POST',
+        json: { message, history },
+      }),
+  },
 };
