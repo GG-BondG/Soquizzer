@@ -57,8 +57,11 @@ export default function QuizPage() {
       const graded = await api.quizzes.submit(quiz.id, { answers: payload, timeSpentSeconds });
       setResult({ ...graded, timeSpentSeconds });
       const ratio = graded.total ? graded.score / graded.total : 0;
-      if (ratio >= 0.6) pet.cheer();
-      else pet.idle(`${graded.score} out of ${graded.total}. Check the explanations and try again!`);
+      if (ratio >= 0.6) {
+        pet.answerResult(true, `Nice! ${graded.score} out of ${graded.total} correct.`);
+      } else {
+        pet.answerResult(false, `${graded.score} out of ${graded.total}. Almost there — check the explanations and try again!`);
+      }
     } catch (err) {
       setSubmitError(err.message);
       pet.error('I could not submit that.');

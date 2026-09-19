@@ -1,10 +1,23 @@
-.pet-root {
+.pet-shell {
   position: fixed;
   right: 16px;
   bottom: 0;
+  width: 300px;
+  z-index: 50;
+  pointer-events: none;
+}
+
+.pet-root {
+  position: relative;
   width: 260px;
   height: 340px;
-  z-index: 50;
+  margin-left: auto;
+  pointer-events: none;
+}
+
+.pet-canvas {
+  position: absolute;
+  inset: 0;
   pointer-events: none;
 }
 
@@ -14,21 +27,162 @@
   display: block;
 }
 
-.pet-bubble {
+.pet-dialog {
   position: absolute;
-  right: 12px;
-  bottom: 100%;
-  max-width: 250px;
-  padding: 10px 14px;
-  background: var(--surface);
+  right: 10px;
+  bottom: calc(100% + 8px);
+  width: min(250px, calc(100vw - 48px));
+  background: rgba(255, 255, 255, 0.96);
+  border: 1px solid rgba(107, 114, 128, 0.22);
+  border-radius: 16px 16px 16px 6px;
+  box-shadow: 0 12px 30px rgba(15, 23, 42, 0.12);
+  overflow: hidden;
+  animation: pet-bubble-in 180ms ease-out;
+}
+
+.pet-dialog::after {
+  content: "";
+  position: absolute;
+  right: 18px;
+  bottom: -8px;
+  width: 16px;
+  height: 16px;
+  background: rgba(255, 255, 255, 0.96);
+  border-right: 1px solid rgba(107, 114, 128, 0.22);
+  border-bottom: 1px solid rgba(107, 114, 128, 0.22);
+  transform: rotate(45deg);
+}
+
+.pet-dialog-header {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  padding: 6px 10px 4px;
+  background: rgba(250, 245, 255, 0.9);
+  border-bottom: 1px solid rgba(148, 163, 184, 0.2);
+}
+
+.pet-dialog-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: #ede9fe;
+  color: #5b21b6;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.pet-dialog-body {
+  padding: 10px 14px 12px;
   color: var(--text);
-  border: 1px solid var(--border-strong);
-  border-radius: 14px 14px 4px 14px;
   font-family: var(--sans);
   font-size: 14px;
-  line-height: 1.4;
-  box-shadow: 0 6px 20px rgba(28, 27, 23, 0.12);
-  animation: pet-bubble-in 160ms ease-out;
+  line-height: 1.5;
+}
+
+.pet-chat-panel {
+  position: absolute;
+  right: 0;
+  bottom: 330px;
+  width: 280px;
+  background: rgba(255, 255, 255, 0.97);
+  border: 1px solid rgba(107, 114, 128, 0.22);
+  border-radius: 18px;
+  box-shadow: 0 16px 32px rgba(15, 23, 42, 0.14);
+  overflow: hidden;
+  pointer-events: auto;
+  animation: pet-bubble-in 180ms ease-out;
+}
+
+.pet-chat-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 12px;
+  background: linear-gradient(135deg, #f5f3ff 0%, #eef2ff 100%);
+  border-bottom: 1px solid rgba(148, 163, 184, 0.22);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #4c1d95;
+}
+
+.pet-chat-close {
+  width: 24px;
+  height: 24px;
+  border: none;
+  border-radius: 999px;
+  background: rgba(124, 58, 237, 0.08);
+  color: #4c1d95;
+  font-size: 18px;
+  cursor: pointer;
+}
+
+.pet-chat-message-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-height: 180px;
+  overflow: auto;
+  padding: 12px;
+  background: rgba(248, 250, 252, 0.85);
+}
+
+.pet-chat-message {
+  max-width: 86%;
+  padding: 8px 10px;
+  border-radius: 12px;
+  font-size: 13px;
+  line-height: 1.45;
+  word-break: break-word;
+}
+
+.pet-chat-message-pet {
+  align-self: flex-start;
+  background: #f3f4f6;
+  color: var(--text);
+  border-radius: 12px 12px 12px 4px;
+}
+
+.pet-chat-message-user {
+  align-self: flex-end;
+  background: #ede9fe;
+  color: #312e81;
+  border-radius: 12px 12px 4px 12px;
+}
+
+.pet-chat-form {
+  display: flex;
+  gap: 8px;
+  padding: 10px 12px 12px;
+  border-top: 1px solid rgba(148, 163, 184, 0.2);
+  background: #ffffff;
+}
+
+.pet-chat-form input {
+  flex: 1;
+  min-width: 0;
+  height: 36px;
+  border: 1px solid rgba(107, 114, 128, 0.22);
+  border-radius: 999px;
+  padding: 0 12px;
+  font: inherit;
+  background: #fff;
+}
+
+.pet-chat-form button {
+  height: 36px;
+  padding: 0 12px;
+  border: none;
+  border-radius: 999px;
+  background: #7c3aed;
+  color: white;
+  font-weight: 700;
+  cursor: pointer;
 }
 
 .pet-fallback {

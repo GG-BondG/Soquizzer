@@ -9,9 +9,40 @@ window.PIXI = PIXI;
 const WIDTH = 260;
 const HEIGHT = 340;
 const FORCE = 3; // MotionPriority.FORCE
+const LOOK_SMOOTHING = 0.18;
 
 // Haru's "TapBody" motions carry her own voice lines, so the reaction uses the silent Idle motion instead.
 const REACTION_MOTION = { group: 'Idle', index: 1 };
+
+function clamp(value, min, max) {
+  return Math.min(max, Math.max(min, value));
+}
+
+function updateGaze(model, pointerX, pointerY) {
+  const coreModel = model?.internalModel?.coreModel;
+  if (!coreModel) return;
+
+  const rect = model.canvas?.getBoundingClientRect?.() ?? { width: WIDTH, height: HEIGHT, left: 0, top: 0 };
+  const centerX = rect.left + rect.width / 2;
+  const centerY = rect.top + rect.height / 2;
+  const dx = clamp((pointerX - centerX) / Math.max(rect.width * 0.6, 1), -1, 1);
+  const dy = clamp((pointerY - centerY) / Math.max(rect.height * 0.6, 1), -1, 1);
+
+  const eyeX = dx * 0.9;
+  const eyeY = -dy * 0.75;
+  const angleX = dx * 25;
+  const angleY = -dy * 18;
+
+  const currentEyeX = coreModel.getParameterValueById('ParamEyeBallX');
+  const currentEyeY = coreModel.getParameterValueById('ParamEyeBallY');
+  const currentAngleX = coreModel.getParameterValueById('ParamAngleX');
+  const currentAngleY = coreModel.getParameterValueById('ParamAngleY');
+
+  coreModel.setParameterValueById('ParamEyeBallX', currentEyeX + (eyeX - currentEyeX) * LOOK_SMOOTHING);
+  coreModel.setParameterValueById('ParamEyeBallY', currentEyeY + (eyeY - currentEyeY) * LOOK_SMOOTHING);
+  coreModel.setParameterValueById('ParamAngleX', currentAngleX + (angleX - currentAngleX) * LOOK_SMOOTHING);
+  coreModel.setParameterValueById('ParamAngleY', currentAngleY + (angleY - currentAngleY) * LOOK_SMOOTHING);
+}
 
 // The pet's reaction: a motion and a random expression.
 function react(model) {
@@ -63,7 +94,7 @@ function playWithLipSync(model, audioUrl, onError) {
     .catch(() => stop(true));
 }
 
-export default function Live2DPet({ ref, bubble }) {
+export default function Live2DPet({ ref, bubble, onTap }) {
   const hostRef = useRef(null);
   const modelRef = useRef(null);
   const [failed, setFailed] = useState(false);
@@ -72,6 +103,7 @@ export default function Live2DPet({ ref, bubble }) {
     let cancelled = false;
     let app = null;
     let onPointerDown = null;
+    let onPointerMove = null;
     const canvas = document.createElement('canvas');
     hostRef.current.appendChild(canvas);
 
@@ -100,11 +132,19 @@ export default function Live2DPet({ ref, bubble }) {
         app.stage.addChild(model);
         modelRef.current = model;
 
+        onPointerMove = (event) => {
+          updateGaze(model, event.clientX, event.clientY);
+        };
+        window.addEventListener('pointermove', onPointerMove);
+
         // Tapping the pet makes it react. The pet sits over the page with pointer-events off so it never blocks
         // what is underneath, so this listens on the window and asks the model whether the tap landed on it.
         onPointerDown = (event) => {
           const box = canvas.getBoundingClientRect();
-          if (model.hitTest(event.clientX - box.left, event.clientY - box.top).length > 0) react(model);
+          if (model.hitTest(event.clientX - box.left, event.clientY - box.top).length > 0) {
+            react(model);
+            onTap?.();
+          }
         };
         window.addEventListener('pointerdown', onPointerDown);
       } catch (error) {
@@ -115,6 +155,7 @@ export default function Live2DPet({ ref, bubble }) {
 
     return () => {
       cancelled = true;
+      if (onPointerMove) window.removeEventListener('pointermove', onPointerMove);
       if (onPointerDown) window.removeEventListener('pointerdown', onPointerDown);
       modelRef.current = null;
       app?.destroy(false, { children: true });
@@ -134,7 +175,14 @@ export default function Live2DPet({ ref, bubble }) {
 
   return (
     <div className="pet-root" aria-live="polite">
-      {bubble && <div className="pet-bubble">{bubble}</div>}
+      {bubble && (
+        <div className="pet-dialog" role="dialog" aria-label="Pet message">
+          <div className="pet-dialog-header">
+            <span className="pet-dialog-badge">助手</span>
+          </div>
+          <div className="pet-dialog-body">{bubble}</div>
+        </div>
+      )}
       <div ref={hostRef} className="pet-canvas" />
       {failed && <div className="pet-fallback" aria-hidden="true">🐱</div>}
     </div>
