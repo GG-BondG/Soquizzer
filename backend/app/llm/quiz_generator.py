@@ -101,6 +101,9 @@ INSTRUCTIONS = """Write a study quiz from the course material below.
 - source_excerpt is the passage of the material the question is based on, copied or very closely paraphrased, at
   most about 300 characters. A student who got the question wrong is sent back to re-read it, so it must contain
   what they needed to know. Never leave anchor_section or source_excerpt empty.
+- Write any math notation as LaTeX, wrapped in `$...$` for inline formulas (e.g. `$n^2$`, `$x_1$`, `$\\frac{{1}}{{2}}$`)
+  or `$$...$$` for a standalone formula on its own line. Never write bare shorthand like `n^2` or `x_1` outside
+  LaTeX delimiters — the frontend renders `$...$` as typeset math and anything else as plain text.
 - Mix the question types unless the material only suits one."""
 
 REVIEW_INSTRUCTIONS = """

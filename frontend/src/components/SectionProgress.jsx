@@ -1,4 +1,5 @@
 import { formatPercent, typeLabel } from '../format.js';
+import MathText from './MathText.jsx';
 import './SectionProgress.css';
 
 // How the student is doing in one section: accuracy by question type, the parts of the PDF worth re-reading and the
@@ -43,7 +44,9 @@ export default function SectionProgress({ progress }) {
                   {r.mistake_count} {r.mistake_count === 1 ? 'question' : 'questions'} still wrong
                 </div>
                 {r.excerpts.map((text) => (
-                  <div className="mistake-explain" key={text}>{text}</div>
+                  <div className="mistake-explain" key={text}>
+                    <MathText text={text} />
+                  </div>
                 ))}
               </div>
             ))}
@@ -60,10 +63,20 @@ export default function SectionProgress({ progress }) {
           <div className="row-list">
             {mistakes.map((m) => (
               <div className="mistake" key={m.question_id}>
-                <div className="mistake-stem">{m.stem}</div>
-                <div className="mistake-line mistake-wrong">You answered: {m.options[m.selected_index]}</div>
-                <div className="mistake-line mistake-right">Correct: {m.options[m.answer_index]}</div>
-                {m.explanation && <div className="mistake-explain">{m.explanation}</div>}
+                <div className="mistake-stem">
+                  <MathText text={m.stem} />
+                </div>
+                <div className="mistake-line mistake-wrong">
+                  You answered: <MathText text={m.options[m.selected_index]} />
+                </div>
+                <div className="mistake-line mistake-right">
+                  Correct: <MathText text={m.options[m.answer_index]} />
+                </div>
+                {m.explanation && (
+                  <div className="mistake-explain">
+                    <MathText text={m.explanation} />
+                  </div>
+                )}
                 {m.anchor_section && <div className="mistake-explain">Re-read: {m.anchor_section}</div>}
               </div>
             ))}
