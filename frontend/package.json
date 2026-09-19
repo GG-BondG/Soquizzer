@@ -13,7 +13,7 @@
   },
   "devDependencies": {
     "concurrently": "^10.0.5",
-    "electron": "file:...",
+    "electron": "^44.4.3",
     "vite": "^8.3.0",
     "wait-on": "^9.1.0"
   },
