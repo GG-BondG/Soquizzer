@@ -87,6 +87,7 @@
   font-family: var(--serif);
   font-size: 32px;
   font-weight: 600;
+  color: var(--brand);
 }
 
 .form-fields {
@@ -105,7 +106,7 @@
 .field-label {
   font-size: 13px;
   font-weight: 500;
-  color: var(--text-2);
+  color: var(--brand);
 }
 
 .field input {
@@ -156,4 +157,67 @@
 .form-error {
   font-size: 13px;
   color: var(--exam);
+}
+
+/* a file row that is a real button (so it can be disabled), used where the picker needs the file list shown below */
+button.file-drop {
+  width: 100%;
+  background: transparent;
+  font-family: var(--sans);
+  text-align: left;
+  cursor: pointer;
+}
+
+button.file-drop:hover:not(:disabled) {
+  border-color: var(--accent);
+}
+
+button.file-drop:disabled {
+  opacity: 0.55;
+  cursor: default;
+}
+
+.file-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.file-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  max-width: 100%;
+  padding: 5px 6px 5px 10px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: rgba(28, 27, 23, 0.03);
+  font-size: 13px;
+  color: var(--text-2);
+}
+
+.file-chip-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.file-chip button {
+  display: inline-flex;
+  padding: 4px;
+  border: none;
+  border-radius: 4px;
+  background: transparent;
+  color: var(--text-3);
+  cursor: pointer;
+}
+
+.file-chip button:hover:not(:disabled) {
+  color: var(--exam);
+  background: var(--exam-tint);
+}
+
+.form-progress {
+  font-size: 13px;
+  color: var(--text-2);
 }

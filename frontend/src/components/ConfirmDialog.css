@@ -16,6 +16,7 @@
   font-family: var(--serif);
   font-size: 22px;
   font-weight: 600;
+  color: var(--brand);
 }
 
 .confirm-body {

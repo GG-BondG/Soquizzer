@@ -99,7 +99,7 @@ export default function MainMenu() {
         ))}
       </div>
 
-      <FloatingWindow originRef={createCardRef} open={open} onClose={() => !busy && setOpen(false)} collapsed={<PlusIcon />}>
+      <FloatingWindow originRef={createCardRef} open={open} onClose={() => !busy && setOpen(false)} collapsed={<PlusIcon style={{ color: 'var(--brand)' }} />}>
         <form className="form-inner" onSubmit={handleSubmit}>
           <div className="form-header">
             <div className="form-title">New course</div>
