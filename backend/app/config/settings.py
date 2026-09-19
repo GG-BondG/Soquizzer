@@ -13,6 +13,9 @@ class Settings(BaseSettings):
     chunk_size: int = 1000
     chunk_overlap: int = 200
     chroma_collection: str = "textbooks"
+    generation_model: str = "gemini-2.5-flash"
+    generation_timeout_seconds: int = 120
+    max_quiz_pdf_bytes: int = 20 * 1024 * 1024  # Gemini inline PDF limit
 
     @property
     def upload_dir(self) -> Path:

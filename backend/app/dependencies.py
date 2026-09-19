@@ -4,8 +4,8 @@ from fastapi import Depends, Request
 from sqlalchemy.orm import Session
 
 from app.container import Container
-from app.repository import TextbookRepository
-from app.service import IngestionService, TextbookService
+from app.repository import CourseRepository, QuizRepository, TextbookRepository
+from app.service import CourseService, IngestionService, QuizService, TextbookService
 
 
 def get_container(request: Request) -> Container:
@@ -35,4 +35,20 @@ def get_ingestion_service(container: Container = Depends(get_container)) -> Inge
         container.chunks,
         container.storage,
         container.settings,
+    )
+
+
+def get_course_service(session: Session = Depends(get_session)) -> CourseService:
+    return CourseService(CourseRepository(session))
+
+
+def get_quiz_service(
+    container: Container = Depends(get_container),
+    session: Session = Depends(get_session),
+) -> QuizService:
+    return QuizService(
+        QuizRepository(session),
+        CourseService(CourseRepository(session)),
+        container.quiz_generator,
+        container.settings.max_quiz_pdf_bytes,
     )
