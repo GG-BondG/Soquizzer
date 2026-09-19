@@ -1,0 +1,41 @@
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+dist-ssr/
+
+# Local environment files（前端 + 后端 + Python 共用 / shared by frontend, backend, and Python）
+*.local
+.env
+.env.*
+!.env.example
+
+# Editor directories and files
+.vscode/*
+!.vscode/extensions.json
+.idea/
+
+# OS / IDE files
+.DS_Store
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+*.egg-info/
