@@ -1,63 +1,153 @@
 import { useRef, useState } from 'react';
-import { Link, useParams } from 'react-router-dom';
-import { useCourses } from '../data/CoursesContext.jsx';
-import {
-  BackIcon,
-  DocIcon,
-  ChevronIcon,
-  LightbulbIcon,
-  ClipboardIcon,
-  UploadIcon,
-  PlusIcon,
-  CloseIcon,
-} from './Icons.jsx';
+import { Link, useNavigate, useParams } from 'react-router-dom';
+import { api, friendlyError, subjectLabel } from '../api.js';
+import { formatDate, formatPercent, typeLabel } from '../format.js';
+import { useApi } from '../useApi.js';
+import { usePet } from '../pet/PetProvider.jsx';
+import { BackIcon, ChevronIcon, CloseIcon, DocIcon, PlusIcon, UploadIcon } from './Icons.jsx';
+import ConfirmDialog from './ConfirmDialog.jsx';
 import FloatingWindow from './FloatingWindow.jsx';
-import { fileSummary } from './fileSummary.js';
 import './CourseDetail.css';
 
-const EMPTY_SECTION = { title: '', materials: [] };
-
-function formatSize(bytes) {
-  return bytes >= 1048576 ? `${(bytes / 1048576).toFixed(1)} MB` : `${Math.max(1, Math.round(bytes / 1024))} KB`;
-}
+const DELETE_COPY = {
+  course: {
+    title: (name) => `Delete “${name}”?`,
+    body: 'This permanently deletes the course along with its materials, sections, quizzes and attempt history.',
+  },
+  material: {
+    title: (name) => `Remove “${name}”?`,
+    body: 'This removes the material from the course.',
+  },
+  section: {
+    title: (name) => `Delete section “${name}”?`,
+    body: 'This also deletes its quizzes and their attempt history.',
+  },
+};
 
 export default function CourseDetail() {
-  const { code } = useParams();
-  const { getCourse, addSection, addPapers } = useCourses();
-  const course = getCourse(code);
+  const { courseId } = useParams();
+  const navigate = useNavigate();
+  const pet = usePet();
+
+  const course = useApi(() => api.courses.get(courseId), [courseId]);
+  const materials = useApi(() => api.materials.list(courseId), [courseId]);
+  const sections = useApi(() => api.sections.list(courseId), [courseId]);
+  const progress = useApi(() => api.courses.progress(courseId), [courseId]);
+
+  const fileInputRef = useRef(null);
+  const [uploading, setUploading] = useState(null); // filename while an upload is in flight
+  const [uploadError, setUploadError] = useState('');
+
   const addSectionRef = useRef(null);
   const [sectionOpen, setSectionOpen] = useState(false);
-  const [sectionForm, setSectionForm] = useState(EMPTY_SECTION);
+  const [sectionName, setSectionName] = useState('');
   const [sectionError, setSectionError] = useState('');
+  const [sectionBusy, setSectionBusy] = useState(false);
+
+  const [pendingDelete, setPendingDelete] = useState(null); // { kind, id, name }
+  const [deleting, setDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState('');
+
+  async function handleUpload(e) {
+    const file = e.target.files[0];
+    e.target.value = ''; // allow picking the same file again
+    if (!file) return;
+    setUploading(file.name);
+    setUploadError('');
+    pet.loading('Reading your PDF… this can take a little while.');
+    try {
+      await api.materials.upload(courseId, file);
+      pet.success('Got it! I read your material.');
+      materials.reload();
+    } catch (err) {
+      setUploadError(friendlyError(err, { 415: 'Only PDF files can be uploaded.' }));
+      pet.error('I could not read that file.');
+    } finally {
+      setUploading(null);
+    }
+  }
 
   function openSectionForm() {
-    setSectionForm(EMPTY_SECTION);
+    setSectionName('');
     setSectionError('');
     setSectionOpen(true);
   }
 
-  function setSectionField(name, value) {
-    setSectionForm((f) => ({ ...f, [name]: value }));
-    setSectionError('');
-  }
-
-  function submitSection(e) {
+  async function submitSection(e) {
     e.preventDefault();
-    const err = addSection(course.code, sectionForm);
-    if (err) return setSectionError(err);
-    setSectionOpen(false);
+    setSectionBusy(true);
+    try {
+      await api.sections.create(courseId, sectionName);
+      setSectionOpen(false);
+      sections.reload();
+    } catch (err) {
+      setSectionError(err.message);
+    } finally {
+      setSectionBusy(false);
+    }
   }
 
-  if (!course) {
+  async function confirmDelete() {
+    const target = pendingDelete;
+    setDeleting(true);
+    setDeleteError('');
+    try {
+      if (target.kind === 'course') {
+        await api.courses.remove(target.id);
+        pet.success('Course deleted.');
+        navigate('/');
+        return;
+      }
+      if (target.kind === 'material') {
+        await api.materials.remove(target.id);
+        materials.reload();
+      } else {
+        await api.sections.remove(target.id);
+        sections.reload();
+        progress.reload();
+      }
+      setPendingDelete(null);
+    } catch (err) {
+      setDeleteError(err.message);
+    } finally {
+      setDeleting(false);
+    }
+  }
+
+  if (course.error) {
     return (
       <div className="page">
         <Link to="/" className="back-link">
           <BackIcon /> Courses
         </Link>
-        <p>Course "{code}" was not found.</p>
+        <div className="error-note">
+          {course.error.status === 404 ? 'This course does not exist (it may have been deleted).' : course.error.message}
+          {course.error.status !== 404 && (
+            <div>
+              <button type="button" className="btn btn-small" onClick={course.reload}>
+                Try again
+              </button>
+            </div>
+          )}
+        </div>
       </div>
     );
   }
+
+  if (!course.data) {
+    return (
+      <div className="page">
+        <Link to="/" className="back-link">
+          <BackIcon /> Courses
+        </Link>
+        <div className="status-note">Loading…</div>
+      </div>
+    );
+  }
+
+  const c = course.data;
+  const copy = pendingDelete && DELETE_COPY[pendingDelete.kind];
+  const hasProgress = progress.data && (progress.data.by_type.some((t) => t.total > 0) || progress.data.mistakes.length > 0);
 
   return (
     <div className="page detail-page">
@@ -67,209 +157,208 @@ export default function CourseDetail() {
 
       <div className="detail-title-row">
         <div className="detail-title">
-          <span className="detail-code">{course.code}</span>
-          <span className="detail-name">{course.title}</span>
+          <span className="detail-code">{c.name}</span>
+          <span className="pill">{subjectLabel(c.subject)}</span>
         </div>
-        <div className="detail-pills">
-          {course.syllabus && (
-            <span className="pill">
-              <DocIcon /> {course.syllabus}
-            </span>
-          )}
-          {course.textbook && <span className="pill">{course.textbook}</span>}
-        </div>
-      </div>
-
-      <div className="quiz-row">
-        <Link to={`/course/${course.code}/trivia`} className="quiz-card quiz-card-trivia">
-          <div className="quiz-card-top">
-            <span className="quiz-icon quiz-icon-trivia">
-              <LightbulbIcon />
-            </span>
-            <span className="quiz-tag quiz-tag-trivia">Warm-up</span>
-          </div>
-          <div>
-            <div className="quiz-name">Trivia</div>
-            <div className="quiz-desc">Playful context questions to open the lesson</div>
-          </div>
-          <div className="quiz-stat">
-            {course.quizStats.trivia
-              ? `last · ${course.quizStats.trivia.label} · ${course.quizStats.trivia.time}`
-              : 'not attempted yet'}
-          </div>
-        </Link>
-
-        <Link to={`/course/${course.code}/exam`} className="quiz-card quiz-card-exam">
-          <div className="quiz-card-top">
-            <span className="quiz-icon quiz-icon-exam">
-              <ClipboardIcon />
-            </span>
-            <span className="quiz-tag quiz-tag-exam">Timed · graded</span>
-          </div>
-          <div>
-            <div className="quiz-name">Mock Exam</div>
-            <div className="quiz-desc">Full exam-style questions, generated fresh</div>
-          </div>
-          <div className="quiz-stat">
-            {course.quizStats.exam ? `last · ${course.quizStats.exam.label} · ${course.quizStats.exam.time}` : 'not attempted yet'}
-          </div>
-        </Link>
-      </div>
-
-      <div className="sections-block">
-        <div className="block-header">
-            <div className="block-label">Sections</div>
-            <div className="block-count">{course.sections.length} total</div>
-          </div>
-          <div className="sections-list">
-            {course.sections.map((s, i) => (
-              <div className="section-row" key={s.title}>
-                <div className="section-index">{String(i + 1).padStart(2, '0')}</div>
-                <div className="section-title">{s.title}</div>
-                <div className="section-meta">
-                  {s.decks > 0 ? `${s.decks} slide deck${s.decks > 1 ? 's' : ''}` : ''}
-                  {s.decks > 0 && s.pdfs > 0 ? ' · ' : ''}
-                  {s.pdfs > 0 ? `${s.pdfs} PDF${s.pdfs > 1 ? 's' : ''}` : ''}
-                </div>
-                <ChevronIcon stroke="var(--text-3)" />
-              </div>
-            ))}
-          </div>
-
-          <button type="button" ref={addSectionRef} className="add-section" onClick={openSectionForm}>
-            <PlusIcon width={14} height={14} />
-            Add section
+        <div className="detail-actions">
+          <button type="button" className="btn btn-danger" onClick={() => setPendingDelete({ kind: 'course', id: c.id, name: c.name })}>
+            Delete course
           </button>
-
-          <FloatingWindow
-            originRef={addSectionRef}
-            open={sectionOpen}
-            onClose={() => setSectionOpen(false)}
-            collapsed={
-              <>
-                <PlusIcon width={14} height={14} />
-                Add section
-              </>
-            }
-          >
-            <form className="form-inner" onSubmit={submitSection}>
-              <div className="form-header">
-                <div className="form-title">New section</div>
-                <button type="button" className="btn" onClick={() => setSectionOpen(false)}>
-                  <CloseIcon />
-                  Cancel
-                </button>
-              </div>
-
-              <div className="form-fields">
-                <label className="field">
-                  <span className="field-label">Section name</span>
-                  <input
-                    type="text"
-                    placeholder="e.g. Limits and Continuity"
-                    value={sectionForm.title}
-                    onChange={(e) => setSectionField('title', e.target.value)}
-                    autoFocus
-                  />
-                </label>
-
-                <label className="field">
-                  <span className="field-label">Materials</span>
-                  <input
-                    type="file"
-                    accept="application/pdf"
-                    multiple
-                    hidden
-                    onChange={(e) => setSectionField('materials', [...e.target.files])}
-                  />
-                  <div className="file-drop">
-                    <span>{fileSummary(sectionForm.materials, 'PDFs')}</span>
-                    <span className="file-drop-cta">
-                      <UploadIcon />
-                      {sectionForm.materials.length ? 'Replace' : 'Upload'}
-                    </span>
-                  </div>
-                </label>
-              </div>
-
-              <div className="form-footer">
-                <div className="form-error">{sectionError}</div>
-                <button type="submit" className="btn btn-primary">
-                  Create
-                </button>
-              </div>
-            </form>
-          </FloatingWindow>
+        </div>
       </div>
 
-      {(course.materials ?? []).length > 0 && (
-        <div className="papers-block">
-          <div className="block-header">
-            <div className="block-label">Course material</div>
-            <div className="block-count">{course.materials.length} files</div>
-          </div>
-          <div className="activity-list">
-            {course.materials.map((m, i) => (
-              <div className="activity-row" key={i}>
-                <DocIcon />
-                <span className="paper-name">{m.name}</span>
-                <span className="activity-time">{formatSize(m.size)}</span>
-                <span className="activity-date">{new Date(m.addedAt).toLocaleDateString()}</span>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      <div className="papers-block">
+      <div className="block">
         <div className="block-header">
-          <div className="block-label">Uploaded papers</div>
-          <label className="btn btn-small">
+          <div className="block-label">Course material</div>
+          <button type="button" className="btn btn-small" onClick={() => fileInputRef.current.click()} disabled={!!uploading}>
             <UploadIcon />
-            Upload
-            <input
-              type="file"
-              accept="application/pdf"
-              multiple
-              hidden
-              onChange={(e) => {
-                addPapers(course.code, [...e.target.files]);
-                e.target.value = '';
-              }}
-            />
-          </label>
+            {uploading ? 'Uploading…' : 'Upload PDF'}
+          </button>
+          <input ref={fileInputRef} type="file" accept="application/pdf" hidden onChange={handleUpload} />
         </div>
-        {(course.papers ?? []).length > 0 ? (
-          <div className="activity-list">
-            {course.papers.map((p, i) => (
-              <div className="activity-row" key={i}>
+
+        {uploading && <div className="status-note">Reading “{uploading}”. This can take up to a minute.</div>}
+        {uploadError && <div className="error-note">{uploadError}</div>}
+        {materials.error && (
+          <div className="error-note">
+            {materials.error.message}
+            <div>
+              <button type="button" className="btn btn-small" onClick={materials.reload}>
+                Try again
+              </button>
+            </div>
+          </div>
+        )}
+
+        {materials.data && materials.data.length > 0 && (
+          <div className="row-list">
+            {materials.data.map((m) => (
+              <div className="row" key={m.id}>
                 <DocIcon />
-                <span className="paper-name">{p.name}</span>
-                <span className="activity-time">{formatSize(p.size)}</span>
-                <span className="activity-date">{new Date(p.addedAt).toLocaleDateString()}</span>
+                <span className="row-title">{m.source_filename}</span>
+                <span className="row-meta">{formatDate(m.created_at)}</span>
+                <button
+                  type="button"
+                  className="row-action"
+                  onClick={() => setPendingDelete({ kind: 'material', id: m.id, name: m.source_filename })}
+                >
+                  Remove
+                </button>
               </div>
             ))}
           </div>
-        ) : (
-          <div className="empty-note">Past papers you upload will be used to shape mock exams.</div>
+        )}
+        {materials.data && materials.data.length === 0 && !uploading && (
+          <div className="empty-note">Upload your slides or notes as a PDF. Quizzes are generated from them.</div>
         )}
       </div>
 
-      {course.recentActivity.length > 0 && (
-        <div className="activity-block">
-          <div className="block-label">Recent activity</div>
-          <div className="activity-list">
-            {course.recentActivity.map((a, i) => (
-              <div className="activity-row" key={i}>
-                <span className={`activity-dot activity-dot-${a.type}`} />
-                <span className="activity-label">{a.label}</span>
-                <span className="activity-result">{a.result}</span>
-                <span className="activity-time">{a.time}</span>
-                <span className="activity-date">{a.date}</span>
+      <div className="block">
+        <div className="block-header">
+          <div className="block-label">Sections</div>
+          {sections.data && <div className="block-count">{sections.data.length} total</div>}
+        </div>
+
+        {sections.error && (
+          <div className="error-note">
+            {sections.error.message}
+            <div>
+              <button type="button" className="btn btn-small" onClick={sections.reload}>
+                Try again
+              </button>
+            </div>
+          </div>
+        )}
+
+        <div className="row-list">
+          {(sections.data ?? []).map((g, i) => (
+            <div className="row" key={g.id}>
+              <Link to={`/section/${g.id}`} className="row-link">
+                <span className="row-index">{String(i + 1).padStart(2, '0')}</span>
+                <span className="row-title">{g.name}</span>
+                <span className="row-meta">{formatDate(g.created_at)}</span>
+                <ChevronIcon stroke="var(--text-3)" />
+              </Link>
+              <button
+                type="button"
+                className="row-action"
+                onClick={() => setPendingDelete({ kind: 'section', id: g.id, name: g.name })}
+              >
+                Delete
+              </button>
+            </div>
+          ))}
+        </div>
+
+        <button type="button" ref={addSectionRef} className="add-row" onClick={openSectionForm}>
+          <PlusIcon width={14} height={14} />
+          Add section
+        </button>
+
+        <FloatingWindow
+          originRef={addSectionRef}
+          open={sectionOpen}
+          onClose={() => !sectionBusy && setSectionOpen(false)}
+          collapsed={
+            <>
+              <PlusIcon width={14} height={14} />
+              Add section
+            </>
+          }
+        >
+          <form className="form-inner" onSubmit={submitSection}>
+            <div className="form-header">
+              <div className="form-title">New section</div>
+              <button type="button" className="btn" onClick={() => setSectionOpen(false)} disabled={sectionBusy}>
+                <CloseIcon />
+                Cancel
+              </button>
+            </div>
+
+            <div className="form-fields">
+              <label className="field">
+                <span className="field-label">Section name</span>
+                <input
+                  type="text"
+                  placeholder="e.g. Chapter 1"
+                  value={sectionName}
+                  onChange={(e) => {
+                    setSectionName(e.target.value);
+                    setSectionError('');
+                  }}
+                  autoFocus
+                />
+              </label>
+            </div>
+
+            <div className="form-footer">
+              <div className="form-error">{sectionError}</div>
+              <button type="submit" className="btn btn-primary" disabled={sectionBusy}>
+                {sectionBusy ? 'Creating…' : 'Create'}
+              </button>
+            </div>
+          </form>
+        </FloatingWindow>
+      </div>
+
+      {hasProgress && <Progress progress={progress.data} />}
+
+      <ConfirmDialog
+        open={!!pendingDelete}
+        title={copy ? copy.title(pendingDelete.name) : ''}
+        busy={deleting}
+        error={deleteError}
+        onConfirm={confirmDelete}
+        onCancel={() => {
+          setPendingDelete(null);
+          setDeleteError('');
+        }}
+      >
+        {copy?.body}
+      </ConfirmDialog>
+    </div>
+  );
+}
+
+function Progress({ progress }) {
+  const { by_type: byType, mistakes } = progress;
+  return (
+    <div className="block">
+      <div className="block-label">Progress</div>
+
+      {byType.length > 0 && (
+        <div className="type-list">
+          {byType.map((t) => (
+            <div className="type-row" key={t.type}>
+              <span className="type-name">{typeLabel(t.type)}</span>
+              <span className="type-bar">
+                <span className="type-bar-fill" style={{ width: formatPercent(t.total ? t.correct / t.total : 0) }} />
+              </span>
+              <span className="row-mono">
+                {t.correct}/{t.total} · {formatPercent(t.total ? t.correct / t.total : null)}
+              </span>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {mistakes.length > 0 && (
+        <>
+          <div className="block-header mistakes-header">
+            <div className="block-label">Still to fix</div>
+            <div className="block-count">{mistakes.length}</div>
+          </div>
+          <div className="row-list">
+            {mistakes.map((m) => (
+              <div className="mistake" key={m.question_id}>
+                <div className="mistake-stem">{m.stem}</div>
+                <div className="mistake-line mistake-wrong">You answered: {m.options[m.selected_index]}</div>
+                <div className="mistake-line mistake-right">Correct: {m.options[m.answer_index]}</div>
+                {m.explanation && <div className="mistake-explain">{m.explanation}</div>}
               </div>
             ))}
           </div>
-        </div>
+        </>
       )}
     </div>
   );

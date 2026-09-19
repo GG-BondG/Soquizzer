@@ -68,41 +68,15 @@
   flex-direction: column;
 }
 
-.exam-question-row {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 24px;
+.quiz-type {
+  margin-bottom: 12px;
+  font-size: 12px;
+  color: var(--text-3);
 }
 
 .exam-question {
   font-size: 19px;
   line-height: 1.5;
-}
-
-.exam-expression {
-  font-family: var(--serif);
-  font-size: 22px;
-}
-
-.flag-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 8px 14px;
-  border-radius: 8px;
-  border: 1px solid var(--border);
-  background: transparent;
-  color: var(--text-2);
-  font-size: 13px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: border-color 0.15s ease, color 0.15s ease;
-}
-
-.flag-btn.is-flagged {
-  border-color: var(--exam);
-  color: var(--exam);
 }
 
 .option-list {
@@ -122,6 +96,10 @@
   background: var(--surface);
   cursor: pointer;
   transition: border-color 0.15s ease, background 0.15s ease;
+}
+
+.option-row:hover {
+  border-color: var(--border-strong);
 }
 
 .option-row.is-picked {
@@ -147,13 +125,52 @@
 
 .option-text {
   font-size: 15px;
+  line-height: 1.45;
+}
+
+.q-jump {
+  margin-top: 28px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.q-dot {
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  background: transparent;
+  font-family: var(--mono);
+  font-size: 12px;
+  color: var(--text-3);
+  cursor: pointer;
+}
+
+.q-dot.is-answered {
+  border-color: var(--exam-border);
+  background: var(--exam-tint);
+  color: var(--exam);
+}
+
+.q-dot.is-current {
+  border-color: var(--exam);
+  font-weight: 600;
 }
 
 .exam-nav {
   margin-top: auto;
   padding-top: 32px;
   display: flex;
+  align-items: center;
   justify-content: space-between;
+  gap: 12px;
+}
+
+.exam-answered {
+  font-size: 13px;
+  color: var(--text-3);
 }
 
 .btn-exam {
@@ -166,4 +183,46 @@
 .btn-exam:hover {
   background: #732f2f;
   border: none;
+}
+
+/* results */
+
+.result-card {
+  margin: 36px auto 0;
+  width: min(820px, 100%);
+  box-sizing: border-box;
+  padding: 36px 48px;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+}
+
+.result-score {
+  font-family: var(--serif);
+  font-size: 56px;
+  font-weight: 600;
+  line-height: 1;
+}
+
+.result-total {
+  font-size: 28px;
+  color: var(--text-3);
+}
+
+.result-meta {
+  margin-top: 10px;
+  font-size: 14px;
+  color: var(--text-2);
+}
+
+.result-actions {
+  margin-top: 24px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.result-review {
+  margin: 12px auto 0;
+  width: min(820px, 100%);
 }
