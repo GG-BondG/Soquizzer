@@ -1,6 +1,6 @@
 .pet-root {
   position: fixed;
-  right: 16px;
+  right: -16px; /* nudged past the edge so the pet stays out of the page content; see --pet-gutter in index.css */
   bottom: 0;
   width: 260px;
   height: 340px;
@@ -16,7 +16,7 @@
 
 .pet-bubble {
   position: absolute;
-  right: 12px;
+  right: 28px; /* keeps the bubble inside the window now that the pet is shifted right */
   bottom: 100%;
   max-width: 250px;
   padding: 10px 14px;
@@ -33,7 +33,7 @@
 
 .pet-fallback {
   position: absolute;
-  right: 24px;
+  right: 40px;
   bottom: 12px;
   font-size: 64px;
   line-height: 1;

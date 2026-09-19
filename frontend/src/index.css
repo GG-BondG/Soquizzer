@@ -23,6 +23,9 @@
   --serif: 'Source Serif 4', Georgia, 'Times New Roman', serif;
   --sans: 'IBM Plex Sans', system-ui, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
   --mono: 'IBM Plex Mono', 'SF Mono', Monaco, 'Courier New', monospace;
+
+  /* Room kept clear on the right of every page for the Live2D pet (see pet/Live2DPet.css). */
+  --pet-gutter: 240px;
 }
 
 * {
@@ -113,7 +116,7 @@ button {
 
 .page {
   min-height: 100%;
-  padding: 56px 64px;
+  padding: 56px var(--pet-gutter) 56px 48px;
   display: flex;
   flex-direction: column;
 }
