@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
+import { usePet } from '../pet/PetProvider.jsx';
 import { BackIcon } from './Icons.jsx';
 import './QuizTrivia.css';
 
@@ -25,6 +26,7 @@ const question = {
 export default function QuizTrivia() {
   const { code } = useParams();
   const [selected, setSelected] = useState(null);
+  const { cheer } = usePet();
 
   const hasSelected = selected !== null;
   const isCorrect = selected === question.correct;
@@ -66,7 +68,11 @@ export default function QuizTrivia() {
               <div
                 key={choice.key}
                 className={`choice ${correctness}`}
-                onClick={() => setSelected(choice.key)}
+                onClick={() => {
+                  if (choice.key === selected) return;
+                  setSelected(choice.key);
+                  if (choice.key === question.correct) cheer();
+                }}
               >
                 <span className={`choice-badge ${correctness}`}>{choice.key}</span>
                 <span>{choice.text}</span>
