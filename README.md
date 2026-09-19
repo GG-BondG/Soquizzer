@@ -50,7 +50,7 @@ frontend lives in `frontend/` (run `npm install`, `npm run dev` or
 ### 环境准备 / Setup
 
 ```bash
-cd gemini-service
+cd gemini-service/fundamental
 
 # 1. 安装依赖 / Install dependencies
 pip install -r requirements.txt
@@ -69,6 +69,12 @@ python main.py
 如果看到 Gemini 返回的文本，说明调用链路（call path）已经跑通。
 If you see text returned from Gemini, the call path is working end to end.
 
+`gemini-service/` 下还有 `claude-experiment/`、`codex-experiment/` 两个提示词实验
+目录和 `outputs/` 生成结果存档，详见 `gemini-service/README.md`。/
+`gemini-service/` also has `claude-experiment/` and `codex-experiment/` prompt
+experiment folders and an `outputs/` archive of generated results — see
+`gemini-service/README.md`.
+
 ### 目录结构 / Project Structure
 
 ```
@@ -77,10 +83,14 @@ Soquizzer/
 ├── backend/               # FastAPI 后端 (Python) / FastAPI backend (Python)
 ├── frontend/              # 前端 (Vite + React + Electron) / frontend (Vite + React + Electron)
 └── gemini-service/        # Gemini API IO 模块 / Gemini API IO module
-    ├── main.py            # 最小烟雾测试脚本 / minimal smoke-test script
-    ├── gemini_client.py   # Gemini API 最小封装 / minimal Gemini API wrapper
-    ├── requirements.txt   # Python 依赖 / Python dependencies
-    └── .env.example       # 环境变量模板 / env var template
+    ├── fundamental/       # 最小可运行 demo / minimal runnable demo
+    │   ├── main.py            # 最小烟雾测试脚本 / minimal smoke-test script
+    │   ├── gemini_client.py   # Gemini API 最小封装 / minimal Gemini API wrapper
+    │   ├── requirements.txt   # Python 依赖 / Python dependencies
+    │   └── .env.example       # 环境变量模板 / env var template
+    ├── claude-experiment/ # Claude 的出题提示词实验 / Claude's quiz-prompt experiments
+    ├── codex-experiment/  # Codex 的出题提示词实验 / Codex's quiz-prompt experiments
+    └── outputs/           # 历次生成结果存档 / archived generated quiz outputs
 ```
 
 **注意 / Note:** 千万不要把 `.env` 文件提交到 git 里，里面是你自己的私密

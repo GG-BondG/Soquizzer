@@ -1,0 +1,57 @@
+{
+  "topic": "CSC236 recursive algorithm correctness",
+  "hooks": [
+    {
+      "id": "deutsch-recursion-quote",
+      "style": "VERIFIED_QUOTE",
+      "hook_text": "An ACCU article attributes the line 'To iterate is human, to recurse divine' to computer scientist L. Peter Deutsch.",
+      "allowed_claims": [
+        "The wording of the quote",
+        "The attribution to L. Peter Deutsch"
+      ],
+      "source_url": "https://accu.org/journals/overload/21/114/deigh_1869/",
+      "verification_level": "published secondary source"
+    },
+    {
+      "id": "csc236-summer-2025-sequence",
+      "style": "FUTURE_USE",
+      "hook_text": "A published University of Toronto CSC236 Summer 2025 schedule places Recursive Algorithms in Lectures 5 and 6 and Recursive Correctness in Lecture 7.",
+      "allowed_claims": [
+        "Recursive Algorithms appears in Lectures 5 and 6 on that published schedule",
+        "Recursive Correctness appears in Lecture 7 on that published schedule"
+      ],
+      "source_url": "https://www.cs.utoronto.ca/~shaharry/csc236/index.html",
+      "verification_level": "official course page"
+    },
+    {
+      "id": "zune-2008-infinite-loop",
+      "style": "VERIFIED_HISTORY",
+      "hook_text": "On December 31, 2008, 30GB Zune players froze because a leap-year date routine could repeat a while-loop iteration without changing the state needed to exit.",
+      "allowed_claims": [
+        "The affected product was the 30GB Zune",
+        "The incident occurred on December 31, 2008",
+        "The leap-year branch could leave the loop state unchanged and keep the loop running"
+      ],
+      "source_url": "https://techcrunch.com/2008/12/31/zune-bug-explained-in-detail/",
+      "verification_level": "contemporaneous technical report with code excerpt"
+    }
+  ],
+  "internal_style_seeds": [
+    {
+      "style": "MEME",
+      "seed": "Use the classic self-referential programmer joke: 'To understand recursion, first understand recursion.' Do not attribute it to a person. Turn the circularity into a question about why a correctness proof needs independently justified smaller calls."
+    },
+    {
+      "style": "MISCONCEPTION",
+      "seed": "Challenge the belief that returning the right-looking value on tested inputs is enough for correctness; the reading also requires normal termination and the postcondition."
+    },
+    {
+      "style": "ANALOGY",
+      "seed": "Map a finite recursive call tree to a familiar process with a measurable resource that strictly decreases at each step. Preserve the distinction between valid calls and eventual termination."
+    },
+    {
+      "style": "ROLEPLAY",
+      "seed": "Make the student a code reviewer deciding whether a proposed recursive-correctness argument proves both valid recursive calls and a finite call tree."
+    }
+  ]
+}

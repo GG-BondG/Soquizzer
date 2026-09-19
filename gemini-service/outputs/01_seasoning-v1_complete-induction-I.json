@@ -1,0 +1,50 @@
+{
+  "reading_title": "Complete Induction Part I",
+  "questions": [
+    {
+      "id": "q1",
+      "type": "cross_discipline_analogy",
+      "anchor_concept": "The Inductive Hypothesis (IH) in Complete Induction assumes P is true for ALL natural numbers less than n that meet the precondition.",
+      "hook": "Think of Simple Induction like climbing a ladder: to step on rung n, you only need to push off rung n-1. But Complete Induction is more like playing an open-world RPG game...",
+      "prompt": "In a video game, to defeat the boss of level n, what kind of inventory items might you need? How does this analogy perfectly map to the Inductive Hypothesis (IH) in Complete Induction?",
+      "answer": "You might need specific items dropped from ANY (or multiple) of the previous levels, not just the immediately preceding one. This maps directly to the Complete Induction IH: we assume P is true for ALL values k (where b <= k < n), because we don't know exactly which previous k's results we will need (just like the unknown prime factors 'a' and 'b' in the reading).",
+      "hint_on_wrong": "Think about your inventory before a final boss fight. Do you only carry the weapon dropped by the second-to-last boss, or do you rely on your entire inventory collected from all previous levels?"
+    },
+    {
+      "id": "q2",
+      "type": "counter_intuitive",
+      "anchor_concept": "The misleading nature of '...' notation in sequences ('12, 13, ..., n-1').",
+      "hook": "In math and computer science, we love using '...' to abbreviate sequences. When stating the Inductive Hypothesis, a very common phrasing is: 'Assume P is true for 12, 13, ..., n-1.'",
+      "prompt": "First intuition tells us this sequence contains at least the numbers 12 and 13, right? What actually happens to this sequence if we substitute n=12? What common programming error does this mathematically resemble?",
+      "answer": "The intuition is wrong. When n=12, the upper bound n-1 is 11. The sequence is actually empty, containing no elements at all! Assuming it always contains elements is mathematically equivalent to an 'out-of-bounds array access' or 'iterating over an empty list' in programming. This is why using strict inequality phrasing like '12 <= k < n' is safer.",
+      "hint_on_wrong": "Calculate the exact endpoint 'n-1' when n is exactly 12. How many integers are there starting from 12 and ending at 11?"
+    },
+    {
+      "id": "q3",
+      "type": "future_use_preview",
+      "anchor_concept": "Proving Prime Factorization using Complete Induction (splitting a non-prime n into unknown factors a and b).",
+      "hook": "The reading proves that any natural n >= 2 is a product of primes. When n is not prime, it splits n into two smaller integers 'a' and 'b' (where 2 <= a, b < n), and immediately assumes both can be factored into primes using the IH.",
+      "prompt": "In future Algorithm Analysis courses (especially when learning Divide and Conquer), you will see this exact pattern: splitting a problem of size n into two smaller, unknown-sized subproblems. Which two incredibly famous sorting algorithms work exactly like this prime factorization proof?",
+      "answer": "Merge Sort and Quick Sort. They both divide an array of size n into two smaller sub-arrays of size 'a' and 'b', recursively sort them (which corresponds to invoking the IH), and then combine the results. Complete Induction is the standard mathematical tool for proving the correctness of such divide-and-conquer algorithms.",
+      "hint_on_wrong": "Think of the most famous sorting algorithms that 'chop the array into two pieces, recursively sort each piece, and then glue them back together'."
+    },
+    {
+      "id": "q4",
+      "type": "meme_joke",
+      "anchor_concept": "Explicitly announcing instances of the Inductive Hypothesis (IH) like recursive function calls.",
+      "hook": "There is a famous programmer joke: 'In order to understand recursion, one must first understand recursion.' Many students feel the same way about Induction proofs, treating them like unexplainable magic.",
+      "prompt": "The handout says it's easy to spot a recursive call in code by looking for the function name. To make your Complete Induction proofs just as clear to the grading TA, what specific action must you take regarding the Inductive Hypothesis to demystify the 'magic'?",
+      "answer": "You must explicitly 'announce' each time an instance of the IH is used, and state exactly which instance it is. Just like explicitly writing a function call `change(n-3)` in code, you must write something like 'So P(n-3) by IH' in your proof, making the underlying 'recursive' logic completely transparent.",
+      "hint_on_wrong": "If the math proof is a program, the IH is like a pre-written API. When you use an API in your code, can you just vaguely mention it, or do you have to specify exactly which arguments you are passing to it?"
+    },
+    {
+      "id": "q5",
+      "type": "scenario_roleplay",
+      "anchor_concept": "Multiple base cases in the Change-Making problem (Case n=12, 13, 14) due to the n-3 step.",
+      "hook": "Imagine you are the AI inside a vending machine that only dispenses $3 and $7 coins. Your programmer proved via Complete Induction that you can make exact change for any amount n >= 12, using a recursive step that relies on the smaller amount n-3.",
+      "prompt": "To ensure you don't crash when customers start requesting change, how many initial 'Base Cases' must the programmer hardcode into your memory? Is just knowing the solution for n=12 enough? Why?",
+      "answer": "The programmer must hardcode 3 base cases (12, 13, and 14). Since the recursive step relies on n-3, if you only knew how to make change for 12, and a customer asked for 13, you would try to use 13-3=10. But 10 is outside your valid known range (no IH exists for 10), causing you to crash. Therefore, 12, 13, and 14 must be explicitly provided.",
+      "hint_on_wrong": "If you only know the answer for 12, and I ask you for 13, your logic will subtract 3 and look up the answer for 10. Do you know how to make change for 10?"
+    }
+  ]
+}

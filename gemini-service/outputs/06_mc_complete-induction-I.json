@@ -1,0 +1,108 @@
+{
+  "questions": [
+    {
+      "type": "MULTIPLE_CHOICE",
+      "stem": "In Complete Induction, when proving a universally quantified statement for natural numbers starting at a base value b, what exactly does the Inductive Hypothesis (IH) assume?",
+      "options": [
+        "P is true only for the single predecessor n-1.",
+        "P is true for each natural less than n that is at least b.",
+        "P is true for all natural numbers greater than n.",
+        "P is true for b and n only."
+      ],
+      "answer_index": 1,
+      "explanation": "Complete Induction is distinct because the IH assumes the predicate is true for EACH value smaller than n that satisfies the precondition, allowing you to rely on any of those instances, not just n-1."
+    },
+    {
+      "type": "MULTIPLE_CHOICE",
+      "stem": "Consider the common analogy of mathematical induction as knocking down a line of dominoes. If standard mathematical induction is like saying \"Domino n-1 falling knocks over Domino n\", how is Complete Induction best described in this analogy?",
+      "options": [
+        "Domino n falls because exactly the first domino and domino n-2 fell.",
+        "Domino n falls because ALL the preceding dominoes (from the base case up to n-1) have fallen, and we can rely on any combination of them to help knock it down.",
+        "Domino n falls because it is heavier than the dominoes before it.",
+        "Domino n falls automatically without needing any previous dominoes to fall."
+      ],
+      "answer_index": 1,
+      "explanation": "In Complete Induction, the Inductive Hypothesis assumes the property holds for all natural numbers before n (down to the base case), acting as if all prior dominoes are available to justify the next step."
+    },
+    {
+      "type": "MULTIPLE_CHOICE",
+      "stem": "In the \"Change-Making Revisited\" proof, the author explicitly writes out cases for n=12, 13, and 14. Based on the recursive reasoning shown, why are these three specific base cases necessary?",
+      "options": [
+        "Because 12, 13, and 14 are the only numbers that cannot be formed by 3 and 7.",
+        "Because the recursive step uses P(n-3), meaning we need three consecutive base cases to ensure the n-3 step safely reaches a valid base value of at least 12.",
+        "Because Complete Induction always requires exactly three base cases regardless of the formula.",
+        "Because the formula uses the constants 3 and 7, and 14 is a multiple of 7."
+      ],
+      "answer_index": 1,
+      "explanation": "The step uses P(n-3). To ensure n-3 >= 12 when applying the recursive logic (which requires n >= 15), the first three values (12, 13, 14) cannot subtract 3 without going out of bounds, so they must be established directly."
+    },
+    {
+      "type": "MULTIPLE_CHOICE",
+      "stem": "Edsger W. Dijkstra famously noted: \"Program testing can be used to show the presence of bugs, but never to show their absence!\" To formally prove the absence of bugs in recursive algorithms, we often use Complete Induction. According to the reading, when you write a Complete Induction proof to verify an algorithm, how should you make its recursive structure transparent?",
+      "options": [
+        "By writing the proof in a programming language syntax instead of mathematical notation.",
+        "By avoiding the Inductive Hypothesis entirely and relying solely on testing the base cases.",
+        "By explicitly announcing each time an instance of the Inductive Hypothesis (IH) is used, just as you would spot a recursive call in code.",
+        "By using the \"if ... then ...\" phrasing for the Inductive Hypothesis to simulate an \"if\" statement."
+      ],
+      "answer_index": 2,
+      "explanation": "The reading emphasizes that just as it's easy to spot a function name inside its own body in code, you should announce each time an instance of the IH is used (and which instance) to make the recursive structure of the proof easy to see."
+    },
+    {
+      "type": "TRUE_FALSE",
+      "stem": "When stating the Inductive Hypothesis using sequence notation like \"P is true for 12, 13, ..., n-1\", this notation inherently guarantees that the sequence contains at least the elements 12, 13, and n-1.",
+      "options": [
+        "True",
+        "False"
+      ],
+      "answer_index": 1,
+      "explanation": "False. The reading warns that \"...\" notation can be misleading. For instance, when n=12, the sequence is completely empty, and when n=13, it contains only 12."
+    },
+    {
+      "type": "MULTIPLE_CHOICE",
+      "stem": "In the \"Prime Factorization Revisited\" proof, the Inductive Hypothesis is used to prove that a non-prime number n is a product of primes. How does the proof determine which smaller instances of the Inductive Hypothesis to use?",
+      "options": [
+        "It relies on the fact that a non-prime n can be factored into a * b (where 2 <= a, b < n), and invokes the IH for both witnesses a and b.",
+        "It subtracts 1 and uses the IH strictly on P(n-1).",
+        "It uses the IH on P(n/2) if n is even, and P(n-3) if n is odd.",
+        "It finds the largest prime smaller than n and uses the IH on their difference."
+      ],
+      "answer_index": 0,
+      "explanation": "The proof handles the non-prime case by breaking n into two smaller factors, a and b, and uses the IH on both of these specific instances, which could be much smaller than n-1."
+    },
+    {
+      "type": "MULTIPLE_CHOICE",
+      "stem": "Imagine the \"Drake Hotline Bling\" meme. In the top panel, Drake turns away in disgust from an ambiguous Inductive Hypothesis. In the bottom panel, he points approvingly at a well-phrased, \"fully-symbolic\" IH that explicitly shows universal quantification. According to the reading, which of the following is this fully-symbolic phrasing?",
+      "options": [
+        "P(12), P(13), ..., and P(n-1)",
+        "If k is a natural and 12 <= k < n then P(k)",
+        "∀ k ∈ N, b ≤ k < n ⇒ P(k)",
+        "P(k) for each natural k with 12 ≤ k < n"
+      ],
+      "answer_index": 2,
+      "explanation": "The reading specifically lists \"∀ k ∈ N, b ≤ k < n ⇒ P(k)\" as the \"fully-symbolic phrasing\" that provides the crucial explicit universal quantification of k, whereas the others are prose or use implicit quantification."
+    },
+    {
+      "type": "TRUE_FALSE",
+      "stem": "In 2006, Google engineer Joshua Bloch revealed a famous bug where standard implementations of Binary Search failed on massive arrays because the sum of indices `low + high` overflowed. If we successfully prove an algorithm correct using Complete Induction exactly as shown in the reading, this proof automatically guarantees the algorithm will never encounter hardware-level integer overflow in a real programming language like Java.",
+      "options": [
+        "True",
+        "False"
+      ],
+      "answer_index": 1,
+      "explanation": "False. The Complete Induction proofs discussed are for \"universally quantified statements over the naturals (N)\". Mathematical naturals have infinite precision. The proof ensures logical correctness, but does not account for physical hardware constraints like fixed-bit integer overflow."
+    },
+    {
+      "type": "MULTIPLE_CHOICE",
+      "stem": "At the end of the Prime Factorization proof, the reading notes that it's hard to capture the recursive structure succinctly because the instances used come from a helper. How does the author eventually express the logical structure to show that the prime base cases do NOT use the Inductive Hypothesis?",
+      "options": [
+        "By defining a new base case for every single prime number up to n.",
+        "∀ n ∈ N, n ≥ 2 ⇒ [(prime(n) ⇒ P(n)) ∧ (¬prime(n) ∧ (∀ k ∈ N, 2 ≤ k < n ⇒ P(k)) ⇒ P(n))]",
+        "∀ n ∈ N, n ≥ 2 ⇒ [P(n) ⇔ (prime(n) ∨ P(n-1))]",
+        "By moving the Inductive Hypothesis completely outside the universal quantifier."
+      ],
+      "answer_index": 1,
+      "explanation": "The text explicitly provides this symbolic formula to capture the structure, making it clear that the IH assumption (∀ k ∈ N...) is exclusively moved into the implication for the non-prime case."
+    }
+  ]
+}

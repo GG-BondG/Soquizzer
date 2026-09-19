@@ -1,0 +1,116 @@
+{
+  "questions": [
+    {
+      "type": "MULTIPLE_CHOICE",
+      "stem": "How many nodes are contained in a binomial tree of order k (Bk)?",
+      "options": [
+        "k",
+        "2^k",
+        "2^(k-1)",
+        "k^2"
+      ],
+      "answer_index": 1,
+      "explanation": "According to Lemma 19.1, a binomial tree Bk has exactly 2^k nodes."
+    },
+    {
+      "type": "MULTIPLE_CHOICE",
+      "stem": "What is the worst-case running time for the UNION operation on two binomial heaps with a total of n elements?",
+      "options": [
+        "O(1)",
+        "O(n)",
+        "O(lg n)",
+        "O(n lg n)"
+      ],
+      "answer_index": 2,
+      "explanation": "The UNION operation merges the root lists and links roots of equal degree, taking O(lg n) time in the worst case."
+    },
+    {
+      "type": "TRUE_FALSE",
+      "stem": "In a binomial heap, there can be multiple binomial trees whose roots have the same degree.",
+      "options": [
+        "True",
+        "False"
+      ],
+      "answer_index": 1,
+      "explanation": "A fundamental property of a binomial heap is that for any nonnegative integer k, there is at most one binomial tree whose root has degree k."
+    },
+    {
+      "type": "MULTIPLE_CHOICE",
+      "stem": "An n-node binomial heap consists of at most how many binomial trees?",
+      "options": [
+        "n / 2",
+        "lg n",
+        "floor(lg n) + 1",
+        "2^n"
+      ],
+      "answer_index": 2,
+      "explanation": "The binary representation of n has floor(lg n) + 1 bits, meaning an n-node binomial heap contains at most floor(lg n) + 1 binomial trees."
+    },
+    {
+      "type": "TRUE_FALSE",
+      "stem": "The maximum degree of any node in an n-node binomial tree is lg n.",
+      "options": [
+        "True",
+        "False"
+      ],
+      "answer_index": 0,
+      "explanation": "Corollary 19.2 states that the maximum degree of any node in an n-node binomial tree is lg n."
+    },
+    {
+      "type": "MULTIPLE_CHOICE",
+      "stem": "In an n-node binomial heap, where must the node with the minimum key reside?",
+      "options": [
+        "It can be any node in the heap.",
+        "It must be one of the leaf nodes.",
+        "It must be a child of the root of the largest binomial tree.",
+        "It must be one of the roots in the root list."
+      ],
+      "answer_index": 3,
+      "explanation": "Because each binomial tree in a binomial heap obeys the min-heap property, the minimum key of each tree is at its root. Thus, the minimum key of the entire heap must be one of the roots in the root list."
+    },
+    {
+      "type": "MULTIPLE_CHOICE",
+      "stem": "How does the BINOMIAL-HEAP-DELETE procedure remove a node x from a binomial heap?",
+      "options": [
+        "It directly unlinks node x and splices its children into the root list.",
+        "It decreases the key of x to negative infinity, then calls BINOMIAL-HEAP-EXTRACT-MIN.",
+        "It swaps x with the last node in the root list and extracts it.",
+        "It recursively calls DELETE on all children of x."
+      ],
+      "answer_index": 1,
+      "explanation": "The BINOMIAL-HEAP-DELETE procedure bubbles the node up to a root by giving it a unique minimum key (-infinity) and then extracts that root using BINOMIAL-HEAP-EXTRACT-MIN."
+    },
+    {
+      "type": "MULTIPLE_CHOICE",
+      "stem": "What is the time complexity of the BINOMIAL-LINK procedure, which makes the root of one binomial tree the parent of the root of another binomial tree of the same degree?",
+      "options": [
+        "O(1)",
+        "O(lg n)",
+        "O(n)",
+        "O(k)"
+      ],
+      "answer_index": 0,
+      "explanation": "The BINOMIAL-LINK procedure simply updates a few pointers (parent, sibling, child) and increments the degree, which takes O(1) time."
+    },
+    {
+      "type": "TRUE_FALSE",
+      "stem": "After extracting the minimum root from a binomial heap, the BINOMIAL-HEAP-EXTRACT-MIN procedure creates a new heap by reversing the order of the extracted root's children.",
+      "options": [
+        "True",
+        "False"
+      ],
+      "answer_index": 0,
+      "explanation": "By property 4 of Lemma 19.1, the children of a Bk root are Bk-1, Bk-2, ..., B0. Reversing this list forms a valid root list (increasing degree order) for a new binomial heap, which is then united with the rest of the original heap."
+    },
+    {
+      "type": "TRUE_FALSE",
+      "stem": "The UNION operation is faster on a standard binary heap than on a binomial heap.",
+      "options": [
+        "True",
+        "False"
+      ],
+      "answer_index": 1,
+      "explanation": "The UNION operation on standard binary heaps takes Theta(n) time, whereas on binomial heaps it takes O(lg n) time. This is the primary advantage of binomial heaps."
+    }
+  ]
+}

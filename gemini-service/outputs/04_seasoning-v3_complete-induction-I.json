@@ -1,0 +1,50 @@
+{
+  "reading_title": "Complete Induction, Part I",
+  "questions": [
+    {
+      "id": "q1",
+      "type": "celebrity_quote",
+      "anchor_concept": "Complete Induction (CI) is a recursive proof technique (Page 1, Paragraph 1)",
+      "hook": "Computer scientist L. Peter Deutsch famously coined the quote: \"To iterate is human, to recurse divine.\" Interestingly, the very first sentence of this reading explicitly states: \"Complete Induction (CI) is a recursive proof technique.\"",
+      "prompt": "Why does the author describe Complete Induction as a \"recursive\" technique? What is the fundamental similarity in logical structure between a recursive function call in code and the Inductive Hypothesis (IH) in a CI proof?",
+      "answer": "Both rely on the principle of reducing a problem to smaller, already-solved instances. In a recursive program, a function assumes that calls to smaller inputs will return correct results, and uses them to construct the current answer. Similarly, in Complete Induction, the IH allows you to assume that the property holds for all smaller values ($k < n$), and you use those \"already returned\" smaller cases to logically prove the property for the current $n$.",
+      "hint_on_wrong": "Think about what happens when you write a recursive helper function. Don't you just \"assume\" it will work for a smaller input like $n-3$? How is stating the Inductive Hypothesis doing the exact same kind of \"assumption\" in mathematics?"
+    },
+    {
+      "id": "q2",
+      "type": "meme_joke",
+      "anchor_concept": "Keep in mind that '...' notation for sequences can be a bit misleading if taken literally... (Page 2)",
+      "hook": "Imagine the classic \"Drake Hotline Bling\" meme format (the two-panel reaction image).\nTop panel (Drake looking disgusted and turning away): Writing your Inductive Hypothesis as \"P is true for 12, 13, ..., n-1\".\nBottom panel (Drake smiling and pointing approvingly): Writing your Inductive Hypothesis as \"∀ k ∈ N, 12 ≤ k < n ⇒ P(k)\".",
+      "prompt": "Based on the reading's warning about the \"...\" notation pitfalls, why would Drake (and the author) strongly prefer the bottom phrasing? If we are evaluating the base case where $n=12$, why does the top phrasing completely fall apart?",
+      "answer": "The \"...\" notation is misleading because visually it implies the sequence always contains at least some elements like 12, 13, and n-1. If we are evaluating $n=12$, the top phrasing becomes absurdly confusing (a sequence starting at 12 and ending at 11 makes no intuitive sense). The bottom phrasing, however, acts as a rigorous conditional implication. When $n=12$, the condition $12 \\le k < 12$ simply makes the domain empty, which remains mathematically and logically sound without any misinterpretations.",
+      "hint_on_wrong": "Try to plug $n=12$ exactly into the phrase \"12, 13, ..., n-1\". What does the sequence look like? Does it make any sense to write a sequence that goes backwards when you are just trying to say \"there are no previous elements\"?"
+    },
+    {
+      "id": "q3",
+      "type": "counter_intuitive",
+      "anchor_concept": "Prime Factorization Revisited proof structure (handling base cases via 'Case n is prime' without numeric enumeration)",
+      "hook": "Many people's first intuition is: \"Since Complete Induction lets you assume *all* previous cases are true, it must require a long, tedious list of specific Base Cases to get the chain reaction started.\" For instance, the Change-Making problem explicitly listed three base cases: $n=12, 13, 14$.",
+      "prompt": "Is this intuition correct? Does Complete Induction *always* require you to hardcode multiple numeric base cases? Use the \"Prime Factorization Revisited\" proof from the reading to explain why or why not.",
+      "answer": "No, it does not. The number of explicit base cases depends entirely on the \"reach-back\" distance of the recursive steps, not the proof method itself. In the Prime Factorization proof, the author didn't list explicit numeric base cases like $n=2$ or $n=3$ at all. Instead, they cleverly split the logic into \"Case $n$ is prime\" and \"Otherwise\". Any prime number naturally acts as a base case because it doesn't break down further (it doesn't invoke the IH), effortlessly starting the chain without needing manual enumeration.",
+      "hint_on_wrong": "Look closely at the \"Prime Factorization Revisited\" proof on Page 2. Did the author explicitly write \"Case n=2\" and \"Case n=3\"? How did they define the scenarios where the Inductive Hypothesis simply wasn't needed?"
+    },
+    {
+      "id": "q4",
+      "type": "future_use_preview",
+      "anchor_concept": "The breakdown step in Prime Factorization: \"a, b ∈ N ... and n = a · b\" (Helper instances that don't have a simple formula of n)",
+      "hook": "In this course, we are using Complete Induction to prove properties about making change (subtracting 3) or factoring primes (splitting $n$ into arbitrary $a \\cdot b$). However, in upper-level computer science courses like Algorithm Design, Complete Induction will become your ultimate weapon for proving how fast certain algorithms run.",
+      "prompt": "Can you guess which famous algorithmic paradigm fundamentally *requires* Complete Induction instead of Simple Induction to prove its correctness and runtime? (Hint: Think about how the prime factorization splits $n$ into smaller factors $a$ and $b$, rather than just gently reducing it to $n-1$).",
+      "answer": "Divide and Conquer algorithms (like Merge Sort or Quick Sort). In these algorithms, the problem size isn't just reduced by 1, but is typically chopped into fractions (like $n/2$). Simple Induction only lets you look one step back at $n-1$, which is useless when your recursive call jumps all the way down to $n/2$. Complete Induction is required because it allows you to utilize the assumption for *any* $k < n$, comfortably covering those massive Divide and Conquer leaps.",
+      "hint_on_wrong": "If an algorithm speeds things up by splitting an array in half every time, the next recursive step handles a problem of size $n/2$. Which type of induction allows you to reach that far back into the history of smaller values?"
+    },
+    {
+      "id": "q5",
+      "type": "cross_discipline_analogy",
+      "anchor_concept": "The formulation of the Inductive Hypothesis (IH): \"∀ k ∈ N, b ≤ k < n ⇒ P (k)\"",
+      "hook": "Simple Induction is almost universally compared to a single line of falling dominoes: it's a one-to-one chain reaction where domino $n-1$ falling is exactly what knocks over domino $n$.",
+      "prompt": "If we were to use a real-world analogy for *Complete* Induction based on its core idea \"∀ k ∈ N, b ≤ k < n ⇒ P (k)\", what would be a much better metaphor than a single line of dominoes? Describe a scenario and point out the key difference.",
+      "answer": "A much better analogy would be \"building a pyramid,\" a \"networking effect/pyramid scheme,\" or a \"zombie infection outbreak.\" Unlike dominoes where you strictly rely on the single piece immediately before you, Complete Induction acts like building a pyramid: the block at level $n$ doesn't just rest on a single block $n-1$; it is supported by the entire foundation of *all* previously laid blocks (from base $b$ up to $n-1$). You have an entire \"reservoir\" of historical truths to draw from (like dynamically picking factors $a$ and $b$ from anywhere in the past) to construct your current proof.",
+      "hint_on_wrong": "Notice the \"∀ k\" (for all k) part of the hypothesis. This means $n$ can ask for support from *anyone* or *everyone* in the past, not just the entity standing right next to it. What real-world structure or phenomenon works by accumulating all previous progress?"
+    }
+  ]
+}
