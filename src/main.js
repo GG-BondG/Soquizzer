@@ -1,60 +1,103 @@
 import './style.css'
-import heroImg from './assets/hero.png'
-import javascriptLogo from './assets/javascript.svg'
-import viteLogo from './assets/vite.svg'
-import { setupCounter } from './counter.js'
 
 document.querySelector('#app').innerHTML = `
-<section id="center">
-  <div class="hero">
-    <img src="${heroImg}" class="base" width="170" height="179">
-    <img src="${javascriptLogo}" class="framework" alt="JavaScript logo"/>
-    <img src="${viteLogo}" class="vite" alt="Vite logo" />
-  </div>
-  <div>
-    <h1>Get started</h1>
-    <p>Edit <code>src/main.js</code> and save to test <code>HMR</code></p>
-  </div>
-  <button id="counter" type="button" class="counter"></button>
-</section>
+  <div class="workspace-shell">
+    <header class="topbar">
+      <div class="brand">
+        <span class="brand-mark">S</span>
+        <span>Soquizzer</span>
+      </div>
+      <button class="primary-button" type="button">Generate Quiz</button>
+    </header>
 
-<div class="ticks"></div>
+    <main class="content-panel">
+      <section class="input-panel">
+        <h1>Study smarter</h1>
+        <p>Upload your notes and let your study buddy help you through the session.</p>
 
-<section id="next-steps">
-  <div id="docs">
-    <svg class="icon" role="presentation" aria-hidden="true"><use href="/icons.svg#documentation-icon"></use></svg>
-    <h2>Documentation</h2>
-    <p>Your questions, answered</p>
-    <ul>
-      <li>
-        <a href="https://vite.dev/" target="_blank">
-          <img class="logo" src="${viteLogo}" alt="" />
-          Explore Vite
-        </a>
-      </li>
-      <li>
-        <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript" target="_blank">
-          <img class="button-icon" src="${javascriptLogo}" alt="">
-          Learn more
-        </a>
-      </li>
-    </ul>
-  </div>
-  <div id="social">
-    <svg class="icon" role="presentation" aria-hidden="true"><use href="/icons.svg#social-icon"></use></svg>
-    <h2>Connect with us</h2>
-    <p>Join the Vite community</p>
-    <ul>
-      <li><a href="https://github.com/vitejs/vite" target="_blank"><svg class="button-icon" role="presentation" aria-hidden="true"><use href="/icons.svg#github-icon"></use></svg>GitHub</a></li>
-      <li><a href="https://chat.vite.dev/" target="_blank"><svg class="button-icon" role="presentation" aria-hidden="true"><use href="/icons.svg#discord-icon"></use></svg>Discord</a></li>
-      <li><a href="https://x.com/vite_js" target="_blank"><svg class="button-icon" role="presentation" aria-hidden="true"><use href="/icons.svg#x-icon"></use></svg>X.com</a></li>
-      <li><a href="https://bsky.app/profile/vite.dev" target="_blank"><svg class="button-icon" role="presentation" aria-hidden="true"><use href="/icons.svg#bluesky-icon"></use></svg>Bluesky</a></li>
-    </ul>
-  </div>
-</section>
+        <div class="input-box">
+          <label for="notes">Paste course material</label>
+          <textarea id="notes" rows="8" placeholder="Paste chapter notes or textbook excerpt here..."></textarea>
+        </div>
 
-<div class="ticks"></div>
-<section id="spacer"></section>
+        <div class="actions">
+          <button id="generateBtn" type="button" class="primary-button">Generate questions</button>
+          <button type="button" class="secondary-button">Upload file</button>
+        </div>
+      </section>
+    </main>
+
+    <div id="pet" class="pet idle" aria-live="polite" aria-label="Study pet">
+      <div class="pet-body">
+        <div class="pet-face">
+          <span class="eye left"></span>
+          <span class="eye right"></span>
+          <span class="mouth"></span>
+        </div>
+      </div>
+      <div class="pet-bubble">Hello! I am your study buddy.</div>
+    </div>
+  </div>
 `
 
-setupCounter(document.querySelector('#counter'))
+const pet = document.querySelector('#pet')
+const petBubble = pet.querySelector('.pet-bubble')
+const generateBtn = document.querySelector('#generateBtn')
+const notes = document.querySelector('#notes')
+
+const states = {
+  idle: '🙂',
+  loading: '🤔',
+  success: '😄',
+  error: '😵',
+  sleeping: '💤',
+}
+
+function setPetState(state, message) {
+  pet.className = `pet ${state}`
+  petBubble.textContent = message
+
+  const face = pet.querySelector('.pet-face')
+  face.innerHTML = `
+    <span class="eye left"></span>
+    <span class="eye right"></span>
+    <span class="mouth"></span>
+  `
+
+  const body = pet.querySelector('.pet-body')
+  body.style.setProperty('--pet-face', states[state] || states.idle)
+}
+
+let idleTimer = null
+
+function resetIdleTimer() {
+  clearTimeout(idleTimer)
+  idleTimer = setTimeout(() => {
+    setPetState('sleeping', 'I am resting while you think...')
+  }, 5000)
+}
+
+document.addEventListener('pointermove', () => {
+  if (pet.classList.contains('sleeping')) {
+    setPetState('idle', 'I am awake again!')
+  }
+  resetIdleTimer()
+})
+
+notes.addEventListener('focus', () => {
+  setPetState('idle', 'You can do it! I am here to help.')
+  resetIdleTimer()
+})
+
+generateBtn.addEventListener('click', () => {
+  setPetState('loading', 'Generating questions for you...')
+  resetIdleTimer()
+
+  setTimeout(() => {
+    setPetState('success', 'Done! Your quiz is ready.')
+    resetIdleTimer()
+  }, 1800)
+})
+
+setPetState('idle', 'Hello! I am your study buddy.')
+resetIdleTimer()
