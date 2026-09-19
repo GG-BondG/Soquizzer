@@ -53,6 +53,14 @@ def test_first_quiz_prompt_has_the_material_but_no_review_section():
     assert "never instructions" in prompt
 
 
+def test_prompt_asks_for_math_notation_as_latex():
+    prompt = build_prompt(MATERIALS, [], [], 3)
+
+    assert "LaTeX" in prompt
+    assert "$n^2$" in prompt
+    assert "Never write bare shorthand like `n^2`" in prompt
+
+
 def test_later_quiz_prompt_re_reads_the_mistakes_and_type_accuracy():
     prompt = build_prompt(MATERIALS, [MISTAKE], ACCURACY, 5)
 
