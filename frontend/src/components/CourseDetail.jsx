@@ -322,6 +322,7 @@ export default function CourseDetail() {
 
 function Progress({ progress }) {
   const { by_type: byType, mistakes } = progress;
+  const reread = progress.reread ?? [];
   return (
     <div className="block">
       <div className="block-label">Progress</div>
@@ -342,6 +343,28 @@ function Progress({ progress }) {
         </div>
       )}
 
+      {reread.length > 0 && (
+        <>
+          <div className="block-header mistakes-header">
+            <div className="block-label">Worth re-reading</div>
+            <div className="block-count">{reread.length}</div>
+          </div>
+          <div className="row-list">
+            {reread.map((r) => (
+              <div className="mistake" key={r.anchor_section}>
+                <div className="mistake-stem">{r.anchor_section}</div>
+                <div className="mistake-line mistake-wrong">
+                  {r.mistake_count} {r.mistake_count === 1 ? 'question' : 'questions'} still wrong
+                </div>
+                {r.excerpts.map((text) => (
+                  <div className="mistake-explain" key={text}>{text}</div>
+                ))}
+              </div>
+            ))}
+          </div>
+        </>
+      )}
+
       {mistakes.length > 0 && (
         <>
           <div className="block-header mistakes-header">
@@ -355,6 +378,7 @@ function Progress({ progress }) {
                 <div className="mistake-line mistake-wrong">You answered: {m.options[m.selected_index]}</div>
                 <div className="mistake-line mistake-right">Correct: {m.options[m.answer_index]}</div>
                 {m.explanation && <div className="mistake-explain">{m.explanation}</div>}
+                {m.anchor_section && <div className="mistake-explain">Re-read: {m.anchor_section}</div>}
               </div>
             ))}
           </div>
