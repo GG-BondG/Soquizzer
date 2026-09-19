@@ -3,7 +3,7 @@ import { Link, useNavigate, useParams } from 'react-router-dom';
 import { api, friendlyError, subjectLabel } from '../api.js';
 import { formatDate, formatPercent, typeLabel } from '../format.js';
 import { useApi } from '../useApi.js';
-import { usePet } from '../pet/PetContext.jsx';
+import { usePet } from '../pet/PetProvider.jsx';
 import { BackIcon, ChevronIcon, CloseIcon, DocIcon, PlusIcon, UploadIcon } from './Icons.jsx';
 import ConfirmDialog from './ConfirmDialog.jsx';
 import FloatingWindow from './FloatingWindow.jsx';

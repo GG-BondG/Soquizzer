@@ -3,7 +3,7 @@ import { Link, useLocation, useParams } from 'react-router-dom';
 import { api } from '../api.js';
 import { formatClock, formatDuration, formatPercent, typeLabel } from '../format.js';
 import { useApi } from '../useApi.js';
-import { usePet } from '../pet/PetContext.jsx';
+import { usePet } from '../pet/PetProvider.jsx';
 import { BackIcon, ClockIcon } from './Icons.jsx';
 import QuestionReview from './QuestionReview.jsx';
 import './QuizPage.css';
@@ -49,7 +49,7 @@ export default function QuizPage() {
       const graded = await api.quizzes.submit(quiz.id, { answers: payload, timeSpentSeconds });
       setResult({ ...graded, timeSpentSeconds });
       const ratio = graded.total ? graded.score / graded.total : 0;
-      if (ratio >= 0.6) pet.success(`${graded.score} out of ${graded.total}. Great work!`);
+      if (ratio >= 0.6) pet.cheer();
       else pet.idle(`${graded.score} out of ${graded.total}. Check the explanations and try again!`);
     } catch (err) {
       setSubmitError(err.message);

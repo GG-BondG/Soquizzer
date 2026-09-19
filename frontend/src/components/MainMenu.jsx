@@ -3,7 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { api, SUBJECTS, subjectLabel } from '../api.js';
 import { formatDate } from '../format.js';
 import { useApi } from '../useApi.js';
-import { usePet } from '../pet/PetContext.jsx';
+import { usePet } from '../pet/PetProvider.jsx';
 import { PlusIcon, ClockIcon, DocIcon, CloseIcon } from './Icons.jsx';
 import FloatingWindow from './FloatingWindow.jsx';
 import './MainMenu.css';

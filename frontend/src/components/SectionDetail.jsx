@@ -3,7 +3,7 @@ import { Link, useNavigate, useParams } from 'react-router-dom';
 import { api } from '../api.js';
 import { formatDate } from '../format.js';
 import { useApi } from '../useApi.js';
-import { usePet } from '../pet/PetContext.jsx';
+import { usePet } from '../pet/PetProvider.jsx';
 import { BackIcon, ChevronIcon } from './Icons.jsx';
 
 export default function SectionDetail() {
