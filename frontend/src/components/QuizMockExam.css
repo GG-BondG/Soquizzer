@@ -1,0 +1,169 @@
+.exam-page {
+  background: #f3efea;
+  min-height: 100vh;
+}
+
+.exam-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.exam-tag {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--exam);
+}
+
+.exam-timer {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--mono);
+  font-size: 15px;
+  color: var(--exam);
+}
+
+.exam-progress-row {
+  margin-top: 22px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.exam-progress-text {
+  font-family: var(--mono);
+  font-size: 13px;
+  color: var(--text-2);
+  white-space: nowrap;
+}
+
+.exam-progress-track {
+  flex-grow: 1;
+  height: 4px;
+  border-radius: 2px;
+  background: rgba(28, 27, 23, 0.1);
+  overflow: hidden;
+}
+
+.exam-progress-fill {
+  height: 100%;
+  background: var(--exam);
+  transition: width 0.3s ease;
+}
+
+.exam-panel {
+  margin: 36px auto 0;
+  width: min(820px, 100%);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 44px 48px;
+  box-sizing: border-box;
+  flex-grow: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.exam-question-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 24px;
+}
+
+.exam-question {
+  font-size: 19px;
+  line-height: 1.5;
+}
+
+.exam-expression {
+  font-family: var(--serif);
+  font-size: 22px;
+}
+
+.flag-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--text-2);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: border-color 0.15s ease, color 0.15s ease;
+}
+
+.flag-btn.is-flagged {
+  border-color: var(--exam);
+  color: var(--exam);
+}
+
+.option-list {
+  margin-top: 32px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.option-row {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 16px 20px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  cursor: pointer;
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+
+.option-row.is-picked {
+  border: 1.5px solid var(--exam);
+  background: rgba(139, 58, 58, 0.05);
+}
+
+.radio {
+  display: inline-flex;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  border: 1.5px solid rgba(28, 27, 23, 0.3);
+  background: transparent;
+  flex-shrink: 0;
+}
+
+.radio.is-picked {
+  border-color: var(--exam);
+  background: var(--exam);
+  box-shadow: inset 0 0 0 3px #fff;
+}
+
+.option-text {
+  font-size: 15px;
+}
+
+.exam-nav {
+  margin-top: auto;
+  padding-top: 32px;
+  display: flex;
+  justify-content: space-between;
+}
+
+.btn-exam {
+  border: none;
+  background: var(--exam);
+  color: #fff;
+  font-weight: 600;
+}
+
+.btn-exam:hover {
+  background: #732f2f;
+  border: none;
+}

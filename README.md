@@ -13,9 +13,11 @@ questions and answers). The repo currently contains only a minimal,
 runnable call example — "parse course material", "generate questions",
 etc. will be built on top of this foundation.
 
-Gemini 模块单独放在 `gemini-service/` 目录下，避免跟前端的根目录 `src/`
-撞名。/ The Gemini module lives in its own `gemini-service/` directory to
-avoid clashing with the frontend's root-level `src/`.
+Gemini 模块单独放在 `gemini-service/` 目录下，前端在 `frontend/` 目录下
+（在该目录里运行 `npm install`、`npm run dev` 或 `npm run desktop`）。/
+The Gemini module lives in its own `gemini-service/` directory; the
+frontend lives in `frontend/` (run `npm install`, `npm run dev` or
+`npm run desktop` from inside it).
 
 ### 环境准备 / Setup
 
