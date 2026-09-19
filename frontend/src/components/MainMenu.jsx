@@ -6,6 +6,7 @@ import { useApi } from '../useApi.js';
 import { usePet } from '../pet/PetProvider.jsx';
 import { PlusIcon, ClockIcon, DocIcon, CloseIcon } from './Icons.jsx';
 import FloatingWindow from './FloatingWindow.jsx';
+import logo from '../../resources/200_001-removebg-preview.png';
 import './MainMenu.css';
 
 const EMPTY_FORM = { name: '', subject: 'OTHER' };
@@ -50,8 +51,8 @@ export default function MainMenu() {
     <div className="page menu-page">
       <div className="menu-header">
         <div className="brand">
-          <span className="brand-dot" />
-          <span className="brand-name">Coursebook</span>
+          <img className="brand-logo" src={logo} alt="" />
+          <span className="brand-name">Soquizzer</span>
         </div>
         <Link to="/history" className="btn">
           <ClockIcon />
