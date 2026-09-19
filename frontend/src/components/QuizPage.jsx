@@ -9,6 +9,13 @@ import { BackIcon, ClockIcon } from './Icons.jsx';
 import QuestionReview from './QuestionReview.jsx';
 import './QuizPage.css';
 
+const OPTION_MOTIONS = ['motion-pop', 'motion-ripple', 'motion-tilt'];
+const RESULT_MOTIONS = ['result-motion-rise', 'result-motion-bloom', 'result-motion-swing'];
+
+function randomItem(items) {
+  return items[Math.floor(Math.random() * items.length)];
+}
+
 export default function QuizPage() {
   const { quizId } = useParams();
   const location = useLocation();
@@ -30,7 +37,11 @@ export default function QuizPage() {
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState('');
   const [result, setResult] = useState(null);
+  const [displayedScore, setDisplayedScore] = useState(0);
+  const [optionMotion, setOptionMotion] = useState(null);
+  const [resultMotion, setResultMotion] = useState(RESULT_MOTIONS[0]);
   const startedAt = useRef(null);
+  const optionMotionTimer = useRef(null);
 
   // The clock starts when the questions are on screen and stops once graded.
   // (Retaking clears `result`, which restarts it.)
@@ -44,6 +55,37 @@ export default function QuizPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [quiz?.id, result]);
 
+  useEffect(() => () => clearTimeout(optionMotionTimer.current), []);
+
+  // Count up the score when results arrive. Reduced-motion users see the final value immediately.
+  useEffect(() => {
+    if (!result) return;
+    const reduceMotion =
+      typeof window.matchMedia === 'function' && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (reduceMotion || result.score === 0) {
+      setDisplayedScore(result.score);
+      return;
+    }
+
+    let frame;
+    const started = performance.now();
+    const duration = 650;
+    const tick = (now) => {
+      const progress = Math.min((now - started) / duration, 1);
+      setDisplayedScore(Math.round(result.score * (1 - Math.pow(1 - progress, 3))));
+      if (progress < 1) frame = requestAnimationFrame(tick);
+    };
+    frame = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(frame);
+  }, [result]);
+
+  function chooseAnswer(questionId, optionIndex) {
+    clearTimeout(optionMotionTimer.current);
+    setOptionMotion({ questionId, optionIndex, name: randomItem(OPTION_MOTIONS) });
+    setAnswers((current) => ({ ...current, [questionId]: optionIndex }));
+    optionMotionTimer.current = setTimeout(() => setOptionMotion(null), 450);
+  }
+
   async function submit() {
     const timeSpentSeconds = Math.round((Date.now() - startedAt.current) / 1000);
     const payload = quiz.questions
@@ -55,6 +97,8 @@ export default function QuizPage() {
     pet.loading('Checking your answers…');
     try {
       const graded = await api.quizzes.submit(quiz.id, { answers: payload, timeSpentSeconds });
+      setDisplayedScore(0);
+      setResultMotion(randomItem(RESULT_MOTIONS));
       setResult({ ...graded, timeSpentSeconds });
       const ratio = graded.total ? graded.score / graded.total : 0;
       if (ratio >= 0.6) {
@@ -106,6 +150,7 @@ export default function QuizPage() {
 
   if (result) {
     const byQuestion = new Map(result.results.map((r) => [r.question_id, r]));
+    const scoreRatio = result.total ? result.score / result.total : 0;
     return (
       <div className={`page exam-page ${themeClass}`}>
         <div className="exam-header">
@@ -116,10 +161,19 @@ export default function QuizPage() {
           <span />
         </div>
 
-        <div className="result-card">
-          <div className="result-score">
-            {result.score}
-            <span className="result-total"> / {result.total}</span>
+        <div className={`result-card ${resultMotion}`}>
+          {scoreRatio >= 0.8 && (
+            <div className="result-confetti" aria-hidden="true">
+              {Array.from({ length: 12 }, (_, i) => (
+                <span key={i} />
+              ))}
+            </div>
+          )}
+          <div className="result-score" aria-label={`${result.score} out of ${result.total}`}>
+            <span aria-hidden="true">
+              {displayedScore}
+              <span className="result-total"> / {result.total}</span>
+            </span>
           </div>
           <div className="result-meta">
             {formatPercent(result.total ? result.score / result.total : null)} correct · {formatDuration(result.timeSpentSeconds)}
@@ -138,7 +192,7 @@ export default function QuizPage() {
         </div>
 
         <div className="result-review">
-          {quiz.questions.map((q) => {
+          {quiz.questions.map((q, reviewIndex) => {
             const r = byQuestion.get(q.id);
             return (
               <QuestionReview
@@ -152,6 +206,8 @@ export default function QuizPage() {
                 explanation={r?.explanation}
                 anchorSection={r?.anchor_section}
                 sourceExcerpt={r?.source_excerpt}
+                animate
+                revealIndex={reviewIndex}
               />
             );
           })}
@@ -206,18 +262,26 @@ export default function QuizPage() {
         <div className="option-list">
           {question.options.map((text, i) => {
             const picked = answers[question.id] === i;
+            const motion =
+              optionMotion?.questionId === question.id && optionMotion.optionIndex === i ? optionMotion.name : '';
             return (
               <div
                 key={i}
                 role="radio"
                 aria-checked={picked}
                 tabIndex={0}
-                className={`option-row ${picked ? 'is-picked' : ''}`}
-                onClick={() => setAnswers((a) => ({ ...a, [question.id]: i }))}
+                className={`option-row ${picked ? 'is-picked' : ''} ${motion}`}
+                onClick={() => chooseAnswer(question.id, i)}
+                onAnimationEnd={(event) => {
+                  if (event.target === event.currentTarget && motion) {
+                    clearTimeout(optionMotionTimer.current);
+                    setOptionMotion(null);
+                  }
+                }}
                 onKeyDown={(e) => {
                   if (e.key === 'Enter' || e.key === ' ') {
                     e.preventDefault();
-                    setAnswers((a) => ({ ...a, [question.id]: i }));
+                    chooseAnswer(question.id, i);
                   }
                 }}
               >
