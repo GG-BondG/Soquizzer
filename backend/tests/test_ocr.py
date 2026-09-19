@@ -2,12 +2,11 @@ import io
 from types import SimpleNamespace
 
 import pytest
-from langchain_core.documents import Document
 from pypdf import PdfReader
 
 from app.config import Settings
 from app.exception import ConfigurationError, EmptyDocumentError, LlmError
-from app.rag import GeminiPageOcr, looks_scanned
+from app.rag import GeminiPageOcr
 from app.rag.ocr import OcrPages
 from tests.conftest import make_blank_pdf, make_pdf
 
@@ -87,13 +86,3 @@ def test_gemini_errors_and_empty_answers_become_llm_errors():
 def test_missing_api_key_is_a_configuration_error():
     with pytest.raises(ConfigurationError):
         GeminiPageOcr(Settings(_env_file=None, gemini_api_key=""))
-
-
-def test_looks_scanned():
-    scanned = [Document(page_content="", metadata={"page": 1}), Document(page_content=" 3 ", metadata={"page": 2})]
-    text = [Document(page_content="A real paragraph of text on this page.", metadata={"page": 1})]
-
-    assert looks_scanned(scanned)
-    assert not looks_scanned(text)
-    assert not looks_scanned([Document(page_content="", metadata={})])  # a plain text file is never OCR'd
-    assert not looks_scanned([])

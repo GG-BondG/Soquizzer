@@ -3,7 +3,6 @@ import json
 
 import pytest
 from fastapi.testclient import TestClient
-from langchain_core.embeddings import DeterministicFakeEmbedding
 from pypdf import PdfWriter
 
 from app.config import Settings
@@ -16,9 +15,6 @@ def settings(tmp_path):
     return Settings(
         _env_file=None,
         data_dir=tmp_path / "data",
-        chunk_size=200,
-        chunk_overlap=40,
-        max_upload_bytes=20_000,
         questions_per_quiz=4,
     )
 
@@ -49,9 +45,15 @@ class FakeQuizGenerator:
         self.calls: list[dict] = []
         self.error: Exception | None = None
 
-    def generate(self, materials, mistakes, accuracy, num_questions):
+    def generate(self, materials, mistakes, accuracy, num_questions, earlier_stems=None):
         self.calls.append(
-            {"materials": materials, "mistakes": mistakes, "accuracy": accuracy, "num_questions": num_questions}
+            {
+                "materials": materials,
+                "mistakes": mistakes,
+                "accuracy": accuracy,
+                "num_questions": num_questions,
+                "earlier_stems": earlier_stems or [],
+            }
         )
         if self.error:
             raise self.error
@@ -103,17 +105,13 @@ def ocr():
 
 @pytest.fixture
 def app(settings, converter, quiz_generator, ocr):
-    return create_app(settings, DeterministicFakeEmbedding(size=32), converter, quiz_generator, ocr)
+    return create_app(settings, converter, quiz_generator, ocr)
 
 
 @pytest.fixture
 def client(app):
     return TestClient(app)
 
-
-@pytest.fixture
-def chunks(app):
-    return app.state.container.chunks
 
 
 def make_pdf(pages: list[str]) -> bytes:

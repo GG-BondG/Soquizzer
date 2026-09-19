@@ -14,7 +14,6 @@ from pathlib import Path
 
 import pytest
 from fastapi.testclient import TestClient
-from langchain_core.embeddings import DeterministicFakeEmbedding
 
 from app.config import Settings
 from app.main import create_app
@@ -39,7 +38,7 @@ def read_rows(db_file: Path, sql: str, *params) -> list[tuple]:
 
 
 def fake_app(settings):
-    return create_app(settings, DeterministicFakeEmbedding(size=32), FakePdfConverter(), FakeQuizGenerator(), FakeOcr())
+    return create_app(settings, FakePdfConverter(), FakeQuizGenerator(), FakeOcr())
 
 
 def make_section(client: TestClient, course: dict) -> dict:
@@ -47,9 +46,11 @@ def make_section(client: TestClient, course: dict) -> dict:
 
 
 def upload_material(client: TestClient, pdf: bytes, filename: str):
+    """A course with one section, and the PDF uploaded to that section."""
     course = client.post("/api/courses", json={"name": "Biology 101", "subject": "BIOLOGY"}).json()
-    response = client.post(f"/api/courses/{course['id']}/materials", files={"file": (filename, pdf)})
-    return course, response
+    section = make_section(client, course)
+    response = client.post(f"/api/sections/{section['id']}/materials", files={"file": (filename, pdf)})
+    return course, section, response
 
 
 def answer_everything_wrong(client: TestClient, quiz: dict):
@@ -71,23 +72,22 @@ def test_database_is_created_and_pdf_json_is_stored_as_material(tmp_path):
     client = TestClient(fake_app(settings))
 
     tables = {row[0] for row in read_rows(db_file, "select name from sqlite_master where type = 'table'")}
-    assert {"courses", "materials", "sections", "quizzes", "questions", "attempts", "answers", "textbooks"} <= tables
+    assert {"courses", "materials", "sections", "quizzes", "questions", "attempts", "answers"} <= tables
 
-    course, response = upload_material(client, make_pdf([SAMPLE_SLIDES]), "slides.pdf")
+    course, section, response = upload_material(client, make_pdf([SAMPLE_SLIDES]), "slides.pdf")
 
     assert response.status_code == 201
     assert read_rows(db_file, "select name, subject from courses") == [("Biology 101", "BIOLOGY")]
-    rows = read_rows(db_file, "select course_id, source_filename, content from materials")
-    assert [(r[0], r[1]) for r in rows] == [(course["id"], "slides.pdf")]
-    assert json.loads(rows[0][2]) == FakePdfConverter.RESULT
+    rows = read_rows(db_file, "select course_id, section_id, source_filename, content from materials")
+    assert [(r[0], r[1], r[2]) for r in rows] == [(course["id"], section["id"], "slides.pdf")]
+    assert json.loads(rows[0][3]) == FakePdfConverter.RESULT
 
 
 def test_quiz_questions_answers_and_mistakes_are_stored_in_the_tables(tmp_path):
     settings = Settings(_env_file=None, data_dir=tmp_path / "data")
     db_file = settings.data_dir / "soquizzer.db"
     client = TestClient(fake_app(settings))
-    course, _ = upload_material(client, make_pdf([SAMPLE_SLIDES]), "slides.pdf")
-    section = make_section(client, course)
+    course, section, _ = upload_material(client, make_pdf([SAMPLE_SLIDES]), "slides.pdf")
 
     quiz = client.post(f"/api/sections/{section['id']}/quizzes").json()
     graded, wrong = answer_everything_wrong(client, quiz)
@@ -112,8 +112,7 @@ def test_quiz_questions_answers_and_mistakes_are_stored_in_the_tables(tmp_path):
 def test_everything_is_still_there_after_the_app_is_restarted(tmp_path):
     settings = Settings(_env_file=None, data_dir=tmp_path / "data")
     first = TestClient(fake_app(settings))
-    course, _ = upload_material(first, make_pdf([SAMPLE_SLIDES]), "slides.pdf")
-    section = make_section(first, course)
+    course, section, _ = upload_material(first, make_pdf([SAMPLE_SLIDES]), "slides.pdf")
     quiz = first.post(f"/api/sections/{section['id']}/quizzes").json()
     answer_everything_wrong(first, quiz)
     progress = first.get(f"/api/courses/{course['id']}/progress").json()
@@ -125,7 +124,7 @@ def test_everything_is_still_there_after_the_app_is_restarted(tmp_path):
     assert second.get(f"/api/courses/{course['id']}/progress").json() == progress
     assert second.get("/api/history").json() == history
     assert second.get(f"/api/courses/{course['id']}/sections").json()[0]["id"] == section["id"]
-    assert len(second.get(f"/api/courses/{course['id']}/materials").json()) == 1
+    assert len(second.get(f"/api/sections/{section['id']}/materials").json()) == 1
 
 
 @pytest.mark.skipif(not Settings().google_api_key, reason="GEMINI_API_KEY is not set")
@@ -136,15 +135,14 @@ def test_real_gemini_full_flow_pdf_to_quiz_to_mistakes_to_next_quiz(tmp_path):
 
     settings = Settings(data_dir=tmp_path / "data")
     db_file = settings.data_dir / "soquizzer.db"
-    client = TestClient(create_app(settings, embeddings=DeterministicFakeEmbedding(size=32)))
+    client = TestClient(create_app(settings))
 
-    course, response = upload_material(client, pdf, filename)
+    course, section, response = upload_material(client, pdf, filename)
     assert response.status_code == 201, response.text
     material = response.json()["content"]
     print(f"\nDatabase: {db_file}\nMaterial JSON from Gemini:\n{json.dumps(material, ensure_ascii=False, indent=2)}")
     assert isinstance(material, (dict, list)) and material
 
-    section = make_section(client, course)
     quiz_url = f"/api/sections/{section['id']}/quizzes"
     first = client.post(quiz_url)
     assert first.status_code == 201, first.text

@@ -10,14 +10,6 @@ class ConfigurationError(AppError):
     status_code = 500
 
 
-class TextbookNotFoundError(AppError):
-    status_code = 404
-
-
-class DuplicateTextbookError(AppError):
-    status_code = 409
-
-
 class FileTooLargeError(AppError):
     status_code = 413
 
