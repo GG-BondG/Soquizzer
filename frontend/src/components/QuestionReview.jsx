@@ -15,13 +15,18 @@ export default function QuestionReview({
   explanation,
   anchorSection,
   sourceExcerpt,
+  animate = false,
+  revealIndex = 0,
 }) {
   const answered = selectedIndex !== null && selectedIndex !== undefined;
   const correct = answered && selectedIndex === answerIndex;
   const status = !answered ? 'skipped' : correct ? 'correct' : 'wrong';
 
   return (
-    <div className="review">
+    <div
+      className={`review review-${status} ${animate ? 'is-animated' : ''}`}
+      style={animate ? { '--review-delay': `${Math.min(revealIndex, 8) * 70}ms` } : undefined}
+    >
       <div className="review-head">
         <span className="review-num">{String(number).padStart(2, '0')}</span>
         <span className={`review-status review-status-${status}`}>
