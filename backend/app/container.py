@@ -4,7 +4,7 @@ from sqlalchemy.orm import sessionmaker
 
 from app.config import Settings
 from app.entity import Base
-from app.llm import GeminiPdfJsonConverter, PdfJsonConverter
+from app.llm import GeminiPdfJsonConverter, GeminiQuizGenerator, PdfJsonConverter, QuizGenerator
 from app.rag import build_embeddings
 from app.repository import ChunkRepository
 from app.storage import LocalStorage
@@ -18,6 +18,7 @@ class Container:
         settings: Settings,
         embeddings: Embeddings | None = None,
         pdf_converter: PdfJsonConverter | None = None,
+        quiz_generator: QuizGenerator | None = None,
     ):
         settings.data_dir.mkdir(parents=True, exist_ok=True)
         self.settings = settings
@@ -31,3 +32,4 @@ class Container:
             embeddings or build_embeddings(settings),
         )
         self.pdf_converter = pdf_converter or GeminiPdfJsonConverter(settings)
+        self.quiz_generator = quiz_generator or GeminiQuizGenerator(settings)

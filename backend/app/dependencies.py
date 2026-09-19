@@ -4,8 +4,14 @@ from fastapi import Depends, Request
 from sqlalchemy.orm import Session
 
 from app.container import Container
-from app.repository import CourseRepository, QuizRepository, TextbookRepository
-from app.service import CourseService, IngestionService, QuizService, TextbookService
+from app.repository import (
+    AnswerRepository,
+    CourseRepository,
+    MaterialRepository,
+    QuizRepository,
+    TextbookRepository,
+)
+from app.service import CourseService, IngestionService, MaterialService, QuizService, TextbookService
 
 
 def get_container(request: Request) -> Container:
@@ -42,13 +48,28 @@ def get_course_service(session: Session = Depends(get_session)) -> CourseService
     return CourseService(CourseRepository(session))
 
 
+def get_material_service(
+    container: Container = Depends(get_container),
+    session: Session = Depends(get_session),
+) -> MaterialService:
+    return MaterialService(
+        MaterialRepository(session),
+        CourseService(CourseRepository(session)),
+        container.pdf_converter,
+        container.settings.max_material_pdf_bytes,
+    )
+
+
 def get_quiz_service(
     container: Container = Depends(get_container),
     session: Session = Depends(get_session),
 ) -> QuizService:
     return QuizService(
         QuizRepository(session),
+        AnswerRepository(session),
+        MaterialRepository(session),
         CourseService(CourseRepository(session)),
-        container.pdf_converter,
-        container.settings.max_quiz_pdf_bytes,
+        container.quiz_generator,
+        container.settings.mistake_review_limit,
+        container.settings.max_material_chars,
     )

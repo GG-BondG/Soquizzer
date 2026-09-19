@@ -1,8 +1,20 @@
-import json
 from datetime import datetime
-from typing import Any
 
-from pydantic import BaseModel, ConfigDict, field_validator
+from pydantic import BaseModel, ConfigDict
+
+from app.entity import QuestionType
+
+
+class QuestionResponse(BaseModel):
+    """What the student sees: no answer and no explanation until they submit."""
+
+    model_config = ConfigDict(from_attributes=True)
+
+    id: str
+    position: int
+    type: QuestionType
+    stem: str
+    options: list[str]
 
 
 class QuizResponse(BaseModel):
@@ -10,11 +22,5 @@ class QuizResponse(BaseModel):
 
     id: str
     course_id: str
-    source_filename: str
-    content: Any  # the JSON Gemini produced; its structure is decided by the model
     created_at: datetime
-
-    @field_validator("content", mode="before")
-    @classmethod
-    def parse_stored_json(cls, value):
-        return json.loads(value) if isinstance(value, str) else value
+    questions: list[QuestionResponse]

@@ -9,6 +9,7 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.entity.base import Base, UtcDateTime
 
 if TYPE_CHECKING:
+    from app.entity.material import Material
     from app.entity.quiz import Quiz
 
 
@@ -33,6 +34,9 @@ class Course(Base):
     subject: Mapped[Subject]
     created_at: Mapped[datetime] = mapped_column(UtcDateTime, default=lambda: datetime.now(timezone.utc))
 
+    materials: Mapped[list["Material"]] = relationship(
+        back_populates="course", cascade="all, delete-orphan", order_by="Material.created_at.desc()"
+    )
     quizzes: Mapped[list["Quiz"]] = relationship(
         back_populates="course", cascade="all, delete-orphan", order_by="Quiz.created_at.desc()"
     )

@@ -7,6 +7,7 @@ from langchain_core.embeddings import DeterministicFakeEmbedding
 from pypdf import PdfWriter
 
 from app.config import Settings
+from app.llm import GeneratedQuestion, GeneratedQuiz
 from app.main import create_app
 
 
@@ -34,9 +35,46 @@ def converter():
     return FakePdfConverter()
 
 
+class FakeQuizGenerator:
+    """Odd questions are multiple choice (answer index 1), even ones true/false (answer index 0)."""
+
+    def __init__(self):
+        self.calls: list[dict] = []
+        self.error: Exception | None = None
+
+    def generate(self, materials, mistakes, accuracy, num_questions):
+        self.calls.append(
+            {"materials": materials, "mistakes": mistakes, "accuracy": accuracy, "num_questions": num_questions}
+        )
+        if self.error:
+            raise self.error
+        round_number = len(self.calls)
+        questions = []
+        for number in range(1, num_questions + 1):
+            if number % 2:
+                kind, options, answer = "MULTIPLE_CHOICE", ["a", "b", "c", "d"], 1
+            else:
+                kind, options, answer = "TRUE_FALSE", ["True", "False"], 0
+            questions.append(
+                GeneratedQuestion(
+                    type=kind,
+                    stem=f"Round {round_number} question {number}?",
+                    options=options,
+                    answer_index=answer,
+                    explanation=f"Because {number}.",
+                )
+            )
+        return GeneratedQuiz(questions=questions)
+
+
 @pytest.fixture
-def app(settings, converter):
-    return create_app(settings, DeterministicFakeEmbedding(size=32), converter)
+def quiz_generator():
+    return FakeQuizGenerator()
+
+
+@pytest.fixture
+def app(settings, converter, quiz_generator):
+    return create_app(settings, DeterministicFakeEmbedding(size=32), converter, quiz_generator)
 
 
 @pytest.fixture

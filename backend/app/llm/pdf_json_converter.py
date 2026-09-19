@@ -5,7 +5,7 @@ from google import genai
 from google.genai import types
 
 from app.config import Settings
-from app.exception import ConfigurationError, QuizGenerationError
+from app.exception import ConfigurationError, LlmError
 
 PROMPT = """Convert the attached PDF into JSON.
 - Read the document and work out its structure yourself, then choose the JSON structure that represents it best
@@ -43,17 +43,17 @@ class GeminiPdfJsonConverter:
                 config=types.GenerateContentConfig(response_mime_type="application/json"),
             )
         except Exception as exc:
-            raise QuizGenerationError(f"Gemini request failed: {str(exc)[:300]}") from exc
+            raise LlmError(f"Gemini request failed: {str(exc)[:300]}") from exc
         return _to_json_text(response.text)
 
 
 def _to_json_text(text: str | None) -> str:
     if not text:
-        raise QuizGenerationError("Gemini returned no content")
+        raise LlmError("Gemini returned no content")
     try:
         data = json.loads(text)
     except ValueError as exc:
-        raise QuizGenerationError("Gemini returned invalid JSON (a very long PDF can be cut off)") from exc
+        raise LlmError("Gemini returned invalid JSON (a very long PDF can be cut off)") from exc
     if not isinstance(data, (dict, list)) or not data:
-        raise QuizGenerationError("Gemini returned empty JSON")
+        raise LlmError("Gemini returned empty JSON")
     return json.dumps(data, ensure_ascii=False)

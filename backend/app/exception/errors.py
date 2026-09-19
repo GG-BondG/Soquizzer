@@ -34,9 +34,21 @@ class CourseNotFoundError(AppError):
     status_code = 404
 
 
+class MaterialNotFoundError(AppError):
+    status_code = 404
+
+
+class LlmError(AppError):
+    status_code = 502
+
+
 class QuizNotFoundError(AppError):
     status_code = 404
 
 
-class QuizGenerationError(AppError):
-    status_code = 502
+class NoMaterialError(AppError):
+    status_code = 409
+
+
+class InvalidSubmissionError(AppError):
+    status_code = 422
