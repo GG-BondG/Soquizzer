@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Link, useLocation, useParams } from 'react-router-dom';
 import { api } from '../api.js';
 import { formatClock, formatDuration, formatPercent, typeLabel } from '../format.js';
+import { QUIZ_MODES } from '../quizModes.js';
 import { useApi } from '../useApi.js';
 import { usePet } from '../pet/PetProvider.jsx';
 import { BackIcon, ClockIcon } from './Icons.jsx';
@@ -17,6 +18,11 @@ export default function QuizPage() {
   const seeded = location.state?.quiz?.id === quizId ? location.state.quiz : null;
   const fetched = useApi(() => (seeded ? null : api.quizzes.get(quizId)), [quizId, !!seeded]);
   const quiz = seeded ?? fetched.data;
+
+  // Trivia or Mock Test, set by the box the student started from (colors and the label in the header).
+  const mode = location.state?.mode in QUIZ_MODES ? location.state.mode : null;
+  const themeClass = mode ? `quiz-${mode}` : '';
+  const modeLabel = mode ? QUIZ_MODES[mode].label : 'Quiz';
 
   const [answers, setAnswers] = useState({}); // question id -> selected option index
   const [index, setIndex] = useState(0);
@@ -98,12 +104,12 @@ export default function QuizPage() {
   if (result) {
     const byQuestion = new Map(result.results.map((r) => [r.question_id, r]));
     return (
-      <div className="page exam-page">
+      <div className={`page exam-page ${themeClass}`}>
         <div className="exam-header">
           <Link to={backTo} className="back-link">
             <BackIcon /> Section
           </Link>
-          <span className="exam-tag">Results</span>
+          <span className="exam-tag">{modeLabel} · Results</span>
           <span />
         </div>
 
@@ -157,29 +163,41 @@ export default function QuizPage() {
   const isLast = index === total - 1;
 
   return (
-    <div className="page exam-page">
+    <div className={`page exam-page ${themeClass}`}>
       <div className="exam-header">
         <Link to={backTo} className="back-link">
           <BackIcon /> Section
         </Link>
-        <span className="exam-tag">Quiz</span>
-        <div className="exam-timer">
-          <ClockIcon />
-          {formatClock(elapsed)}
-        </div>
-      </div>
+        <span className="exam-tag">{modeLabel}</span>
 
-      <div className="exam-progress-row">
-        <div className="exam-progress-text">
-          Question {index + 1} of {total}
-        </div>
-        <div className="exam-progress-track">
-          <div className="exam-progress-fill" style={{ width: `${((index + 1) / total) * 100}%` }} />
-        </div>
+        {/* top-right corner; the header is pinned, so progress and time stay in view while answering */}
+        <aside className="quiz-status" aria-label="Quiz status">
+          <div className="status-item">
+            <span className="status-label">Progress</span>
+            <span className="status-value">
+              {index + 1} / {total}
+            </span>
+            <span className="status-bar">
+              <span className="status-bar-fill" style={{ width: `${((index + 1) / total) * 100}%` }} />
+            </span>
+          </div>
+          <div className="status-item">
+            <span className="status-label">Answered</span>
+            <span className="status-value">
+              {answeredCount} / {total}
+            </span>
+          </div>
+          <div className="status-time" aria-label="Time elapsed">
+            <ClockIcon />
+            {formatClock(elapsed)}
+          </div>
+        </aside>
       </div>
 
       <div className="exam-panel">
-        <div className="quiz-type">{typeLabel(question.type)}</div>
+        <div className="quiz-type">
+          Question {index + 1} · {typeLabel(question.type)}
+        </div>
         <div className="exam-question">{question.stem}</div>
 
         <div className="option-list">

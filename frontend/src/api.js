@@ -59,6 +59,18 @@ export function friendlyError(err, byStatus = {}) {
   return err?.message || 'Something went wrong.';
 }
 
+// A failed fetch has three possible causes: nothing is listening, the app's origin is blocked, or the server
+// answered with an error that carries no CORS headers (an unhandled 500 does this) which the browser hides from
+// us. A plain GET that succeeds tells the first case from the others.
+async function describeNetworkFailure() {
+  try {
+    await fetch(`${BASE_URL}/openapi.json`, { signal: AbortSignal.timeout(4000) });
+    return `The server at ${BASE_URL} is running but hit an internal error while handling this request. Check the backend terminal for the error.`;
+  } catch {
+    return `Can't reach the server at ${BASE_URL}. Is the backend running?`;
+  }
+}
+
 async function request(path, { method = 'GET', json, form, params, timeout = DEFAULT_TIMEOUT_MS } = {}) {
   const url = new URL(`${BASE_URL}${path}`);
   for (const [key, value] of Object.entries(params ?? {})) {
@@ -84,7 +96,7 @@ async function request(path, { method = 'GET', json, form, params, timeout = DEF
     if (e.name === 'AbortError') {
       throw new ApiError(`The request timed out after ${Math.round(timeout / 1000)}s. The server may still be working, so check back shortly.`);
     }
-    throw new ApiError(`Can't reach the server at ${BASE_URL}. Is the backend running?`);
+    throw new ApiError(await describeNetworkFailure());
   } finally {
     clearTimeout(timer);
   }
@@ -137,8 +149,14 @@ export const api = {
   quizzes: {
     list: (sectionId) => request(`/api/sections/${id(sectionId)}/quizzes`),
     get: (quizId) => request(`/api/quizzes/${id(quizId)}`),
-    // Takes no parameters: the backend picks the questions itself.
-    create: (sectionId) => request(`/api/sections/${id(sectionId)}/quizzes`, { method: 'POST', timeout: LONG_TIMEOUT_MS }),
+    // The backend picks the questions itself. `type` ('TRIVIA' | 'MOCK_TEST') says which kind of quiz the
+    // student asked for; it is optional and only sent when given.
+    create: (sectionId, { type } = {}) =>
+      request(`/api/sections/${id(sectionId)}/quizzes`, {
+        method: 'POST',
+        json: type ? { type } : undefined,
+        timeout: LONG_TIMEOUT_MS,
+      }),
     submit: (quizId, { answers, timeSpentSeconds }) =>
       request(`/api/quizzes/${id(quizId)}/submissions`, {
         method: 'POST',
