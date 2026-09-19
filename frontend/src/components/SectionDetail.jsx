@@ -6,6 +6,7 @@ import { useApi } from '../useApi.js';
 import { usePet } from '../pet/PetProvider.jsx';
 import { BackIcon, ChevronIcon, DocIcon, UploadIcon } from './Icons.jsx';
 import ConfirmDialog from './ConfirmDialog.jsx';
+import SectionProgress from './SectionProgress.jsx';
 
 export default function SectionDetail() {
   const { sectionId } = useParams();
@@ -16,6 +17,7 @@ export default function SectionDetail() {
   const course = useApi(() => (section.data ? api.courses.get(section.data.course_id) : null), [section.data?.course_id]);
   const quizzes = useApi(() => api.quizzes.list(sectionId), [sectionId]);
   const materials = useApi(() => api.materials.list(sectionId), [sectionId]);
+  const progress = useApi(() => api.sections.progress(sectionId), [sectionId]);
 
   const fileInputRef = useRef(null);
   const [uploading, setUploading] = useState(null); // filename while an upload is in flight
@@ -225,6 +227,9 @@ export default function SectionDetail() {
         )}
         {quizzes.data && list.length === 0 && <div className="empty-note">No quizzes yet. Press “New quiz” to generate the first one.</div>}
       </div>
+
+      {/* a failed progress request just leaves the block out: the quizzes above are what matters on this page */}
+      {progress.data && <SectionProgress progress={progress.data} />}
 
       <ConfirmDialog
         open={!!pendingRemove}

@@ -128,7 +128,6 @@ export const api = {
     get: (courseId) => request(`/api/courses/${id(courseId)}`),
     create: ({ name, subject }) => request('/api/courses', { method: 'POST', json: { name, subject } }),
     remove: (courseId) => request(`/api/courses/${id(courseId)}`, { method: 'DELETE' }),
-    progress: (courseId) => request(`/api/courses/${id(courseId)}/progress`),
   },
   // A section's PDF (turned into JSON by the backend). The section's quizzes are written from it.
   materials: {
@@ -145,6 +144,8 @@ export const api = {
     get: (sectionId) => request(`/api/sections/${id(sectionId)}`),
     create: (courseId, name) => request(`/api/courses/${id(courseId)}/sections`, { method: 'POST', json: { name } }),
     remove: (sectionId) => request(`/api/sections/${id(sectionId)}`, { method: 'DELETE' }),
+    // accuracy by question type plus the mistakes still open, over the quizzes of this section
+    progress: (sectionId) => request(`/api/sections/${id(sectionId)}/progress`),
   },
   quizzes: {
     list: (sectionId) => request(`/api/sections/${id(sectionId)}/quizzes`),

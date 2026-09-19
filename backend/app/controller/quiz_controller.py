@@ -37,3 +37,8 @@ def submit_answers(quiz_id: str, request: SubmissionRequest, service: QuizServic
 @router.get("/api/courses/{course_id}/progress", response_model=ProgressResponse)
 def get_progress(course_id: str, service: QuizService = Depends(get_quiz_service)):
     return service.progress(course_id)
+
+
+@router.get("/api/sections/{section_id}/progress", response_model=ProgressResponse)
+def get_section_progress(section_id: str, service: QuizService = Depends(get_quiz_service)):
+    return service.section_progress(section_id)

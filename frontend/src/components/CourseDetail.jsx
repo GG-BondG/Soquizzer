@@ -1,14 +1,13 @@
 import { useRef, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { api, friendlyError, subjectLabel } from '../api.js';
-import { formatDate, formatPercent, typeLabel } from '../format.js';
+import { formatDate } from '../format.js';
 import { useApi } from '../useApi.js';
 import { usePet } from '../pet/PetProvider.jsx';
 import { BackIcon, ChevronIcon, CloseIcon, DocIcon, PlusIcon, UploadIcon } from './Icons.jsx';
 import ConfirmDialog from './ConfirmDialog.jsx';
 import FloatingWindow from './FloatingWindow.jsx';
 import QuizModeBox from './QuizModeBox.jsx';
-import './CourseDetail.css';
 
 const DELETE_COPY = {
   course: {
@@ -28,7 +27,6 @@ export default function CourseDetail() {
 
   const course = useApi(() => api.courses.get(courseId), [courseId]);
   const sections = useApi(() => api.sections.list(courseId), [courseId]);
-  const progress = useApi(() => api.courses.progress(courseId), [courseId]);
 
   const addSectionRef = useRef(null);
   const [sectionOpen, setSectionOpen] = useState(false);
@@ -131,7 +129,6 @@ export default function CourseDetail() {
       }
       await api.sections.remove(target.id);
       sections.reload();
-      progress.reload();
       setPendingDelete(null);
     } catch (err) {
       setDeleteError(err.message);
@@ -173,7 +170,6 @@ export default function CourseDetail() {
 
   const c = course.data;
   const copy = pendingDelete && DELETE_COPY[pendingDelete.kind];
-  const hasProgress = progress.data && (progress.data.by_type.some((t) => t.total > 0) || progress.data.mistakes.length > 0);
 
   return (
     <div className="page detail-page">
@@ -342,8 +338,6 @@ export default function CourseDetail() {
         </FloatingWindow>
       </div>
 
-      {hasProgress && <Progress progress={progress.data} />}
-
       <ConfirmDialog
         open={!!pendingDelete}
         title={copy ? copy.title(pendingDelete.name) : ''}
@@ -357,74 +351,6 @@ export default function CourseDetail() {
       >
         {copy?.body}
       </ConfirmDialog>
-    </div>
-  );
-}
-
-function Progress({ progress }) {
-  const { by_type: byType, mistakes } = progress;
-  const reread = progress.reread ?? [];
-  return (
-    <div className="block">
-      <div className="block-label">Progress</div>
-
-      {byType.length > 0 && (
-        <div className="type-list">
-          {byType.map((t) => (
-            <div className="type-row" key={t.type}>
-              <span className="type-name">{typeLabel(t.type)}</span>
-              <span className="type-bar">
-                <span className="type-bar-fill" style={{ width: formatPercent(t.total ? t.correct / t.total : 0) }} />
-              </span>
-              <span className="row-mono">
-                {t.correct}/{t.total} · {formatPercent(t.total ? t.correct / t.total : null)}
-              </span>
-            </div>
-          ))}
-        </div>
-      )}
-
-      {reread.length > 0 && (
-        <>
-          <div className="block-header mistakes-header">
-            <div className="block-label">Worth re-reading</div>
-            <div className="block-count">{reread.length}</div>
-          </div>
-          <div className="row-list">
-            {reread.map((r) => (
-              <div className="mistake" key={r.anchor_section}>
-                <div className="mistake-stem">{r.anchor_section}</div>
-                <div className="mistake-line mistake-wrong">
-                  {r.mistake_count} {r.mistake_count === 1 ? 'question' : 'questions'} still wrong
-                </div>
-                {r.excerpts.map((text) => (
-                  <div className="mistake-explain" key={text}>{text}</div>
-                ))}
-              </div>
-            ))}
-          </div>
-        </>
-      )}
-
-      {mistakes.length > 0 && (
-        <>
-          <div className="block-header mistakes-header">
-            <div className="block-label">Still to fix</div>
-            <div className="block-count">{mistakes.length}</div>
-          </div>
-          <div className="row-list">
-            {mistakes.map((m) => (
-              <div className="mistake" key={m.question_id}>
-                <div className="mistake-stem">{m.stem}</div>
-                <div className="mistake-line mistake-wrong">You answered: {m.options[m.selected_index]}</div>
-                <div className="mistake-line mistake-right">Correct: {m.options[m.answer_index]}</div>
-                {m.explanation && <div className="mistake-explain">{m.explanation}</div>}
-                {m.anchor_section && <div className="mistake-explain">Re-read: {m.anchor_section}</div>}
-              </div>
-            ))}
-          </div>
-        </>
-      )}
     </div>
   );
 }

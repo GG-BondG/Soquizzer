@@ -89,6 +89,7 @@ def test_unknown_section_course_quiz_are_404(client):
     assert create_quiz(client, "nope").status_code == 404
     assert client.get("/api/sections/nope/quizzes").status_code == 404
     assert client.get("/api/courses/nope/progress").status_code == 404
+    assert client.get("/api/sections/nope/progress").status_code == 404
     assert client.get("/api/quizzes/nope").status_code == 404
     assert client.delete("/api/quizzes/nope").status_code == 404
     body = {"answers": [{"question_id": "x", "selected_index": 0}]}
@@ -170,6 +171,35 @@ def test_progress_lists_mistakes_and_accuracy_by_question_type(client):
     mistake = progress["mistakes"][0]
     assert mistake["quiz_id"] == quiz["id"] and mistake["type"] == "TRUE_FALSE"
     assert (mistake["selected_index"], mistake["answer_index"]) == (1, 0)
+
+
+def test_section_progress_only_counts_that_sections_answers(client):
+    course_id, section_a = make_course_and_section(client)
+    section_b = make_section(client, course_id, "Chapter 2")
+    quiz_a = create_quiz(client, section_a).json()
+    quiz_b = create_quiz(client, section_b).json()
+    a1, a2, a3, a4 = [q["id"] for q in quiz_a["questions"]]
+    submit(client, quiz_a, correct_ids={a1, a3})  # the true/false ones are wrong
+    submit(client, quiz_b)  # everything wrong, in section B
+
+    progress = client.get(f"/api/sections/{section_a}/progress").json()
+
+    assert progress["by_type"] == [
+        {"type": "MULTIPLE_CHOICE", "total": 2, "correct": 2},
+        {"type": "TRUE_FALSE", "total": 2, "correct": 0},
+    ]
+    assert {m["question_id"] for m in progress["mistakes"]} == {a2, a4}
+    assert {m["quiz_id"] for m in progress["mistakes"]} == {quiz_a["id"]}
+    assert {r["anchor_section"] for r in progress["reread"]} == {"Section 1", "Section 2"}
+    course = client.get(f"/api/courses/{course_id}/progress").json()
+    assert sum(t["total"] for t in course["by_type"]) == 8  # the course still adds both sections up
+
+
+def test_section_progress_is_empty_before_any_answer(client):
+    _, section_id = make_course_and_section(client)
+    create_quiz(client, section_id)
+
+    assert client.get(f"/api/sections/{section_id}/progress").json() == {"by_type": [], "mistakes": [], "reread": []}
 
 
 def test_next_quiz_in_a_section_re_reads_the_mistakes_still_open(client, quiz_generator):

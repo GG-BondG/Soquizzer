@@ -81,6 +81,14 @@ describe('requests', () => {
     expect(called(fetch).url).toBe('http://localhost:8000/api/courses/a%2Fb%20c');
   });
 
+  it("asks for one section's progress, not the whole course's", async () => {
+    const fetch = mockFetch({ body: { by_type: [], mistakes: [], reread: [] } });
+
+    await api.sections.progress('s1');
+
+    expect(called(fetch).url).toBe('http://localhost:8000/api/sections/s1/progress');
+  });
+
   it('rejects with the server message, status and detail', async () => {
     mockFetch({ status: 404, body: { detail: 'Course c1 not found' } });
 
