@@ -6,6 +6,7 @@ import { QUIZ_MODES } from '../quizModes.js';
 import { useApi } from '../useApi.js';
 import { useAssistant } from '../pet/PetProvider.jsx';
 import { BackIcon, ClockIcon } from './Icons.jsx';
+import MathText from './MathText.jsx';
 import QuestionReview from './QuestionReview.jsx';
 import './QuizPage.css';
 
@@ -322,7 +323,9 @@ export default function QuizPage() {
             <div className="quiz-type">
               Question {index + 1} · {typeLabel(question.type)}
             </div>
-            <div className="exam-question">{question.stem}</div>
+            <div className="exam-question">
+              <MathText text={question.stem} />
+            </div>
 
             <div className="option-list">
               {question.options.map((text, i) => {
@@ -351,7 +354,9 @@ export default function QuizPage() {
                     }}
                   >
                     <span className={`radio ${picked ? 'is-picked' : ''}`} />
-                    <span className="option-text">{text}</span>
+                    <span className="option-text">
+                      <MathText text={text} />
+                    </span>
                   </div>
                 );
               })}
