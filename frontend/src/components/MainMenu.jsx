@@ -6,6 +6,7 @@ import { useApi } from '../useApi.js';
 import { usePet } from '../pet/PetProvider.jsx';
 import { PlusIcon, ClockIcon, DocIcon, CloseIcon } from './Icons.jsx';
 import FloatingWindow from './FloatingWindow.jsx';
+import ActivityHeatmap from './ActivityHeatmap.jsx';
 import logo from '../../resources/200_001-removebg-preview.png';
 import './MainMenu.css';
 
@@ -59,6 +60,8 @@ export default function MainMenu() {
           History
         </Link>
       </div>
+
+      <ActivityHeatmap />
 
       <div className="menu-label">Your courses{courses ? ` · ${courses.length}` : ''}</div>
 
