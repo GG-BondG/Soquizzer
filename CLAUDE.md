@@ -60,9 +60,10 @@ overwrites from 4 people editing `main` at the same time.
   `cd backend && .venv/bin/python -m pytest`。/ Python (FastAPI) backend that
   calls Gemini directly to write quizzes; see `backend/README.md`, and the API
   doc at `backend/app/controller/API.md`. Tests: `cd backend && .venv/bin/python -m pytest`.
-- `frontend/` — 前端 (Vite + React + Electron)，`npm` 命令都在这个目录下运行 /
+- `frontend/` — 前端 (Vite + React + Electron)，`npm` 命令都在这个目录下运行；
+  测试 `npm test`（Vitest），检查 `npm run lint`（ESLint）。/
   frontend (Vite + React + Electron); run `npm` commands from inside this
-  directory
+  directory. Tests: `npm test` (Vitest); lint: `npm run lint` (ESLint).
 - `gemini-service/` — Gemini API IO 模块的 Python 最小示例（烟雾测试），
   独立成自己的目录，不参与后端运行。/ Standalone Python minimal example
   (smoke test) for the Gemini API; the backend does not depend on it.
