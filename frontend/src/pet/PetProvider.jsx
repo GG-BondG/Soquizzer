@@ -87,9 +87,9 @@ export function AssistantProvider({ children }) {
       }
 
       const message = text ?? 'Almost there — let\'s review that one.';
-      setMessages((current) => [...current, { role: 'assistant', text: message }]);
+      showBubble(message);
     },
-    [cheer]
+    [showBubble]
   );
 
   const value = useMemo(

@@ -141,7 +141,7 @@
   word-break: break-word;
 }
 
-.pet-chat-message-pet {
+.pet-chat-message-assistant {
   align-self: flex-start;
   background: #f3f4f6;
   color: var(--text);
