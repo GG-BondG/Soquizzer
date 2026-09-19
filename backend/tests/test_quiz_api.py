@@ -123,6 +123,50 @@ def test_submission_is_graded_against_the_answer_gemini_wrote(client):
     assert wrong["is_correct"] is False and wrong["answer_index"] == 1 and wrong["selected_index"] == 0
 
 
+def check(client, quiz, question_id, selected_index):
+    return client.post(f"/api/quizzes/{quiz['id']}/questions/{question_id}/check", json={"selected_index": selected_index})
+
+
+def test_checking_one_answer_reveals_it_immediately_and_records_nothing(client):
+    course_id, section_id = make_course_and_section(client)
+    quiz = create_quiz(client, section_id).json()
+    first = quiz["questions"][0]["id"]
+
+    right = check(client, quiz, first, 1)
+    wrong = check(client, quiz, first, 0)
+
+    assert right.status_code == wrong.status_code == 200
+    assert right.json() == {
+        "question_id": first, "selected_index": 1, "is_correct": True, "answer_index": 1, "explanation": "Because 1.",
+        "anchor_section": "Section 1", "source_excerpt": "Passage for question 1.",
+    }
+    assert wrong.json()["is_correct"] is False and wrong.json()["answer_index"] == 1
+    assert client.get(f"/api/sections/{section_id}/quizzes").json()[0]["attempt_count"] == 0
+    assert client.get(f"/api/courses/{course_id}/progress").json()["by_type"] == []
+
+
+def test_checking_agrees_with_what_submitting_says(client):
+    _, section_id = make_course_and_section(client)
+    quiz = create_quiz(client, section_id).json()
+    body = picks(quiz, correct_ids={quiz["questions"][0]["id"]})
+
+    checked = [check(client, quiz, a["question_id"], a["selected_index"]).json() for a in body["answers"]]
+    submitted = client.post(f"/api/quizzes/{quiz['id']}/submissions", json=body).json()["results"]
+
+    assert checked == submitted
+
+
+def test_checking_rejects_a_missing_quiz_question_or_option(client):
+    _, section_id = make_course_and_section(client)
+    quiz = create_quiz(client, section_id).json()
+    first = quiz["questions"][0]["id"]
+
+    assert check(client, {"id": "nope"}, first, 0).status_code == 404
+    assert check(client, quiz, "not-a-real-question-id", 0).status_code == 404
+    assert check(client, quiz, first, 9).status_code == 422
+    assert check(client, quiz, first, -1).status_code == 422
+
+
 def test_partial_submission_only_records_answered_questions(client):
     course_id, section_id = make_course_and_section(client)
     quiz = create_quiz(client, section_id).json()
