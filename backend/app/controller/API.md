@@ -28,10 +28,10 @@ Base URL: `http://localhost:8000`.
 | 409 | The course has no material and no ready textbook yet, so no quiz can be made |
 | 413 | The PDF is too large (over 20 MB), or the course's material is too long |
 | 415 | The uploaded file is not a PDF |
-| 422 | Invalid input (empty name, option index out of range, the same question answered twice, ...) |
+| 422 | Invalid input (empty name, option index out of range, the same question answered twice, ...), or a PDF that is corrupted, password-protected or has no readable text |
 | 502 | Gemini failed or returned something invalid. Nothing was saved; retrying is fine |
 
-**Slow endpoints:** `POST .../materials` (Gemini reads the PDF) and `POST .../quizzes` (Gemini writes the questions) each take from a few seconds to tens of seconds. Show a loading state and set the request timeout to at least 120 seconds.
+**Slow endpoints:** `POST .../quizzes` (Gemini writes the questions) takes from a few seconds to tens of seconds. `POST .../materials` is normally fast (the PDF's text is read locally), but a scanned PDF is read by Gemini (OCR) and can take that long too. Show a loading state and set the request timeout to at least 120 seconds.
 
 **Language:** quizzes (questions, options, explanations) are written in English by default, whatever language the material is in. The backend setting `QUIZ_LANGUAGE` changes that. The frontend does not need to do anything.
 
@@ -98,11 +98,11 @@ Creating another quiz gives the next round in the same section. The backend take
 
 ## Material
 
-A PDF the user uploads (slides, lecture notes, ...). The backend has Gemini read it and stores the result, which is later used to write quizzes. The PDF itself is not kept.
+A PDF the user uploads (slides, lecture notes, ...). The backend extracts its text (locally; a scanned PDF is read with OCR) and stores the result, which is later used to write quizzes. The PDF itself is not kept.
 
 | Method | Path | Description |
 |---|---|---|
-| POST | `/api/courses/{course_id}/materials` | Upload a PDF as `multipart/form-data`, field name `file`, at most 20 MB. Returns 201. **Slow endpoint** |
+| POST | `/api/courses/{course_id}/materials` | Upload a PDF as `multipart/form-data`, field name `file`, at most 20 MB. Returns 201. Slow only for scanned PDFs |
 | GET | `/api/courses/{course_id}/materials` | The course's materials |
 | GET | `/api/materials/{material_id}` | One material |
 | DELETE | `/api/materials/{material_id}` | Delete a material. Returns 204 |
@@ -113,14 +113,14 @@ form.append("file", pdfFile);
 await fetch(`${BASE}/api/courses/${courseId}/materials`, { method: "POST", body: form });
 ```
 
-In the response, `content` is JSON whose structure Gemini decided by itself, so its shape can differ from one material to the next. The frontend normally only needs to show `source_filename` and should not depend on the structure of `content`.
+In the response, `content` is the extracted text: `page_count`, `pages` (each `{page, text}`, only pages that have text) and, when the PDF has bookmarks, `outline` (each `{title, page, level}`). The frontend normally only needs to show `source_filename` and should not depend on `content`.
 
 ```json
 {
   "id": "3cde0873-5e47-4a60-acc1-591d488d3c6c",
   "course_id": "9da23c53-b719-4893-aba2-19b297cdb949",
   "source_filename": "slides.pdf",
-  "content": { "...": "structure decided by Gemini" },
+  "content": { "page_count": 2, "pages": [{ "page": 1, "text": "..." }, { "page": 2, "text": "..." }] },
   "created_at": "2026-09-19T15:01:15.337293Z"
 }
 ```

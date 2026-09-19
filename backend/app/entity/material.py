@@ -16,7 +16,7 @@ class Material(Base):
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
     course_id: Mapped[str] = mapped_column(ForeignKey("courses.id"), index=True)
     source_filename: Mapped[str] = mapped_column(String(255))
-    content: Mapped[str] = mapped_column(Text)  # JSON text produced by Gemini from the PDF
+    content: Mapped[str] = mapped_column(Text)  # JSON text extracted from the PDF (see LocalPdfJsonConverter)
     created_at: Mapped[datetime] = mapped_column(UtcDateTime, default=lambda: datetime.now(timezone.utc))
 
     course: Mapped[Course] = relationship(back_populates="materials")

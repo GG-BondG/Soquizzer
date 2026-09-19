@@ -13,7 +13,7 @@ uvicorn app.main:create_app --factory --reload
 pytest
 ```
 
-The app refuses to start without `GEMINI_API_KEY` (Gemini embeddings and PDF-to-JSON conversion; `GOOGLE_API_KEY` also works). Unit tests use fakes and need no key.
+The app refuses to start without `GEMINI_API_KEY` (Gemini embeddings, quiz generation and OCR of scanned PDFs; `GOOGLE_API_KEY` also works). Unit tests use fakes and need no key.
 
 Data lives under `DATA_DIR` (default `./data`): `soquizzer.db` (SQLite: textbooks, courses, quizzes) and `chroma/` (vectors). Both are local files, no Docker or database server needed.
 
@@ -26,8 +26,8 @@ app/
 ├── repository/   SQLite repositories via SQLAlchemy (textbook, course, section, material, quiz, attempt, answer), ChunkRepository (ChromaDB)
 ├── entity/       Database models (Textbook, Course, Material, Section, Quiz, Question, Attempt, Answer)
 ├── dto/          Request/response schemas
-├── llm/          Native Google GenAI SDK: GeminiPdfJsonConverter (PDF in, JSON out), GeminiQuizGenerator
-├── rag/          Loaders, chunking, embeddings
+├── llm/          Native Google GenAI SDK: GeminiQuizGenerator (and the PdfJsonConverter interface)
+├── rag/          Loaders, chunking, embeddings, OCR, LocalPdfJsonConverter (PDF in, JSON out, no model)
 ├── storage/      LocalStorage for raw uploads
 ├── config/       Settings (env vars / .env)
 ├── exception/    AppError subclasses + handler that maps them to HTTP errors
@@ -83,6 +83,20 @@ When a quiz is generated, `TextbookContextService` searches the chunks of the co
 - **Prompt:** the excerpts go in next to the uploaded material's JSON, so a course can have material, textbooks, or both. With neither, generating is refused (409).
 - **If the search fails** (for example an embedding quota error), the quiz is still written from the uploaded material; if the textbooks are all the course has, the request fails with 502.
 
+## Course material: PDF -> JSON
+
+`POST /api/courses/{id}/materials` turns the PDF into JSON **locally with pypdf, no model call**, so it is fast (a 30-page deck takes well under a second, a 700-page textbook a few seconds) and cannot drop or invent content the way a model-written conversion could.
+
+```json
+{"page_count": 12,
+ "outline": [{"title": "Cells", "page": 3, "level": 1}],
+ "pages": [{"page": 1, "text": "..."}]}
+```
+
+- `pages` holds every page that has text, with the PDF's own page numbers; `outline` is the PDF's bookmarks (flattened, with nesting `level`) and is left out when the PDF has none. The quiz prompt uses the headings and page numbers to anchor questions.
+- A scan with no text layer (under 20 characters per page on average) is read with the same Gemini OCR as textbooks (`OCR_ENABLED`, `OCR_PAGES_PER_REQUEST`, `OCR_MAX_PAGES`). That is the only case that calls a model, and it is slow.
+- A corrupted or password-protected PDF, or a scan OCR cannot read, returns 422 and stores nothing.
+
 ## Courses, sections, quizzes and memory
 
 The endpoints the frontend uses are documented in [`app/controller/API.md`](app/controller/API.md).
@@ -126,8 +140,8 @@ If you already have a `data/soquizzer.db` from an earlier version, delete it: ta
 
 ```bash
 pytest                          # everything; unit tests use fakes, no key needed
-pytest -m integration -s        # integration tests only, -s prints the JSON Gemini produced
+pytest -m integration -s        # integration tests only, -s prints the extracted JSON and the quiz
 QUIZ_PDF_PATH=~/my_slides.pdf pytest -m integration -s     # try your own PDF
 ```
 
-The integration tests (`tests/test_integration.py`) start the app on a real SQLite file (created on startup, no server or Docker), inspect every table with `sqlite3`, and check that materials, sections, quizzes, attempts and mistakes survive an app restart. The last one calls the real Gemini API for the whole flow (PDF -> material -> quiz -> wrong answers -> next quiz) and is skipped unless `GEMINI_API_KEY` is set (environment or `backend/.env`). It prints what Gemini produced and the path of the SQLite file.
+The integration tests (`tests/test_integration.py`) start the app on a real SQLite file (created on startup, no server or Docker), inspect every table with `sqlite3`, and check that materials, sections, quizzes, attempts and mistakes survive an app restart. The last one calls the real Gemini API for the whole flow (PDF -> material -> quiz -> wrong answers -> next quiz) and is skipped unless `GEMINI_API_KEY` is set (environment or `backend/.env`). It prints what was produced and the path of the SQLite file.

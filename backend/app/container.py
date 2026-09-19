@@ -4,8 +4,8 @@ from sqlalchemy.orm import sessionmaker
 
 from app.config import Settings
 from app.entity import Base, add_missing_columns
-from app.llm import GeminiPdfJsonConverter, GeminiQuizGenerator, PdfJsonConverter, QuizGenerator
-from app.rag import GeminiPageOcr, PageOcr, build_embeddings
+from app.llm import GeminiQuizGenerator, PdfJsonConverter, QuizGenerator
+from app.rag import GeminiPageOcr, LocalPdfJsonConverter, PageOcr, build_embeddings
 from app.repository import ChunkRepository
 from app.storage import LocalStorage
 
@@ -33,6 +33,6 @@ class Container:
             settings.chroma_dir,
             embeddings or build_embeddings(settings),
         )
-        self.pdf_converter = pdf_converter or GeminiPdfJsonConverter(settings)
-        self.quiz_generator = quiz_generator or GeminiQuizGenerator(settings)
         self.ocr = ocr or (GeminiPageOcr(settings) if settings.ocr_enabled else None)
+        self.pdf_converter = pdf_converter or LocalPdfJsonConverter(self.ocr)
+        self.quiz_generator = quiz_generator or GeminiQuizGenerator(settings)
