@@ -10,6 +10,7 @@ class MaterialResponse(BaseModel):
 
     id: str
     course_id: str
+    section_id: str | None
     source_filename: str
     content: Any  # {page_count, outline?, pages: [{page, text}]}
     created_at: datetime

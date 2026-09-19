@@ -128,50 +128,27 @@ describe('requests', () => {
   });
 });
 
-describe('textbooks.upload', () => {
-  const file = new File(['text'], 'bio.txt', { type: 'text/plain' });
+describe('materials (a section\'s PDF)', () => {
+  const file = new File(['%PDF-'], 'slides.pdf', { type: 'application/pdf' });
 
-  it('uploads the file, then attaches it to the course', async () => {
-    const fetch = mockFetch({ status: 202, body: { id: 't1', status: 'PROCESSING' } }, { status: 204 });
+  it('uploads the PDF to the section as multipart form data', async () => {
+    const fetch = mockFetch({ status: 201, body: { id: 'm1' } });
 
-    const textbook = await api.textbooks.upload('c1', file);
+    const material = await api.materials.upload('s1', file);
 
-    expect(textbook.id).toBe('t1');
-    expect(called(fetch, 0)).toMatchObject({ url: 'http://localhost:8000/api/textbooks', method: 'POST' });
-    expect(called(fetch, 0).body).toBeInstanceOf(FormData);
-    expect(called(fetch, 1)).toMatchObject({ url: 'http://localhost:8000/api/courses/c1/textbooks/t1', method: 'PUT' });
+    expect(material.id).toBe('m1');
+    const call = called(fetch);
+    expect(call).toMatchObject({ url: 'http://localhost:8000/api/sections/s1/materials', method: 'POST' });
+    expect(call.body.get('file')).toBe(file);
   });
 
-  it('attaches a file that was uploaded before instead of failing', async () => {
-    const id = '4f3a6c1e-9b2f-4c1d-8e7a-123456789abc';
-    const fetch = mockFetch(
-      { status: 409, body: { detail: `This file was already uploaded as textbook ${id}` } },
-      { status: 204 }
-    );
+  it('lists a section\'s PDFs and removes one', async () => {
+    const fetch = mockFetch({ body: [] }, { status: 204 });
 
-    const textbook = await api.textbooks.upload('c1', file);
+    await api.materials.list('s1');
+    await api.materials.remove('m1');
 
-    expect(textbook.id).toBe(id);
-    expect(called(fetch, 1).url).toBe(`http://localhost:8000/api/courses/c1/textbooks/${id}`);
-  });
-
-  it('gives up without attaching when the upload fails for another reason', async () => {
-    const fetch = mockFetch({ status: 415, body: { detail: "Unsupported file type '.exe'" } });
-
-    await expect(api.textbooks.upload('c1', file)).rejects.toMatchObject({ status: 415 });
-    expect(fetch).toHaveBeenCalledTimes(1);
-  });
-
-  it('gives up on a duplicate error that names no textbook', async () => {
-    const fetch = mockFetch({ status: 409, body: { detail: 'This file was already uploaded' } });
-
-    await expect(api.textbooks.upload('c1', file)).rejects.toMatchObject({ status: 409 });
-    expect(fetch).toHaveBeenCalledTimes(1);
-  });
-
-  it('detaches a textbook from a course', async () => {
-    const fetch = mockFetch({ status: 204 });
-    await api.textbooks.detach('c1', 't1');
-    expect(called(fetch)).toMatchObject({ url: 'http://localhost:8000/api/courses/c1/textbooks/t1', method: 'DELETE' });
+    expect(called(fetch, 0).url).toBe('http://localhost:8000/api/sections/s1/materials');
+    expect(called(fetch, 1)).toMatchObject({ url: 'http://localhost:8000/api/materials/m1', method: 'DELETE' });
   });
 });

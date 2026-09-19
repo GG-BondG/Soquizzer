@@ -1,10 +1,11 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
-import { api } from '../api.js';
+import { api, friendlyError } from '../api.js';
 import { formatDate } from '../format.js';
 import { useApi } from '../useApi.js';
 import { usePet } from '../pet/PetProvider.jsx';
-import { BackIcon, ChevronIcon } from './Icons.jsx';
+import { BackIcon, ChevronIcon, DocIcon, UploadIcon } from './Icons.jsx';
+import ConfirmDialog from './ConfirmDialog.jsx';
 
 export default function SectionDetail() {
   const { sectionId } = useParams();
@@ -14,6 +15,14 @@ export default function SectionDetail() {
   const section = useApi(() => api.sections.get(sectionId), [sectionId]);
   const course = useApi(() => (section.data ? api.courses.get(section.data.course_id) : null), [section.data?.course_id]);
   const quizzes = useApi(() => api.quizzes.list(sectionId), [sectionId]);
+  const materials = useApi(() => api.materials.list(sectionId), [sectionId]);
+
+  const fileInputRef = useRef(null);
+  const [uploading, setUploading] = useState(null); // filename while an upload is in flight
+  const [uploadError, setUploadError] = useState('');
+  const [pendingRemove, setPendingRemove] = useState(null); // the PDF being removed
+  const [removing, setRemoving] = useState(false);
+  const [removeError, setRemoveError] = useState('');
 
   const [creating, setCreating] = useState(false);
   const [createError, setCreateError] = useState(null); // { status, message }
@@ -31,6 +40,39 @@ export default function SectionDetail() {
       setCreateError({ status: err.status, message: err.message });
       pet.error(err.status === 409 ? 'I need some material first.' : 'That did not work.');
       setCreating(false);
+    }
+  }
+
+  async function handleUpload(e) {
+    const file = e.target.files[0];
+    e.target.value = ''; // allow picking the same file again
+    if (!file) return;
+    setUploading(file.name);
+    setUploadError('');
+    pet.loading('Reading your PDF… this can take a little while.');
+    try {
+      await api.materials.upload(sectionId, file);
+      pet.success('Got it! I read your PDF.');
+      materials.reload();
+    } catch (err) {
+      setUploadError(friendlyError(err, { 415: 'Only PDF files can be uploaded.', 413: 'That PDF is too large.' }));
+      pet.error('I could not read that file.');
+    } finally {
+      setUploading(null);
+    }
+  }
+
+  async function confirmRemove() {
+    setRemoving(true);
+    setRemoveError('');
+    try {
+      await api.materials.remove(pendingRemove.id);
+      materials.reload();
+      setPendingRemove(null);
+    } catch (err) {
+      setRemoveError(err.message);
+    } finally {
+      setRemoving(false);
     }
   }
 
@@ -60,6 +102,7 @@ export default function SectionDetail() {
 
   const g = section.data;
   const list = quizzes.data ?? [];
+  const pdfs = materials.data ?? [];
 
   return (
     <div className="page detail-page">
@@ -72,18 +115,22 @@ export default function SectionDetail() {
           <span className="detail-code">{g.name}</span>
         </div>
         <div className="detail-actions">
-          <button type="button" className="btn btn-primary" onClick={newQuiz} disabled={creating}>
+          <button
+            type="button"
+            className="btn btn-primary"
+            onClick={newQuiz}
+            disabled={creating || !!uploading || (materials.data && pdfs.length === 0)}
+          >
             {creating ? 'Generating…' : 'New quiz'}
           </button>
         </div>
       </div>
 
-      {creating && <div className="status-note">Generating a quiz from your course material. This can take up to a minute.</div>}
+      {creating && <div className="status-note">Generating a quiz from this section’s PDF. This can take up to a minute.</div>}
 
       {createError?.status === 409 && (
         <div className="info-note">
-          This course has no material yet. <Link to={`/course/${g.course_id}`}>Upload a PDF first</Link>, then come back to
-          create a quiz.
+          This section has no PDF yet. Upload one above, then create a quiz.
         </div>
       )}
       {createError && createError.status !== 409 && (
@@ -98,6 +145,48 @@ export default function SectionDetail() {
           </div>
         </div>
       )}
+
+      <div className="block">
+        <div className="block-header">
+          <div className="block-label">Section PDF</div>
+          <button type="button" className="btn btn-small" onClick={() => fileInputRef.current.click()} disabled={!!uploading}>
+            <UploadIcon />
+            {uploading ? 'Uploading…' : 'Upload PDF'}
+          </button>
+          <input ref={fileInputRef} type="file" accept="application/pdf" hidden onChange={handleUpload} />
+        </div>
+
+        {uploading && <div className="status-note">Reading “{uploading}”. This can take up to a minute.</div>}
+        {uploadError && <div className="error-note">{uploadError}</div>}
+        {materials.error && (
+          <div className="error-note">
+            {materials.error.message}
+            <div>
+              <button type="button" className="btn btn-small" onClick={materials.reload}>
+                Try again
+              </button>
+            </div>
+          </div>
+        )}
+
+        {pdfs.length > 0 && (
+          <div className="row-list">
+            {pdfs.map((m) => (
+              <div className="row" key={m.id}>
+                <DocIcon />
+                <span className="row-title">{m.source_filename}</span>
+                <span className="row-meta">{formatDate(m.created_at)}</span>
+                <button type="button" className="row-action" onClick={() => setPendingRemove(m)}>
+                  Remove
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+        {materials.data && pdfs.length === 0 && !uploading && (
+          <div className="empty-note">Upload this section’s slides or notes as a PDF. Every quiz in this section is written from it.</div>
+        )}
+      </div>
 
       <div className="block">
         <div className="block-header">
@@ -136,6 +225,20 @@ export default function SectionDetail() {
         )}
         {quizzes.data && list.length === 0 && <div className="empty-note">No quizzes yet. Press “New quiz” to generate the first one.</div>}
       </div>
+
+      <ConfirmDialog
+        open={!!pendingRemove}
+        title={pendingRemove ? `Remove “${pendingRemove.source_filename}”?` : ''}
+        busy={removing}
+        error={removeError}
+        onConfirm={confirmRemove}
+        onCancel={() => {
+          setPendingRemove(null);
+          setRemoveError('');
+        }}
+      >
+        This removes the PDF from this section. Quizzes already made stay, but new ones need another PDF.
+      </ConfirmDialog>
     </div>
   );
 }

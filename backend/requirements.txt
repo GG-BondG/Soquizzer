@@ -4,12 +4,6 @@ python-multipart>=0.0.9
 sqlalchemy>=2.0
 pydantic-settings>=2.4
 
-# RAG: LangChain handles loading, chunking and the vector store.
-langchain-core>=0.3
-langchain-text-splitters>=0.3
-langchain-chroma>=0.2
-langchain-google-genai>=2.0
-chromadb>=0.5
 pypdf>=4.0
 
 # Quiz generation calls the native Google GenAI SDK directly (no LangChain chain).

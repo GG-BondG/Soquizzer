@@ -3,7 +3,6 @@ import json
 
 import pytest
 from fastapi.testclient import TestClient
-from langchain_core.embeddings import DeterministicFakeEmbedding
 from pypdf import PdfReader, PdfWriter
 
 from app.config import Settings
@@ -140,35 +139,36 @@ def test_a_hundred_page_pdf_converts_in_well_under_a_second_without_any_model_ca
 def real_converter_client(tmp_path):
     settings = Settings(_env_file=None, data_dir=tmp_path / "data")
     ocr = FakeOcr()
-    app = create_app(settings, DeterministicFakeEmbedding(size=32), LocalPdfJsonConverter(ocr), FakeQuizGenerator(), ocr)
+    app = create_app(settings, LocalPdfJsonConverter(ocr), FakeQuizGenerator(), ocr)
     return TestClient(app), ocr
 
 
 def upload(client, content: bytes):
     course_id = client.post("/api/courses", json={"name": "Biology 101", "subject": "BIOLOGY"}).json()["id"]
-    return course_id, client.post(f"/api/courses/{course_id}/materials", files={"file": ("cells.pdf", content)})
+    section_id = client.post(f"/api/courses/{course_id}/sections", json={"name": "Chapter 1"}).json()["id"]
+    return section_id, client.post(f"/api/sections/{section_id}/materials", files={"file": ("cells.pdf", content)})
 
 
 def test_upload_stores_the_extracted_json_as_material(real_converter_client):
     client, ocr = real_converter_client
 
-    course_id, response = upload(client, make_pdf([f"Cells\n{LONG}"]))
+    section_id, response = upload(client, make_pdf([f"Cells\n{LONG}"]))
 
     assert response.status_code == 201
     content = response.json()["content"]
     assert content["page_count"] == 1
     assert content["pages"][0]["text"].startswith("Cells")
-    assert client.get(f"/api/courses/{course_id}/materials").json()[0]["content"] == content
+    assert client.get(f"/api/sections/{section_id}/materials").json()[0]["content"] == content
     assert ocr.calls == []
 
 
 def test_upload_of_an_unreadable_pdf_is_422_and_stores_nothing(real_converter_client):
     client, _ = real_converter_client
 
-    course_id, response = upload(client, b"%PDF-1.4 broken")
+    section_id, response = upload(client, b"%PDF-1.4 broken")
 
     assert response.status_code == 422
-    assert client.get(f"/api/courses/{course_id}/materials").json() == []
+    assert client.get(f"/api/sections/{section_id}/materials").json() == []
 
 
 def test_upload_of_a_scan_uses_ocr(real_converter_client):

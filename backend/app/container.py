@@ -1,13 +1,10 @@
-from langchain_core.embeddings import Embeddings
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
 from app.config import Settings
 from app.entity import Base, add_missing_columns
 from app.llm import GeminiQuizGenerator, PdfJsonConverter, QuizGenerator
-from app.rag import GeminiPageOcr, LocalPdfJsonConverter, PageOcr, build_embeddings
-from app.repository import ChunkRepository
-from app.storage import LocalStorage
+from app.rag import GeminiPageOcr, LocalPdfJsonConverter, PageOcr
 
 
 class Container:
@@ -16,7 +13,6 @@ class Container:
     def __init__(
         self,
         settings: Settings,
-        embeddings: Embeddings | None = None,
         pdf_converter: PdfJsonConverter | None = None,
         quiz_generator: QuizGenerator | None = None,
         ocr: PageOcr | None = None,
@@ -27,12 +23,6 @@ class Container:
         Base.metadata.create_all(self.engine)
         add_missing_columns(self.engine)
         self.session_factory = sessionmaker(self.engine, expire_on_commit=False)
-        self.storage = LocalStorage(settings.upload_dir)
-        self.chunks = ChunkRepository.create(
-            settings.chroma_collection,
-            settings.chroma_dir,
-            embeddings or build_embeddings(settings),
-        )
         self.ocr = ocr or (GeminiPageOcr(settings) if settings.ocr_enabled else None)
         self.pdf_converter = pdf_converter or LocalPdfJsonConverter(self.ocr)
         self.quiz_generator = quiz_generator or GeminiQuizGenerator(settings)

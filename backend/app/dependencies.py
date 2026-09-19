@@ -8,22 +8,16 @@ from app.repository import (
     AnswerRepository,
     AttemptRepository,
     CourseRepository,
-    CourseTextbookRepository,
     SectionRepository,
     MaterialRepository,
     QuizRepository,
-    TextbookRepository,
 )
 from app.service import (
     CourseService,
-    CourseTextbookService,
     SectionService,
     HistoryService,
-    IngestionService,
     MaterialService,
     QuizService,
-    TextbookContextService,
-    TextbookService,
 )
 
 
@@ -36,28 +30,6 @@ def get_session(container: Container = Depends(get_container)) -> Iterator[Sessi
         yield session
 
 
-def get_textbook_service(
-    container: Container = Depends(get_container),
-    session: Session = Depends(get_session),
-) -> TextbookService:
-    return TextbookService(
-        TextbookRepository(session),
-        container.chunks,
-        container.storage,
-        container.settings.max_upload_bytes,
-    )
-
-
-def get_ingestion_service(container: Container = Depends(get_container)) -> IngestionService:
-    return IngestionService(
-        container.session_factory,
-        container.chunks,
-        container.storage,
-        container.settings,
-        container.ocr,
-    )
-
-
 def get_course_service(session: Session = Depends(get_session)) -> CourseService:
     return CourseService(CourseRepository(session))
 
@@ -68,15 +40,9 @@ def get_material_service(
 ) -> MaterialService:
     return MaterialService(
         MaterialRepository(session),
-        CourseService(CourseRepository(session)),
+        SectionService(SectionRepository(session), CourseService(CourseRepository(session))),
         container.pdf_converter,
         container.settings.max_material_pdf_bytes,
-    )
-
-
-def get_course_textbook_service(session: Session = Depends(get_session)) -> CourseTextbookService:
-    return CourseTextbookService(
-        CourseTextbookRepository(session), TextbookRepository(session), CourseService(CourseRepository(session))
     )
 
 
@@ -97,9 +63,6 @@ def get_quiz_service(
         MaterialRepository(session),
         courses,
         SectionService(SectionRepository(session), courses),
-        TextbookContextService(
-            CourseTextbookRepository(session), container.chunks, settings.rag_top_k, settings.max_textbook_chars
-        ),
         container.quiz_generator,
         settings.questions_per_quiz,
         settings.mistake_review_limit,

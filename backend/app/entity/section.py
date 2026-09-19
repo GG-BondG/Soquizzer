@@ -9,6 +9,7 @@ from app.entity.base import Base, UtcDateTime
 from app.entity.course import Course
 
 if TYPE_CHECKING:
+    from app.entity.material import Material
     from app.entity.quiz import Quiz
 
 
@@ -23,6 +24,9 @@ class Section(Base):
     created_at: Mapped[datetime] = mapped_column(UtcDateTime, default=lambda: datetime.now(timezone.utc))
 
     course: Mapped[Course] = relationship(back_populates="sections")
+    materials: Mapped[list["Material"]] = relationship(
+        back_populates="section", cascade="all, delete-orphan", order_by="Material.created_at"
+    )
     quizzes: Mapped[list["Quiz"]] = relationship(
         back_populates="section", cascade="all, delete-orphan", order_by="Quiz.created_at.desc()"
     )

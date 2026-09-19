@@ -47,11 +47,34 @@ def test_quiz_list_has_summaries_without_questions(client):
     assert listed[1]["attempt_count"] == 0
 
 
-def test_generating_needs_course_material(client, quiz_generator):
+def test_generating_needs_a_pdf_in_the_section(client, quiz_generator):
     _, section_id = make_course_and_section(client, with_material=False)
 
     assert create_quiz(client, section_id).status_code == 409
     assert quiz_generator.calls == []
+
+
+def test_a_quiz_is_written_only_from_its_own_sections_pdf(client, quiz_generator):
+    course_id = make_course(client)
+    first = make_section(client, course_id, "Chapter 1")
+    second = make_section(client, course_id, "Chapter 2", with_material=False)
+    client.post(f"/api/sections/{second}/materials", files={"file": ("other.pdf", PDF)})
+
+    assert create_quiz(client, first).status_code == 201
+    assert create_quiz(client, second).status_code == 201
+
+    assert [title for title, _ in quiz_generator.calls[0]["materials"]] == ["cells.pdf"]
+    assert [title for title, _ in quiz_generator.calls[1]["materials"]] == ["other.pdf"]
+
+
+def test_the_next_quiz_is_told_which_questions_were_already_asked(client, quiz_generator):
+    _, section_id = make_course_and_section(client)
+    first = create_quiz(client, section_id).json()
+
+    create_quiz(client, section_id)
+
+    assert quiz_generator.calls[0]["earlier_stems"] == []
+    assert sorted(quiz_generator.calls[1]["earlier_stems"]) == sorted(q["stem"] for q in first["questions"])
 
 
 def test_material_too_large_for_one_prompt_is_rejected(client, settings, quiz_generator):

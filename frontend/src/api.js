@@ -118,35 +118,15 @@ export const api = {
     remove: (courseId) => request(`/api/courses/${id(courseId)}`, { method: 'DELETE' }),
     progress: (courseId) => request(`/api/courses/${id(courseId)}/progress`),
   },
+  // A section's PDF (turned into JSON by the backend). The section's quizzes are written from it.
   materials: {
-    list: (courseId) => request(`/api/courses/${id(courseId)}/materials`),
-    upload: (courseId, file) => {
+    list: (sectionId) => request(`/api/sections/${id(sectionId)}/materials`),
+    upload: (sectionId, file) => {
       const form = new FormData();
       form.append('file', file);
-      return request(`/api/courses/${id(courseId)}/materials`, { method: 'POST', form, timeout: LONG_TIMEOUT_MS });
+      return request(`/api/sections/${id(sectionId)}/materials`, { method: 'POST', form, timeout: LONG_TIMEOUT_MS });
     },
     remove: (materialId) => request(`/api/materials/${id(materialId)}`, { method: 'DELETE' }),
-  },
-  // Textbooks are attached to a course; quizzes for the course search the ones that are READY.
-  textbooks: {
-    list: (courseId) => request(`/api/courses/${id(courseId)}/textbooks`),
-    // Upload the file, then attach it to the course. A file uploaded before (409) is attached instead of re-uploaded.
-    upload: async (courseId, file) => {
-      const form = new FormData();
-      form.append('file', file);
-      let textbook;
-      try {
-        textbook = await request('/api/textbooks', { method: 'POST', form, timeout: LONG_TIMEOUT_MS });
-      } catch (err) {
-        const existing = err.status === 409 && /textbook ([\w-]+)/.exec(String(err.detail ?? ''));
-        if (!existing) throw err;
-        textbook = { id: existing[1] };
-      }
-      await request(`/api/courses/${id(courseId)}/textbooks/${id(textbook.id)}`, { method: 'PUT' });
-      return textbook;
-    },
-    detach: (courseId, textbookId) =>
-      request(`/api/courses/${id(courseId)}/textbooks/${id(textbookId)}`, { method: 'DELETE' }),
   },
   sections: {
     list: (courseId) => request(`/api/courses/${id(courseId)}/sections`),

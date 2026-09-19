@@ -3,7 +3,6 @@ from app.exception.errors import (
     AttemptNotFoundError,
     ConfigurationError,
     CourseNotFoundError,
-    DuplicateTextbookError,
     EmptyDocumentError,
     FileTooLargeError,
     SectionNotFoundError,
@@ -12,7 +11,6 @@ from app.exception.errors import (
     MaterialNotFoundError,
     NoMaterialError,
     QuizNotFoundError,
-    TextbookNotFoundError,
     UnsupportedFileTypeError,
 )
 from app.exception.handlers import register_exception_handlers
@@ -22,7 +20,6 @@ __all__ = [
     "AttemptNotFoundError",
     "ConfigurationError",
     "CourseNotFoundError",
-    "DuplicateTextbookError",
     "EmptyDocumentError",
     "FileTooLargeError",
     "SectionNotFoundError",
@@ -31,7 +28,6 @@ __all__ = [
     "MaterialNotFoundError",
     "NoMaterialError",
     "QuizNotFoundError",
-    "TextbookNotFoundError",
     "UnsupportedFileTypeError",
     "register_exception_handlers",
 ]
