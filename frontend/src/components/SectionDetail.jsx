@@ -2,6 +2,7 @@ import { useRef, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { api, friendlyError } from '../api.js';
 import { formatDate } from '../format.js';
+import { QUIZ_MODES } from '../quizModes.js';
 import { useApi } from '../useApi.js';
 import { usePet } from '../pet/PetProvider.jsx';
 import { BackIcon, ChevronIcon, DocIcon, UploadIcon } from './Icons.jsx';
@@ -24,22 +25,22 @@ export default function SectionDetail() {
   const [removing, setRemoving] = useState(false);
   const [removeError, setRemoveError] = useState('');
 
-  const [creating, setCreating] = useState(false);
-  const [createError, setCreateError] = useState(null); // { status, message }
+  const [creating, setCreating] = useState(null); // 'trivia' | 'mock' while that kind of quiz is being generated
+  const [createError, setCreateError] = useState(null); // { status, message, mode }
 
-  async function newQuiz() {
-    setCreating(true);
+  async function newQuiz(mode) {
+    setCreating(mode);
     setCreateError(null);
     pet.loading('Writing 20 questions for you… hang tight!');
     try {
-      const quiz = await api.quizzes.create(sectionId);
+      const quiz = await api.quizzes.create(sectionId, { type: QUIZ_MODES[mode].apiType });
       pet.success('Your quiz is ready. Good luck!');
       // the response already holds the questions, so hand them over instead of refetching
-      navigate(`/quiz/${quiz.id}`, { state: { quiz } });
+      navigate(`/quiz/${quiz.id}`, { state: { quiz, mode } });
     } catch (err) {
-      setCreateError({ status: err.status, message: err.message });
+      setCreateError({ status: err.status, message: err.message, mode });
       pet.error(err.status === 409 ? 'I need some material first.' : 'That did not work.');
-      setCreating(false);
+      setCreating(null);
     }
   }
 
@@ -115,18 +116,25 @@ export default function SectionDetail() {
           <span className="detail-code">{g.name}</span>
         </div>
         <div className="detail-actions">
-          <button
-            type="button"
-            className="btn btn-primary"
-            onClick={newQuiz}
-            disabled={creating || !!uploading || (materials.data && pdfs.length === 0)}
-          >
-            {creating ? 'Generating…' : 'New quiz'}
-          </button>
+          {Object.entries(QUIZ_MODES).map(([mode, config]) => (
+            <button
+              key={mode}
+              type="button"
+              className="btn btn-primary"
+              onClick={() => newQuiz(mode)}
+              disabled={!!creating || !!uploading || (materials.data && pdfs.length === 0)}
+            >
+              {creating === mode ? 'Generating…' : `New ${config.label}`}
+            </button>
+          ))}
         </div>
       </div>
 
-      {creating && <div className="status-note">Generating a quiz from this section’s PDF. This can take up to a minute.</div>}
+      {creating && (
+        <div className="status-note">
+          Generating a {QUIZ_MODES[creating].label} quiz from this section’s PDF. This can take up to a minute.
+        </div>
+      )}
 
       {createError?.status === 409 && (
         <div className="info-note">
@@ -139,7 +147,7 @@ export default function SectionDetail() {
             ? 'Generating the quiz failed. Nothing was saved, so it is safe to try again.'
             : createError.message}
           <div>
-            <button type="button" className="btn btn-small" onClick={newQuiz} disabled={creating}>
+            <button type="button" className="btn btn-small" onClick={() => newQuiz(createError.mode)} disabled={!!creating}>
               Try again
             </button>
           </div>
@@ -223,7 +231,7 @@ export default function SectionDetail() {
             ))}
           </div>
         )}
-        {quizzes.data && list.length === 0 && <div className="empty-note">No quizzes yet. Press “New quiz” to generate the first one.</div>}
+        {quizzes.data && list.length === 0 && <div className="empty-note">No quizzes yet. Press “New Trivia” or “New Mock Test” to generate the first one.</div>}
       </div>
 
       <ConfirmDialog
