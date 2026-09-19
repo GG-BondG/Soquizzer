@@ -3,7 +3,7 @@ import { Link, useNavigate, useParams } from 'react-router-dom';
 import { api, friendlyError } from '../api.js';
 import { formatDate } from '../format.js';
 import { useApi } from '../useApi.js';
-import { usePet } from '../pet/PetProvider.jsx';
+import { useAssistant } from '../pet/PetProvider.jsx';
 import { BackIcon, ChevronIcon, DocIcon, UploadIcon } from './Icons.jsx';
 import ConfirmDialog from './ConfirmDialog.jsx';
 import SectionProgress from './SectionProgress.jsx';
@@ -11,7 +11,7 @@ import SectionProgress from './SectionProgress.jsx';
 export default function SectionDetail() {
   const { sectionId } = useParams();
   const navigate = useNavigate();
-  const pet = usePet();
+  const assistant = useAssistant();
 
   const section = useApi(() => api.sections.get(sectionId), [sectionId]);
   const course = useApi(() => (section.data ? api.courses.get(section.data.course_id) : null), [section.data?.course_id]);
@@ -32,15 +32,15 @@ export default function SectionDetail() {
   async function newQuiz() {
     setCreating(true);
     setCreateError(null);
-    pet.loading('Writing 20 questions for you… hang tight!');
+    assistant.loading('Writing 20 questions for you… hang tight!');
     try {
       const quiz = await api.quizzes.create(sectionId);
-      pet.success('Your quiz is ready. Good luck!');
+      assistant.success('Your quiz is ready. Good luck!');
       // the response already holds the questions, so hand them over instead of refetching
       navigate(`/quiz/${quiz.id}`, { state: { quiz } });
     } catch (err) {
       setCreateError({ status: err.status, message: err.message });
-      pet.error(err.status === 409 ? 'I need some material first.' : 'That did not work.');
+      assistant.error(err.status === 409 ? 'I need some material first.' : 'That did not work.');
       setCreating(false);
     }
   }
@@ -51,14 +51,14 @@ export default function SectionDetail() {
     if (!file) return;
     setUploading(file.name);
     setUploadError('');
-    pet.loading('Reading your PDF… this can take a little while.');
+    assistant.loading('Reading your PDF… this can take a little while.');
     try {
       await api.materials.upload(sectionId, file);
-      pet.success('Got it! I read your PDF.');
+      assistant.success('Got it! I read your PDF.');
       materials.reload();
     } catch (err) {
       setUploadError(friendlyError(err, { 415: 'Only PDF files can be uploaded.', 413: 'That PDF is too large.' }));
-      pet.error('I could not read that file.');
+      assistant.error('I could not read that file.');
     } finally {
       setUploading(null);
     }

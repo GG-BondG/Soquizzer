@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { api } from '../api.js';
 import { QUIZ_MODES } from '../quizModes.js';
-import { usePet } from '../pet/PetProvider.jsx';
+import { useAssistant } from '../pet/PetProvider.jsx';
 import { ChevronIcon, ClipboardIcon, CloseIcon, LightbulbIcon } from './Icons.jsx';
 import FloatingWindow from './FloatingWindow.jsx';
 import './QuizModeBox.css';
@@ -14,7 +14,7 @@ export default function QuizModeBox({ mode, sections }) {
   const config = QUIZ_MODES[mode];
   const Icon = mode === 'trivia' ? LightbulbIcon : ClipboardIcon;
   const navigate = useNavigate();
-  const pet = usePet();
+  const assistant = useAssistant();
   const boxRef = useRef(null);
   const [open, setOpen] = useState(false);
   const [startingId, setStartingId] = useState(null); // section being generated for
@@ -51,15 +51,15 @@ export default function QuizModeBox({ mode, sections }) {
   async function start(section) {
     setStartingId(section.id);
     setError(null);
-    pet.loading('Writing 20 questions for you… hang tight!');
+    assistant.loading('Writing 20 questions for you… hang tight!');
     try {
       const quiz = await api.quizzes.create(section.id, { type: config.apiType });
-      pet.success('Your quiz is ready. Good luck!');
+      assistant.success('Your quiz is ready. Good luck!');
       // the response already holds the questions, so hand them over instead of refetching
       navigate(`/quiz/${quiz.id}`, { state: { quiz, mode } });
     } catch (err) {
       setError({ status: err.status, message: err.message });
-      pet.error(err.status === 409 ? 'That section needs a PDF first.' : 'That did not work.');
+      assistant.error(err.status === 409 ? 'That section needs a PDF first.' : 'That did not work.');
       setStartingId(null);
     }
   }

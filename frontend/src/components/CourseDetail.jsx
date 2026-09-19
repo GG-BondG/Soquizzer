@@ -3,7 +3,7 @@ import { Link, useNavigate, useParams } from 'react-router-dom';
 import { api, friendlyError, subjectLabel } from '../api.js';
 import { formatDate } from '../format.js';
 import { useApi } from '../useApi.js';
-import { usePet } from '../pet/PetProvider.jsx';
+import { useAssistant } from '../pet/PetProvider.jsx';
 import { BackIcon, ChevronIcon, CloseIcon, DocIcon, PlusIcon, UploadIcon } from './Icons.jsx';
 import ConfirmDialog from './ConfirmDialog.jsx';
 import FloatingWindow from './FloatingWindow.jsx';
@@ -23,7 +23,7 @@ const DELETE_COPY = {
 export default function CourseDetail() {
   const { courseId } = useParams();
   const navigate = useNavigate();
-  const pet = usePet();
+  const assistant = useAssistant();
 
   const course = useApi(() => api.courses.get(courseId), [courseId]);
   const sections = useApi(() => api.sections.list(courseId), [courseId]);
@@ -74,7 +74,7 @@ export default function CourseDetail() {
       for (let i = 0; i < sectionFiles.length; i++) {
         const file = sectionFiles[i];
         setSectionProgress(`Reading “${file.name}” (${i + 1} of ${sectionFiles.length})…`);
-        pet.loading('Reading your PDFs… this can take a little while.');
+        assistant.loading('Reading your PDFs… this can take a little while.');
         try {
           await api.materials.upload(section.id, file);
           readCount++;
@@ -91,7 +91,7 @@ export default function CourseDetail() {
         sections.reload();
         setSectionFiles(failed.map((f) => f.file));
         setSectionError(`None of the files could be read, so the section was not created: ${failureText}`);
-        pet.error('I could not read those files.');
+        assistant.error('I could not read those files.');
         return;
       }
 
@@ -102,14 +102,14 @@ export default function CourseDetail() {
         setSectionError(
           `The section was created, but ${failed.length === 1 ? '1 file' : `${failed.length} files`} could not be read: ${failureText}`
         );
-        pet.error('Some files did not work.');
+        assistant.error('Some files did not work.');
         return;
       }
-      pet.success('Section added, and I read your materials!');
+      assistant.success('Section added, and I read your materials!');
       setSectionOpen(false);
     } catch (err) {
       setSectionError(err.message);
-      pet.error('That did not work.');
+      assistant.error('That did not work.');
     } finally {
       setSectionBusy(false);
       setSectionProgress('');
@@ -123,7 +123,7 @@ export default function CourseDetail() {
     try {
       if (target.kind === 'course') {
         await api.courses.remove(target.id);
-        pet.success('Course deleted.');
+        assistant.success('Course deleted.');
         navigate('/');
         return;
       }

@@ -68,7 +68,7 @@ describe('QuizPage wired to the real pet', () => {
     fireEvent.click(screen.getByTestId('pet-button'));
     await settle();
 
-    fireEvent.change(screen.getByPlaceholderText('Ask your pet...'), { target: { value: 'hi' } });
+    fireEvent.change(screen.getByPlaceholderText('Ask your assistant...'), { target: { value: 'hi' } });
     await settle();
     const settled = petRenders.count;
     await settle();
@@ -80,7 +80,7 @@ describe('QuizPage wired to the real pet', () => {
     chatAsk.mockResolvedValue({ reply: 'Think about what makes energy.' });
     renderQuiz();
     fireEvent.click(screen.getByTestId('pet-button'));
-    fireEvent.change(screen.getByPlaceholderText('Ask your pet...'), { target: { value: 'Help?' } });
+    fireEvent.change(screen.getByPlaceholderText('Ask your assistant...'), { target: { value: 'Help?' } });
 
     fireEvent.click(screen.getByText('Send'));
 
