@@ -56,9 +56,12 @@ overwrites from 4 people editing `main` at the same time.
 ## 项目结构 / Project Structure
 
 - `backend/` — Java (Spring) 后端服务 / Java (Spring) backend service
-- `src/`, `main.py`, `requirements.txt` — Gemini API IO 模块的 Python
-  最小示例（详见根目录 README）。/ Python minimal example for the Gemini
-  API IO module (see the root README for details).
+- `src/`, `index.html`, `package.json` — 前端 (Vite) / frontend (Vite)
+- `gemini-service/` — Gemini API IO 模块的 Python 最小示例，独立成自己的
+  目录，避免跟前端根目录下的 `src/` 撞名（详见根目录 README）。/ Python
+  minimal example for the Gemini API IO module, kept in its own directory
+  to avoid clashing with the frontend's root-level `src/` (see the root
+  README for details).
 
 如果 Python 的 Gemini 模块之后要和 Java 后端集成，建议在 PR 里讨论清楚
 调用方式（比如 Python 起一个独立服务被 Java 调用，还是把逻辑用 Java 重写），

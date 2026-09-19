@@ -13,9 +13,15 @@ questions and answers). The repo currently contains only a minimal,
 runnable call example — "parse course material", "generate questions",
 etc. will be built on top of this foundation.
 
+Gemini 模块单独放在 `gemini-service/` 目录下，避免跟前端的根目录 `src/`
+撞名。/ The Gemini module lives in its own `gemini-service/` directory to
+avoid clashing with the frontend's root-level `src/`.
+
 ### 环境准备 / Setup
 
 ```bash
+cd gemini-service
+
 # 1. 安装依赖 / Install dependencies
 pip install -r requirements.txt
 
@@ -37,11 +43,13 @@ If you see text returned from Gemini, the call path is working end to end.
 
 ```
 Soquizzer/
-├── main.py               # 最小烟雾测试脚本 / minimal smoke-test script
-├── src/
-│   └── gemini_client.py  # Gemini API 最小封装 / minimal Gemini API wrapper
-├── requirements.txt       # Python 依赖 / Python dependencies
-└── .env.example           # 环境变量模板 / env var template
+├── backend/               # Java (Spring) 后端 / Java (Spring) backend
+├── src/, index.html, ...  # 前端 (Vite) / frontend (Vite)
+└── gemini-service/        # Gemini API IO 模块 / Gemini API IO module
+    ├── main.py            # 最小烟雾测试脚本 / minimal smoke-test script
+    ├── gemini_client.py   # Gemini API 最小封装 / minimal Gemini API wrapper
+    ├── requirements.txt   # Python 依赖 / Python dependencies
+    └── .env.example       # 环境变量模板 / env var template
 ```
 
 **注意 / Note:** 千万不要把 `.env` 文件提交到 git 里，里面是你自己的私密
