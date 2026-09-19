@@ -1,0 +1,119 @@
+:root {
+  --bg: #f6f4ee;
+  --surface: #ffffff;
+  --text: #1c1b17;
+  --text-2: #6e6b60;
+  --text-3: #a39e8e;
+  --border: rgba(28, 27, 23, 0.14);
+  --border-strong: rgba(28, 27, 23, 0.3);
+
+  --accent: #34523b;
+  --accent-tint: rgba(52, 82, 59, 0.08);
+
+  --good: #3f6b4c;
+
+  --trivia: #c98a2c;
+  --trivia-tint: rgba(201, 138, 44, 0.08);
+  --trivia-border: rgba(201, 138, 44, 0.35);
+
+  --exam: #8b3a3a;
+  --exam-tint: rgba(139, 58, 58, 0.08);
+  --exam-border: rgba(139, 58, 58, 0.35);
+
+  --serif: 'Source Serif 4', Georgia, 'Times New Roman', serif;
+  --sans: 'IBM Plex Sans', system-ui, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  --mono: 'IBM Plex Mono', 'SF Mono', Monaco, 'Courier New', monospace;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--sans);
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+button {
+  font-family: var(--sans);
+}
+
+/* ---- shared building blocks ---- */
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  height: 44px;
+  padding: 0 20px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--text);
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+
+.btn:hover {
+  border-color: var(--border-strong);
+  background: rgba(28, 27, 23, 0.03);
+}
+
+.btn-primary {
+  border: none;
+  background: var(--accent);
+  color: #faf9f5;
+  font-weight: 600;
+}
+
+.btn-primary:hover {
+  background: #2b4330;
+  border: none;
+}
+
+.pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border-radius: 20px;
+  border: 1px solid var(--border);
+  font-size: 12px;
+  color: var(--text-2);
+}
+
+.back-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-2);
+  transition: color 0.15s ease;
+}
+
+.back-link:hover {
+  color: var(--text);
+}
+
+.page {
+  min-height: 100%;
+  padding: 56px 64px;
+  display: flex;
+  flex-direction: column;
+}

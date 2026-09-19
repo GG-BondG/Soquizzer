@@ -7,15 +7,23 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "start": "electron ."
+    "start": "electron .",
+    "desktop": "concurrently \"npm run dev\" \"wait-on http://localhost:5173 && npx electron .\""
   },
   "devDependencies": {
+    "concurrently": "^10.0.5",
+    "electron": "file:...",
     "vite": "^8.3.0",
-    "electron": "..."
+    "wait-on": "^9.1.0"
   },
   "description": "",
-  "main": "main.cjs",
+  "main": "electron/main.cjs",
   "keywords": [],
   "author": "",
-  "license": "ISC"
+  "license": "ISC",
+  "dependencies": {
+    "react": "^19.3.0",
+    "react-dom": "^19.3.0",
+    "react-router-dom": "^7.18.4"
+  }
 }

@@ -1,0 +1,159 @@
+/* ---- the growing floating window, and the form styles used inside it ---- */
+
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 29;
+  background: rgba(28, 27, 23, 0.4);
+  opacity: 0;
+  transition: opacity 0.42s ease;
+}
+
+.modal-backdrop.is-open {
+  opacity: 1;
+}
+
+.floating-window {
+  position: fixed;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  overflow: hidden;
+  box-sizing: border-box;
+  z-index: 30;
+  box-shadow: none;
+  transition: top 0.42s cubic-bezier(0.4, 0, 0.2, 1), left 0.42s cubic-bezier(0.4, 0, 0.2, 1),
+    width 0.42s cubic-bezier(0.4, 0, 0.2, 1), height 0.42s cubic-bezier(0.4, 0, 0.2, 1),
+    border-radius 0.42s ease, box-shadow 0.42s ease;
+}
+
+.floating-window.is-open {
+  box-shadow: 0 32px 80px rgba(20, 20, 19, 0.22);
+}
+
+.panel-face {
+  position: absolute;
+  inset: 0;
+}
+
+.panel-face-collapsed {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 1;
+  transition: opacity 0.15s ease;
+}
+
+.panel-face-collapsed.is-hidden {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.collapsed-content {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  color: var(--text-3);
+}
+
+.panel-face-form {
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.28s ease;
+}
+
+.panel-face-form.is-visible {
+  opacity: 1;
+  pointer-events: auto;
+  transition-delay: 0.16s;
+}
+
+.form-inner {
+  padding: 40px 48px;
+  height: 100%;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  overflow: auto;
+}
+
+.form-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.form-title {
+  font-family: var(--serif);
+  font-size: 32px;
+  font-weight: 600;
+}
+
+.form-fields {
+  margin-top: 32px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.field-label {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-2);
+}
+
+.field input {
+  height: 44px;
+  padding: 0 14px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  font-size: 15px;
+  color: var(--text);
+  outline: none;
+  font-family: var(--sans);
+}
+
+.field input:focus {
+  border-color: var(--accent);
+}
+
+.file-drop {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 44px;
+  padding: 0 14px;
+  border-radius: 8px;
+  border: 1px dashed var(--border-strong);
+  color: var(--text-3);
+  font-size: 14px;
+}
+
+.file-drop-cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--accent);
+  font-weight: 500;
+}
+
+.form-footer {
+  margin-top: auto;
+  padding-top: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.form-error {
+  font-size: 13px;
+  color: var(--exam);
+}
