@@ -22,6 +22,8 @@ class Settings(BaseSettings):
     ocr_pages_per_request: int = 10
     ocr_max_pages: int = 300
     max_material_chars: int = 400_000  # all of a course's material JSON goes into one quiz prompt
+    rag_top_k: int = 8  # textbook chunks fetched per search when a quiz is written
+    max_textbook_chars: int = 30_000  # cap on all textbook excerpts put into one quiz prompt
     mistake_review_limit: int = 20
     questions_per_quiz: int = 20
     quiz_language: str = "English"  # the language Gemini writes quizzes in, whatever language the material is in

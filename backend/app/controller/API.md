@@ -25,7 +25,7 @@ Base URL: `http://localhost:8000`.
 |---|---|
 | 200 / 201 / 204 | OK / created / deleted (no body) |
 | 404 | The course, section, quiz, material or attempt does not exist |
-| 409 | The course has no material yet, so no quiz can be made |
+| 409 | The course has no material and no ready textbook yet, so no quiz can be made |
 | 413 | The PDF is too large (over 20 MB), or the course's material is too long |
 | 415 | The uploaded file is not a PDF |
 | 422 | Invalid input (empty name, option index out of range, the same question answered twice, ...) |
@@ -129,7 +129,7 @@ In the response, `content` is JSON whose structure Gemini decided by itself, so 
 
 | Method | Path | Description |
 |---|---|---|
-| POST | `/api/sections/{section_id}/quizzes` | Create the section's next quiz. **The response is the 20 questions**, and no parameters are needed. Returns 201. **Slow endpoint.** Returns 409 if the course has no material |
+| POST | `/api/sections/{section_id}/quizzes` | Create the section's next quiz. **The response is the 20 questions**, and no parameters are needed. Returns 201. **Slow endpoint.** Returns 409 if the course has no material and no ready textbook |
 | GET | `/api/sections/{section_id}/quizzes` | The section's quizzes (without questions), newest first |
 | GET | `/api/quizzes/{quiz_id}` | One quiz with all its questions |
 | DELETE | `/api/quizzes/{quiz_id}` | Delete a quiz **and** its attempts. Returns 204 |
@@ -279,6 +279,26 @@ For questions the student left unanswered, `selected_index` and `is_correct` are
 
 ---
 
-## Not needed by the frontend yet
+## Textbooks
 
-`/api/textbooks` (textbook chunks and a vector store) is not used by quiz generation, so the frontend can ignore it for now.
+A textbook is a big reference PDF or text file (`.pdf`, `.txt`, `.md`). It is split into chunks and stored for search in the background; a scanned PDF is read with OCR. Once a textbook is **attached to a course**, that course's quizzes are written from the passages closest to the section (and to the student's open mistakes), in addition to the uploaded material.
+
+| Method | Path | Description |
+|---|---|---|
+| POST | `/api/textbooks` | Upload (multipart `file`). Returns 202 with `status: "PROCESSING"`; a duplicate file is 409 |
+| GET | `/api/textbooks/{textbook_id}` | Poll it until `status` is `READY` (or `FAILED`, with `error`). OCR of a long scan can take minutes |
+| GET | `/api/textbooks` | All textbooks, newest first |
+| DELETE | `/api/textbooks/{textbook_id}` | Delete the textbook, its chunks and its course links. Returns 204 |
+| PUT | `/api/courses/{course_id}/textbooks/{textbook_id}` | Attach it to the course (repeating it is fine). Returns 204 |
+| DELETE | `/api/courses/{course_id}/textbooks/{textbook_id}` | Detach it. Returns 204 |
+| GET | `/api/courses/{course_id}/textbooks` | The course's attached textbooks, in the order they were attached |
+
+```json
+{
+  "id": "4f3a6c1e-...", "original_name": "biology-textbook.pdf", "size_bytes": 4821337,
+  "sha256": "9b2f...", "status": "READY", "chunk_count": 812, "error": null,
+  "created_at": "2026-09-19T15:01:15.328228Z"
+}
+```
+
+Only `READY` textbooks are used for quizzes, so attaching one that is still `PROCESSING` is fine: it starts to count once it is ready. A course needs uploaded material, a ready textbook, or both; with neither, `POST /api/sections/{id}/quizzes` returns 409.

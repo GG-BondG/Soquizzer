@@ -13,7 +13,9 @@ from app.llm import PastMistake, QuizGenerator, TypeAccuracy
 from app.repository import AnswerRepository, AttemptRepository, MaterialRepository, QuizRepository
 from app.service.course_service import CourseService
 from app.service.section_service import SectionService
+from app.service.textbook_context_service import TextbookContextService
 
+_MISTAKE_SEARCHES = 3  # past mistakes whose stems are also used as textbook search queries
 _REREAD_SCAN_LIMIT = 200  # how many still-wrong questions are grouped into reread suggestions
 _REREAD_EXCERPTS = 3  # passages listed per suggestion
 _REREAD_SUGGESTIONS = 10
@@ -49,6 +51,7 @@ class QuizService:
         materials: MaterialRepository,
         courses: CourseService,
         sections: SectionService,
+        context: TextbookContextService,
         generator: QuizGenerator,
         questions_per_quiz: int,
         mistake_review_limit: int,
@@ -60,6 +63,7 @@ class QuizService:
         self._materials = materials
         self._courses = courses
         self._sections = sections
+        self._context = context
         self._generator = generator
         self._questions_per_quiz = questions_per_quiz
         self._mistake_review_limit = mistake_review_limit
@@ -70,8 +74,11 @@ class QuizService:
         this method's business: the mistakes still open in this section are re-read and handed to Gemini."""
         section = self._sections.get(section_id)
         materials = [(m.source_filename, m.content) for m in self._materials.list_by_course(section.course_id)]
-        if not materials:
-            raise NoMaterialError("Upload course material before generating a quiz")
+        textbooks = self._context.ready_textbooks(section.course_id)
+        if not materials and not textbooks:
+            raise NoMaterialError(
+                "Upload course material, or attach a textbook that has finished processing, before generating a quiz"
+            )
         if sum(len(content) for _, content in materials) > self._max_material_chars:
             raise FileTooLargeError("The course material is too large to fit in one quiz prompt")
 
@@ -82,7 +89,12 @@ class QuizService:
         accuracy = [
             TypeAccuracy(kind, total, correct) for kind, total, correct in self._answers.stats_by_type(section_id=section.id)
         ]
-        generated = self._generator.generate(materials, mistakes, accuracy, self._questions_per_quiz)
+        # The textbook passages closest to this section, and to what the student keeps getting wrong.
+        queries = [f"{section.course.name}: {section.name}", *(m.stem for m in mistakes[:_MISTAKE_SEARCHES])]
+        excerpts = self._context.excerpts(textbooks, queries, required=not materials)
+        if not materials and not excerpts:
+            raise NoMaterialError("The attached textbooks have no text to write a quiz from")
+        generated = self._generator.generate(materials + excerpts, mistakes, accuracy, self._questions_per_quiz)
 
         questions = [
             Question(

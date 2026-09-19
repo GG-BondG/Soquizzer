@@ -2,10 +2,15 @@ import enum
 import uuid
 from datetime import datetime, timezone
 
+from typing import TYPE_CHECKING
+
 from sqlalchemy import String
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.entity.base import Base, UtcDateTime
+
+if TYPE_CHECKING:
+    from app.entity.course_textbook import CourseTextbook
 
 
 class TextbookStatus(str, enum.Enum):
@@ -26,3 +31,5 @@ class Textbook(Base):
     chunk_count: Mapped[int] = mapped_column(default=0)
     error: Mapped[str | None] = mapped_column(String(500), default=None)
     created_at: Mapped[datetime] = mapped_column(UtcDateTime, default=lambda: datetime.now(timezone.utc))
+
+    course_links: Mapped[list["CourseTextbook"]] = relationship(cascade="all, delete-orphan")
