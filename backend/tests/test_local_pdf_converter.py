@@ -9,7 +9,7 @@ from app.config import Settings
 from app.exception import EmptyDocumentError, LlmError
 from app.main import create_app
 from app.rag import LocalPdfJsonConverter
-from tests.conftest import FakeOcr, FakeQuizGenerator, make_blank_pdf, make_pdf
+from tests.conftest import FakeOcr, FakePetTutor, FakeQuizGenerator, make_blank_pdf, make_pdf
 
 LONG = "This sentence is long enough to count as a real text layer."
 
@@ -139,7 +139,7 @@ def test_a_hundred_page_pdf_converts_in_well_under_a_second_without_any_model_ca
 def real_converter_client(tmp_path):
     settings = Settings(_env_file=None, data_dir=tmp_path / "data")
     ocr = FakeOcr()
-    app = create_app(settings, LocalPdfJsonConverter(ocr), FakeQuizGenerator(), ocr)
+    app = create_app(settings, LocalPdfJsonConverter(ocr), FakeQuizGenerator(), ocr, FakePetTutor())
     return TestClient(app), ocr
 
 

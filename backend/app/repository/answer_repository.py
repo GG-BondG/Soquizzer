@@ -16,6 +16,11 @@ class AnswerRepository:
     def __init__(self, session: Session):
         self._session = session
 
+    def history_for_question(self, question_id: str) -> list[Answer]:
+        """Every past answer to this exact question (e.g. from earlier attempts at the same quiz), oldest first."""
+        query = select(Answer).where(Answer.question_id == question_id).order_by(Answer.answered_at)
+        return list(self._session.scalars(query))
+
     def still_wrong(
         self, limit: int, *, section_id: str | None = None, course_id: str | None = None
     ) -> list[tuple[Question, Answer]]:

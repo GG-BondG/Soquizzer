@@ -3,9 +3,9 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.config import Settings
 from app.container import Container
-from app.controller import course_router, section_router, history_router, material_router, quiz_router
+from app.controller import chat_router, course_router, section_router, history_router, material_router, quiz_router
 from app.exception import register_exception_handlers
-from app.llm import PdfJsonConverter, QuizGenerator
+from app.llm import PdfJsonConverter, PetTutor, QuizGenerator
 from app.rag import PageOcr
 
 
@@ -14,9 +14,10 @@ def create_app(
     pdf_converter: PdfJsonConverter | None = None,
     quiz_generator: QuizGenerator | None = None,
     ocr: PageOcr | None = None,
+    pet_tutor: PetTutor | None = None,
 ) -> FastAPI:
     app = FastAPI(title="Soquizzer")
-    container = Container(settings or Settings(), pdf_converter, quiz_generator, ocr)
+    container = Container(settings or Settings(), pdf_converter, quiz_generator, ocr, pet_tutor)
     app.state.container = container
     app.add_middleware(
         CORSMiddleware,
@@ -30,4 +31,5 @@ def create_app(
     app.include_router(material_router)
     app.include_router(quiz_router)
     app.include_router(history_router)
+    app.include_router(chat_router)
     return app

@@ -24,14 +24,14 @@ Base URL: `http://localhost:8000`.
 | Status | Meaning |
 |---|---|
 | 200 / 201 / 204 | OK / created / deleted (no body) |
-| 404 | The course, section, quiz, material or attempt does not exist |
+| 404 | The course, section, quiz, question, material or attempt does not exist |
 | 409 | The section has no PDF yet, so no quiz can be made |
 | 413 | The PDF is too large (over 20 MB), or the section's PDF text is too long |
 | 415 | The uploaded file is not a PDF |
 | 422 | Invalid input (empty name, option index out of range, the same question answered twice, ...), or a PDF that is corrupted, password-protected or has no readable text |
 | 502 | Gemini failed or returned something invalid. Nothing was saved; retrying is fine |
 
-**Slow endpoints:** `POST .../quizzes` (Gemini writes the questions) takes from a few seconds to tens of seconds. `POST .../materials` is normally fast (the PDF's text is read locally), but a scanned PDF is read by Gemini (OCR) and can take that long too. Show a loading state and set the request timeout to at least 120 seconds.
+**Slow endpoints:** `POST .../quizzes` (Gemini writes the questions) takes from a few seconds to tens of seconds. `POST .../materials` is normally fast (the PDF's text is read locally), but a scanned PDF is read by Gemini (OCR) and can take that long too. `POST .../chat` (the pet tutor) is also a Gemini call, usually a few seconds. Show a loading state and set the request timeout to at least 120 seconds.
 
 **Language:** quizzes (questions, options, explanations) are written in English by default, whatever language the material is in. The backend setting `QUIZ_LANGUAGE` changes that. The frontend does not need to do anything.
 
@@ -194,6 +194,39 @@ Response:
 ```
 
 `score` is the number of correct answers and `total` is the number of questions in the quiz. `answer_index` is the index of the correct option and `explanation` says why. `anchor_section` and `source_excerpt` say where in the course material the question came from (a heading or page, and a short passage), so the UI can offer "re-read this". Like the answer, they only come back after submitting. Both are `""` for quizzes made before this existed.
+
+## Chat (pet tutor)
+
+| Method | Path | Description |
+|---|---|---|
+| POST | `/api/quizzes/{quiz_id}/questions/{question_id}/chat` | Ask the pet about one question while the quiz is still unsubmitted. **Slow endpoint** (calls Gemini) |
+
+**Stateless**: nothing about the conversation is kept on the server between requests. The frontend keeps the transcript client-side (per question) and resends the whole thing as `history` on every call.
+
+Request:
+
+```json
+{
+  "message": "Why isn't it the nucleus?",
+  "history": [
+    { "role": "student", "text": "I don't get this one" },
+    { "role": "pet", "text": "What does each organelle in the options actually do?" }
+  ]
+}
+```
+
+- `message` is the student's new message (required, 1-2000 chars).
+- `history` is the conversation so far, oldest first, `role` is `"student"` or `"pet"` (optional, defaults to empty — the student's first message about this question).
+
+Response:
+
+```json
+{ "reply": "Good question — the nucleus stores DNA, but does it actually make energy for the cell?" }
+```
+
+Returns 404 if the quiz or the question (within that quiz) does not exist.
+
+**Tutoring style:** the pet defaults to Socratic hints and does not say which option is correct unless the student explicitly insists, gives up, or has already picked that option themselves earlier in the conversation — it never just states the answer up front, even though (unlike the submission response) it does have access to `answer_index`/`explanation` internally to reason with. The prompt also gets this student's own past attempts at this exact question and their broader accuracy/mistakes in the section, so the pet's hints can be personalized.
 
 ## History
 
