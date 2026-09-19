@@ -4,7 +4,7 @@ from langchain_core.embeddings import Embeddings
 
 from app.config import Settings
 from app.container import Container
-from app.controller import course_router, group_router, history_router, material_router, quiz_router, textbook_router
+from app.controller import course_router, section_router, history_router, material_router, quiz_router, textbook_router
 from app.exception import register_exception_handlers
 from app.llm import PdfJsonConverter, QuizGenerator
 
@@ -27,7 +27,7 @@ def create_app(
     register_exception_handlers(app)
     app.include_router(textbook_router)
     app.include_router(course_router)
-    app.include_router(group_router)
+    app.include_router(section_router)
     app.include_router(material_router)
     app.include_router(quiz_router)
     app.include_router(history_router)

@@ -10,17 +10,17 @@ def make_course(client, with_material=True, name="Biology 101") -> str:
     return course_id
 
 
-def make_group(client, course_id, name="Chapter 1") -> str:
-    return client.post(f"/api/courses/{course_id}/groups", json={"name": name}).json()["id"]
+def make_section(client, course_id, name="Chapter 1") -> str:
+    return client.post(f"/api/courses/{course_id}/sections", json={"name": name}).json()["id"]
 
 
-def make_course_and_group(client, with_material=True):
+def make_course_and_section(client, with_material=True):
     course_id = make_course(client, with_material)
-    return course_id, make_group(client, course_id)
+    return course_id, make_section(client, course_id)
 
 
-def create_quiz(client, group_id):
-    return client.post(f"/api/groups/{group_id}/quizzes")
+def create_quiz(client, section_id):
+    return client.post(f"/api/sections/{section_id}/quizzes")
 
 
 def picks(quiz, correct_ids=(), only=None, **extra):

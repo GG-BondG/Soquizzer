@@ -6,7 +6,7 @@ from sqlalchemy import ForeignKey, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.entity.base import Base, UtcDateTime
-from app.entity.group import QuizGroup
+from app.entity.section import Section
 
 if TYPE_CHECKING:
     from app.entity.attempt import Attempt
@@ -14,15 +14,15 @@ if TYPE_CHECKING:
 
 
 class Quiz(Base):
-    """One round in a group: the questions Gemini wrote for it, and every attempt at them."""
+    """One round in a section: the questions Gemini wrote for it, and every attempt at them."""
 
     __tablename__ = "quizzes"
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
-    group_id: Mapped[str] = mapped_column(ForeignKey("quiz_groups.id"), index=True)
+    section_id: Mapped[str] = mapped_column(ForeignKey("sections.id"), index=True)
     created_at: Mapped[datetime] = mapped_column(UtcDateTime, default=lambda: datetime.now(timezone.utc))
 
-    group: Mapped[QuizGroup] = relationship(back_populates="quizzes")
+    section: Mapped[Section] = relationship(back_populates="quizzes")
     questions: Mapped[list["Question"]] = relationship(
         back_populates="quiz", cascade="all, delete-orphan", order_by="Question.position"
     )

@@ -1,7 +1,7 @@
 from app.dto.course_request import CourseCreateRequest
 from app.dto.course_response import CourseResponse
-from app.dto.group_request import GroupCreateRequest
-from app.dto.group_response import GroupResponse
+from app.dto.section_request import SectionCreateRequest
+from app.dto.section_response import SectionResponse
 from app.dto.history_response import (
     AttemptDetail,
     AttemptQuestion,
@@ -23,8 +23,8 @@ __all__ = [
     "AttemptSummary",
     "CourseCreateRequest",
     "CourseResponse",
-    "GroupCreateRequest",
-    "GroupResponse",
+    "SectionCreateRequest",
+    "SectionResponse",
     "HistoryResponse",
     "HistorySummary",
     "MaterialResponse",

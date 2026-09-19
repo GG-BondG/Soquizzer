@@ -24,7 +24,7 @@ uvicorn app.main:create_app --factory --reload
 | 状态码 | 含义 |
 |---|---|
 | 200 / 201 / 204 | 成功 / 创建成功 / 删除成功(无响应体) |
-| 404 | 课程、分组、quiz、教材、作答记录不存在 |
+| 404 | 课程、章节、quiz、教材、作答记录不存在 |
 | 409 | 这门课还没有上传教材,不能出题 |
 | 413 | PDF 太大(超过 20 MB),或这门课的教材内容太长 |
 | 415 | 上传的不是 PDF |
@@ -38,8 +38,8 @@ uvicorn app.main:create_app --factory --reload
 ```
 Course(课程)
 ├── Material(教材,上传的 PDF)
-└── Group(分组,也就是课程里的 section)
-    └── Quiz(分组里一次次的测验,每个 20 道题)
+└── Section(章节)
+    └── Quiz(章节里一次次的测验,每个 20 道题)
         └── Attempt(每次提交答案,记录得分和用时)
 ```
 
@@ -47,12 +47,12 @@ Course(课程)
 
 1. `POST /api/courses` 创建课程
 2. `POST /api/courses/{id}/materials` 上传这门课的教材 PDF(出题需要它)
-3. `POST /api/courses/{id}/groups` 创建分组
-4. `POST /api/groups/{id}/quizzes` 创建 quiz,响应里直接是 20 道题
+3. `POST /api/courses/{id}/sections` 创建章节
+4. `POST /api/sections/{id}/quizzes` 创建 quiz,响应里直接是 20 道题
 5. 用户做题,前端计时,然后 `POST /api/quizzes/{id}/submissions` 提交,响应里有对错、正确答案和解析
 6. `GET /api/history` 看历史记录、正确率和用时
 
-再点一次"创建 quiz",就是这个分组的下一份测验。后端会自己参考用户之前答错的题,**前端不需要传任何参数,也不用关心这件事**。
+再点一次"创建 quiz",就是这个章节的下一份测验。后端会自己参考用户之前答错的题,**前端不需要传任何参数,也不用关心这件事**。
 
 ---
 
@@ -65,7 +65,7 @@ Course(课程)
 | POST | `/api/courses` | 创建课程,body `{"name": "Biology 101", "subject": "BIOLOGY"}`,`name` 1~100 字,首尾空格会去掉。返回 201 |
 | GET | `/api/courses` | 课程列表,新的在前 |
 | GET | `/api/courses/{course_id}` | 单个课程 |
-| DELETE | `/api/courses/{course_id}` | 删除课程,**同时删除**它的教材、分组、quiz 和作答记录。返回 204 |
+| DELETE | `/api/courses/{course_id}` | 删除课程,**同时删除**它的教材、章节、quiz 和作答记录。返回 204 |
 
 ```json
 {
@@ -76,14 +76,14 @@ Course(课程)
 }
 ```
 
-## 分组 Group
+## 章节 Section
 
 | 方法 | 路径 | 说明 |
 |---|---|---|
-| POST | `/api/courses/{course_id}/groups` | 在课程下创建分组,body `{"name": "Chapter 1"}`,`name` 1~100 字。返回 201 |
-| GET | `/api/courses/{course_id}/groups` | 课程下的分组,按创建时间从早到晚 |
-| GET | `/api/groups/{group_id}` | 单个分组 |
-| DELETE | `/api/groups/{group_id}` | 删除分组,**同时删除**它的 quiz 和作答记录。返回 204 |
+| POST | `/api/courses/{course_id}/sections` | 在课程下创建章节,body `{"name": "Chapter 1"}`,`name` 1~100 字。返回 201 |
+| GET | `/api/courses/{course_id}/sections` | 课程下的章节,按创建时间从早到晚 |
+| GET | `/api/sections/{section_id}` | 单个章节 |
+| DELETE | `/api/sections/{section_id}` | 删除章节,**同时删除**它的 quiz 和作答记录。返回 204 |
 
 ```json
 {
@@ -127,8 +127,8 @@ await fetch(`${BASE}/api/courses/${courseId}/materials`, { method: "POST", body:
 
 | 方法 | 路径 | 说明 |
 |---|---|---|
-| POST | `/api/groups/{group_id}/quizzes` | 创建分组里的下一份 quiz,**响应里直接就是 20 道题**,不需要任何参数。返回 201。**耗时接口**。这门课没有教材时返回 409 |
-| GET | `/api/groups/{group_id}/quizzes` | 分组里的 quiz 列表(不含题目),新的在前 |
+| POST | `/api/sections/{section_id}/quizzes` | 创建章节里的下一份 quiz,**响应里直接就是 20 道题**,不需要任何参数。返回 201。**耗时接口**。这门课没有教材时返回 409 |
+| GET | `/api/sections/{section_id}/quizzes` | 章节里的 quiz 列表(不含题目),新的在前 |
 | GET | `/api/quizzes/{quiz_id}` | 一份 quiz 和它的全部题目 |
 | DELETE | `/api/quizzes/{quiz_id}` | 删除 quiz,**同时删除**它的作答记录。返回 204 |
 
@@ -137,7 +137,7 @@ await fetch(`${BASE}/api/courses/${courseId}/materials`, { method: "POST", body:
 ```json
 {
   "id": "806f05a9-2b89-4a74-a318-d904c56adb6b",
-  "group_id": "6caad8ec-b1f4-4298-af15-65d9b0ca87ed",
+  "section_id": "6caad8ec-b1f4-4298-af15-65d9b0ca87ed",
   "created_at": "2026-09-19T15:01:15.344166Z",
   "questions": [
     { "id": "2d1f95a6-...", "position": 1, "type": "MULTIPLE_CHOICE", "stem": "线粒体的主要功能是什么?", "options": ["合成蛋白质", "产生 ATP", "储存 DNA", "包装蛋白质"] },
@@ -149,7 +149,7 @@ await fetch(`${BASE}/api/courses/${courseId}/materials`, { method: "POST", body:
 列表里每项(没有 `questions`):
 
 ```json
-{ "id": "806f05a9-...", "group_id": "6caad8ec-...", "created_at": "...", "question_count": 20, "attempt_count": 1 }
+{ "id": "806f05a9-...", "section_id": "6caad8ec-...", "created_at": "...", "question_count": 20, "attempt_count": 1 }
 ```
 
 ## 提交答案 Submission
@@ -196,7 +196,7 @@ await fetch(`${BASE}/api/courses/${courseId}/materials`, { method: "POST", body:
 
 | 方法 | 路径 | 说明 |
 |---|---|---|
-| GET | `/api/history` | 所有作答记录,新的在前。可选参数:`course_id`、`group_id`(按课程或分组筛选)、`limit`(默认 50,1~200) |
+| GET | `/api/history` | 所有作答记录,新的在前。可选参数:`course_id`、`section_id`(按课程或章节筛选)、`limit`(默认 50,1~200) |
 | GET | `/api/attempts/{attempt_id}` | 一次作答的详情:每道题、用户选了什么、正确答案、解析 |
 
 `GET /api/history` 响应:
@@ -208,8 +208,8 @@ await fetch(`${BASE}/api/courses/${courseId}/materials`, { method: "POST", body:
     {
       "attempt_id": "a9667b02-...",
       "quiz_id": "806f05a9-...",
-      "group_id": "6caad8ec-...",
-      "group_name": "Chapter 1",
+      "section_id": "6caad8ec-...",
+      "section_name": "Chapter 1",
       "course_id": "9da23c53-...",
       "course_name": "Biology 101",
       "submitted_at": "2026-09-19T15:01:15.349919Z",

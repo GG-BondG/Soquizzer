@@ -54,7 +54,7 @@ class InvalidSubmissionError(AppError):
     status_code = 422
 
 
-class GroupNotFoundError(AppError):
+class SectionNotFoundError(AppError):
     status_code = 404
 
 
