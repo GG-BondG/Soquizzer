@@ -4,7 +4,7 @@ from app.exception import FileTooLargeError, InvalidSubmissionError, NoMaterialE
 from app.llm import PastMistake, QuizGenerator, TypeAccuracy
 from app.repository import AnswerRepository, AttemptRepository, MaterialRepository, QuizRepository
 from app.service.course_service import CourseService
-from app.service.group_service import GroupService
+from app.service.section_service import SectionService
 
 
 class QuizService:
@@ -15,7 +15,7 @@ class QuizService:
         attempts: AttemptRepository,
         materials: MaterialRepository,
         courses: CourseService,
-        groups: GroupService,
+        sections: SectionService,
         generator: QuizGenerator,
         questions_per_quiz: int,
         mistake_review_limit: int,
@@ -26,17 +26,17 @@ class QuizService:
         self._attempts = attempts
         self._materials = materials
         self._courses = courses
-        self._groups = groups
+        self._sections = sections
         self._generator = generator
         self._questions_per_quiz = questions_per_quiz
         self._mistake_review_limit = mistake_review_limit
         self._max_material_chars = max_material_chars
 
-    def generate(self, group_id: str) -> Quiz:
-        """Add a new round to the group. Callers only get questions back; whether earlier rounds shaped them is
-        this method's business: the mistakes still open in this group are re-read and handed to Gemini."""
-        group = self._groups.get(group_id)
-        materials = [(m.source_filename, m.content) for m in self._materials.list_by_course(group.course_id)]
+    def generate(self, section_id: str) -> Quiz:
+        """Add a new round to the section. Callers only get questions back; whether earlier rounds shaped them is
+        this method's business: the mistakes still open in this section are re-read and handed to Gemini."""
+        section = self._sections.get(section_id)
+        materials = [(m.source_filename, m.content) for m in self._materials.list_by_course(section.course_id)]
         if not materials:
             raise NoMaterialError("Upload course material before generating a quiz")
         if sum(len(content) for _, content in materials) > self._max_material_chars:
@@ -44,10 +44,10 @@ class QuizService:
 
         mistakes = [
             PastMistake(q.stem, q.options, q.answer_index, a.selected_index, q.explanation)
-            for q, a in self._answers.still_wrong(self._mistake_review_limit, group_id=group.id)
+            for q, a in self._answers.still_wrong(self._mistake_review_limit, section_id=section.id)
         ]
         accuracy = [
-            TypeAccuracy(kind, total, correct) for kind, total, correct in self._answers.stats_by_type(group_id=group.id)
+            TypeAccuracy(kind, total, correct) for kind, total, correct in self._answers.stats_by_type(section_id=section.id)
         ]
         generated = self._generator.generate(materials, mistakes, accuracy, self._questions_per_quiz)
 
@@ -62,7 +62,7 @@ class QuizService:
             )
             for position, item in enumerate(generated.questions, start=1)
         ]
-        return self._quizzes.add(Quiz(group_id=group.id, questions=questions))
+        return self._quizzes.add(Quiz(section_id=section.id, questions=questions))
 
     def get(self, quiz_id: str) -> Quiz:
         quiz = self._quizzes.get(quiz_id)
@@ -70,9 +70,9 @@ class QuizService:
             raise QuizNotFoundError(f"Quiz {quiz_id} not found")
         return quiz
 
-    def list_by_group(self, group_id: str) -> list[Quiz]:
-        group = self._groups.get(group_id)
-        return self._quizzes.list_by_group(group.id)
+    def list_by_section(self, section_id: str) -> list[Quiz]:
+        section = self._sections.get(section_id)
+        return self._quizzes.list_by_section(section.id)
 
     def delete(self, quiz_id: str) -> None:
         self._quizzes.delete(self.get(quiz_id))

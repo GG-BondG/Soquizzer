@@ -3,18 +3,18 @@ from app.entity import Attempt
 from app.exception import AttemptNotFoundError
 from app.repository import AttemptRepository
 from app.service.course_service import CourseService
-from app.service.group_service import GroupService
+from app.service.section_service import SectionService
 
 
 def _summary(attempt: Attempt) -> dict:
-    group = attempt.quiz.group
+    section = attempt.quiz.section
     return {
         "attempt_id": attempt.id,
         "quiz_id": attempt.quiz_id,
-        "group_id": group.id,
-        "group_name": group.name,
-        "course_id": group.course_id,
-        "course_name": group.course.name,
+        "section_id": section.id,
+        "section_name": section.name,
+        "course_id": section.course_id,
+        "course_name": section.course.name,
         "submitted_at": attempt.submitted_at,
         "score": attempt.score,
         "total": attempt.total,
@@ -24,18 +24,18 @@ def _summary(attempt: Attempt) -> dict:
 
 
 class HistoryService:
-    def __init__(self, attempts: AttemptRepository, courses: CourseService, groups: GroupService):
+    def __init__(self, attempts: AttemptRepository, courses: CourseService, sections: SectionService):
         self._attempts = attempts
         self._courses = courses
-        self._groups = groups
+        self._sections = sections
 
-    def history(self, course_id: str | None, group_id: str | None, limit: int) -> HistoryResponse:
+    def history(self, course_id: str | None, section_id: str | None, limit: int) -> HistoryResponse:
         if course_id is not None:
             self._courses.get(course_id)
-        if group_id is not None:
-            self._groups.get(group_id)
-        totals = self._attempts.totals(course_id=course_id, group_id=group_id)
-        attempts = self._attempts.list_recent(limit, course_id=course_id, group_id=group_id)
+        if section_id is not None:
+            self._sections.get(section_id)
+        totals = self._attempts.totals(course_id=course_id, section_id=section_id)
+        attempts = self._attempts.list_recent(limit, course_id=course_id, section_id=section_id)
         return HistoryResponse(
             summary=HistorySummary(
                 attempts=totals.attempts,

@@ -8,14 +8,14 @@ from app.repository import (
     AnswerRepository,
     AttemptRepository,
     CourseRepository,
-    GroupRepository,
+    SectionRepository,
     MaterialRepository,
     QuizRepository,
     TextbookRepository,
 )
 from app.service import (
     CourseService,
-    GroupService,
+    SectionService,
     HistoryService,
     IngestionService,
     MaterialService,
@@ -70,8 +70,8 @@ def get_material_service(
     )
 
 
-def get_group_service(session: Session = Depends(get_session)) -> GroupService:
-    return GroupService(GroupRepository(session), CourseService(CourseRepository(session)))
+def get_section_service(session: Session = Depends(get_session)) -> SectionService:
+    return SectionService(SectionRepository(session), CourseService(CourseRepository(session)))
 
 
 def get_quiz_service(
@@ -86,7 +86,7 @@ def get_quiz_service(
         AttemptRepository(session),
         MaterialRepository(session),
         courses,
-        GroupService(GroupRepository(session), courses),
+        SectionService(SectionRepository(session), courses),
         container.quiz_generator,
         settings.questions_per_quiz,
         settings.mistake_review_limit,
@@ -96,4 +96,4 @@ def get_quiz_service(
 
 def get_history_service(session: Session = Depends(get_session)) -> HistoryService:
     courses = CourseService(CourseRepository(session))
-    return HistoryService(AttemptRepository(session), courses, GroupService(GroupRepository(session), courses))
+    return HistoryService(AttemptRepository(session), courses, SectionService(SectionRepository(session), courses))

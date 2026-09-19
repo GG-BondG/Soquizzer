@@ -42,8 +42,8 @@ def fake_app(settings):
     return create_app(settings, DeterministicFakeEmbedding(size=32), FakePdfConverter(), FakeQuizGenerator())
 
 
-def make_group(client: TestClient, course: dict) -> dict:
-    return client.post(f"/api/courses/{course['id']}/groups", json={"name": "Chapter 1"}).json()
+def make_section(client: TestClient, course: dict) -> dict:
+    return client.post(f"/api/courses/{course['id']}/sections", json={"name": "Chapter 1"}).json()
 
 
 def upload_material(client: TestClient, pdf: bytes, filename: str):
@@ -71,7 +71,7 @@ def test_database_is_created_and_pdf_json_is_stored_as_material(tmp_path):
     client = TestClient(fake_app(settings))
 
     tables = {row[0] for row in read_rows(db_file, "select name from sqlite_master where type = 'table'")}
-    assert {"courses", "materials", "quiz_groups", "quizzes", "questions", "attempts", "answers", "textbooks"} <= tables
+    assert {"courses", "materials", "sections", "quizzes", "questions", "attempts", "answers", "textbooks"} <= tables
 
     course, response = upload_material(client, make_pdf([SAMPLE_SLIDES]), "slides.pdf")
 
@@ -87,13 +87,13 @@ def test_quiz_questions_answers_and_mistakes_are_stored_in_the_tables(tmp_path):
     db_file = settings.data_dir / "soquizzer.db"
     client = TestClient(fake_app(settings))
     course, _ = upload_material(client, make_pdf([SAMPLE_SLIDES]), "slides.pdf")
-    group = make_group(client, course)
+    section = make_section(client, course)
 
-    quiz = client.post(f"/api/groups/{group['id']}/quizzes").json()
+    quiz = client.post(f"/api/sections/{section['id']}/quizzes").json()
     graded, wrong = answer_everything_wrong(client, quiz)
 
-    assert read_rows(db_file, "select name, course_id from quiz_groups") == [("Chapter 1", course["id"])]
-    assert read_rows(db_file, "select group_id from quizzes") == [(group["id"],)]
+    assert read_rows(db_file, "select name, course_id from sections") == [("Chapter 1", course["id"])]
+    assert read_rows(db_file, "select section_id from quizzes") == [(section["id"],)]
     assert read_rows(db_file, "select quiz_id, score, total, time_spent_seconds from attempts") == [(quiz["id"], 10, 20, 42)]
     assert read_rows(db_file, "select count(*) from answers where attempt_id = ?", graded["attempt_id"]) == [(20,)]
 
@@ -113,8 +113,8 @@ def test_everything_is_still_there_after_the_app_is_restarted(tmp_path):
     settings = Settings(_env_file=None, data_dir=tmp_path / "data")
     first = TestClient(fake_app(settings))
     course, _ = upload_material(first, make_pdf([SAMPLE_SLIDES]), "slides.pdf")
-    group = make_group(first, course)
-    quiz = first.post(f"/api/groups/{group['id']}/quizzes").json()
+    section = make_section(first, course)
+    quiz = first.post(f"/api/sections/{section['id']}/quizzes").json()
     answer_everything_wrong(first, quiz)
     progress = first.get(f"/api/courses/{course['id']}/progress").json()
     history = first.get("/api/history").json()
@@ -124,7 +124,7 @@ def test_everything_is_still_there_after_the_app_is_restarted(tmp_path):
     assert second.get(f"/api/quizzes/{quiz['id']}").json() == quiz
     assert second.get(f"/api/courses/{course['id']}/progress").json() == progress
     assert second.get("/api/history").json() == history
-    assert second.get(f"/api/courses/{course['id']}/groups").json()[0]["id"] == group["id"]
+    assert second.get(f"/api/courses/{course['id']}/sections").json()[0]["id"] == section["id"]
     assert len(second.get(f"/api/courses/{course['id']}/materials").json()) == 1
 
 
@@ -144,8 +144,8 @@ def test_real_gemini_full_flow_pdf_to_quiz_to_mistakes_to_next_quiz(tmp_path):
     print(f"\nDatabase: {db_file}\nMaterial JSON from Gemini:\n{json.dumps(material, ensure_ascii=False, indent=2)}")
     assert isinstance(material, (dict, list)) and material
 
-    group = make_group(client, course)
-    quiz_url = f"/api/groups/{group['id']}/quizzes"
+    section = make_section(client, course)
+    quiz_url = f"/api/sections/{section['id']}/quizzes"
     first = client.post(quiz_url)
     assert first.status_code == 201, first.text
     quiz = first.json()

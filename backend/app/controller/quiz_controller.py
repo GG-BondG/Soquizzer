@@ -7,15 +7,15 @@ from app.service import QuizService
 router = APIRouter(tags=["quizzes"])
 
 
-@router.post("/api/groups/{group_id}/quizzes", status_code=201, response_model=QuizResponse)
-def create_quiz(group_id: str, service: QuizService = Depends(get_quiz_service)):
-    """Creates the next quiz in the group and returns its questions (20 by default)."""
-    return service.generate(group_id)
+@router.post("/api/sections/{section_id}/quizzes", status_code=201, response_model=QuizResponse)
+def create_quiz(section_id: str, service: QuizService = Depends(get_quiz_service)):
+    """Creates the next quiz in the section and returns its questions (20 by default)."""
+    return service.generate(section_id)
 
 
-@router.get("/api/groups/{group_id}/quizzes", response_model=list[QuizSummaryResponse])
-def list_quizzes(group_id: str, service: QuizService = Depends(get_quiz_service)):
-    return service.list_by_group(group_id)
+@router.get("/api/sections/{section_id}/quizzes", response_model=list[QuizSummaryResponse])
+def list_quizzes(section_id: str, service: QuizService = Depends(get_quiz_service)):
+    return service.list_by_section(section_id)
 
 
 @router.get("/api/quizzes/{quiz_id}", response_model=QuizResponse)

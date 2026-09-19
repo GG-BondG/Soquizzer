@@ -8,8 +8,8 @@ from app.entity import QuestionType
 class AttemptSummary(BaseModel):
     attempt_id: str
     quiz_id: str
-    group_id: str
-    group_name: str
+    section_id: str
+    section_name: str
     course_id: str
     course_name: str
     submitted_at: datetime

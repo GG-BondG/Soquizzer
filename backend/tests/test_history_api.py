@@ -1,4 +1,4 @@
-from tests.helpers import create_quiz, make_course, make_course_and_group, make_group, submit
+from tests.helpers import create_quiz, make_course, make_course_and_section, make_section, submit
 
 
 def all_ids(quiz):
@@ -6,7 +6,7 @@ def all_ids(quiz):
 
 
 def test_history_is_empty_before_any_attempt(client):
-    make_course_and_group(client)
+    make_course_and_section(client)
 
     assert client.get("/api/history").json() == {
         "summary": {"attempts": 0, "accuracy": None, "total_time_seconds": 0},
@@ -15,8 +15,8 @@ def test_history_is_empty_before_any_attempt(client):
 
 
 def test_history_lists_attempts_newest_first_with_score_accuracy_and_time(client):
-    course_id, group_id = make_course_and_group(client)
-    quiz = create_quiz(client, group_id).json()
+    course_id, section_id = make_course_and_section(client)
+    quiz = create_quiz(client, section_id).json()
     first_id = submit(client, quiz, correct_ids=set(list(all_ids(quiz))[:2]), time_spent_seconds=90).json()["attempt_id"]
     second_id = submit(client, quiz, correct_ids=all_ids(quiz), time_spent_seconds=60).json()["attempt_id"]
 
@@ -25,7 +25,7 @@ def test_history_lists_attempts_newest_first_with_score_accuracy_and_time(client
     assert history["summary"] == {"attempts": 2, "accuracy": 0.75, "total_time_seconds": 150}
     newest, oldest = history["attempts"]
     assert newest == {
-        "attempt_id": second_id, "quiz_id": quiz["id"], "group_id": group_id, "group_name": "Chapter 1",
+        "attempt_id": second_id, "quiz_id": quiz["id"], "section_id": section_id, "section_name": "Chapter 1",
         "course_id": course_id, "course_name": "Biology 101", "submitted_at": newest["submitted_at"],
         "score": 4, "total": 4, "accuracy": 1.0, "time_spent_seconds": 60,
     }
@@ -34,8 +34,8 @@ def test_history_lists_attempts_newest_first_with_score_accuracy_and_time(client
 
 
 def test_attempt_without_a_recorded_time_shows_null_and_counts_as_zero(client):
-    _, group_id = make_course_and_group(client)
-    quiz = create_quiz(client, group_id).json()
+    _, section_id = make_course_and_section(client)
+    quiz = create_quiz(client, section_id).json()
     submit(client, quiz)
     submit(client, quiz, time_spent_seconds=45)
 
@@ -45,27 +45,27 @@ def test_attempt_without_a_recorded_time_shows_null_and_counts_as_zero(client):
     assert history["summary"]["total_time_seconds"] == 45
 
 
-def test_history_can_be_filtered_by_course_and_by_group(client):
+def test_history_can_be_filtered_by_course_and_by_section(client):
     course_a = make_course(client, name="Biology 101")
-    group_a1, group_a2 = make_group(client, course_a, "Chapter 1"), make_group(client, course_a, "Chapter 2")
+    section_a1, section_a2 = make_section(client, course_a, "Chapter 1"), make_section(client, course_a, "Chapter 2")
     course_b = make_course(client, name="Chemistry 101")
-    group_b = make_group(client, course_b, "Chapter 1")
-    for group_id in (group_a1, group_a2, group_b):
-        submit(client, create_quiz(client, group_id).json())
+    section_b = make_section(client, course_b, "Chapter 1")
+    for section_id in (section_a1, section_a2, section_b):
+        submit(client, create_quiz(client, section_id).json())
 
     assert client.get("/api/history").json()["summary"]["attempts"] == 3
     by_course = client.get("/api/history", params={"course_id": course_a}).json()
-    assert {a["group_id"] for a in by_course["attempts"]} == {group_a1, group_a2}
+    assert {a["section_id"] for a in by_course["attempts"]} == {section_a1, section_a2}
     assert {a["course_name"] for a in by_course["attempts"]} == {"Biology 101"}
-    by_group = client.get("/api/history", params={"group_id": group_b}).json()
-    assert [a["course_name"] for a in by_group["attempts"]] == ["Chemistry 101"]
-    both = client.get("/api/history", params={"course_id": course_b, "group_id": group_a1}).json()
+    by_section = client.get("/api/history", params={"section_id": section_b}).json()
+    assert [a["course_name"] for a in by_section["attempts"]] == ["Chemistry 101"]
+    both = client.get("/api/history", params={"course_id": course_b, "section_id": section_a1}).json()
     assert both["attempts"] == [] and both["summary"]["attempts"] == 0
 
 
 def test_limit_shortens_the_list_but_not_the_summary(client):
-    _, group_id = make_course_and_group(client)
-    quiz = create_quiz(client, group_id).json()
+    _, section_id = make_course_and_section(client)
+    quiz = create_quiz(client, section_id).json()
     for _ in range(3):
         submit(client, quiz, correct_ids=all_ids(quiz))
 
@@ -76,21 +76,21 @@ def test_limit_shortens_the_list_but_not_the_summary(client):
 
 def test_history_rejects_unknown_filters_and_bad_limits(client):
     assert client.get("/api/history", params={"course_id": "nope"}).status_code == 404
-    assert client.get("/api/history", params={"group_id": "nope"}).status_code == 404
+    assert client.get("/api/history", params={"section_id": "nope"}).status_code == 404
     assert client.get("/api/history", params={"limit": 0}).status_code == 422
     assert client.get("/api/history", params={"limit": 201}).status_code == 422
 
 
 def test_attempt_detail_shows_each_question_with_the_pick_and_the_right_answer(client):
-    _, group_id = make_course_and_group(client)
-    quiz = create_quiz(client, group_id).json()
+    _, section_id = make_course_and_section(client)
+    quiz = create_quiz(client, section_id).json()
     q1, q2 = quiz["questions"][0]["id"], quiz["questions"][1]["id"]
     attempt_id = submit(client, quiz, correct_ids={q1}, only={q1, q2}, time_spent_seconds=30).json()["attempt_id"]
 
     detail = client.get(f"/api/attempts/{attempt_id}").json()
 
     assert (detail["score"], detail["total"], detail["accuracy"], detail["time_spent_seconds"]) == (1, 4, 0.25, 30)
-    assert detail["group_name"] == "Chapter 1" and detail["course_name"] == "Biology 101"
+    assert detail["section_name"] == "Chapter 1" and detail["course_name"] == "Biology 101"
     first, second, third, fourth = detail["questions"]
     assert first == {
         "question_id": q1, "position": 1, "type": "MULTIPLE_CHOICE", "stem": "Round 1 question 1?",
