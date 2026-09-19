@@ -17,6 +17,18 @@ class QuestionResponse(BaseModel):
     options: list[str]
 
 
+class AnswerReveal(BaseModel):
+    """The answer to one question, asked for before submitting (Trivia shows it as soon as the student picks)."""
+
+    model_config = ConfigDict(from_attributes=True)
+
+    question_id: str
+    answer_index: int
+    explanation: str
+    anchor_section: str
+    source_excerpt: str
+
+
 class QuizResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 

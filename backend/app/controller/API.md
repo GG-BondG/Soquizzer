@@ -133,9 +133,10 @@ In the response, `content` is the extracted text: `page_count`, `pages` (each `{
 | POST | `/api/sections/{section_id}/quizzes` | Create the section's next quiz. **The response is the 20 questions**, and no parameters are needed. Returns 201. **Slow endpoint.** Returns 409 if the section has no PDF |
 | GET | `/api/sections/{section_id}/quizzes` | The section's quizzes (without questions), newest first |
 | GET | `/api/quizzes/{quiz_id}` | One quiz with all its questions |
+| GET | `/api/quizzes/{quiz_id}/questions/{question_id}/answer` | The correct answer to one question, before submitting. Trivia calls it the moment the student picks an option. Returns 404 if the quiz or the question does not exist |
 | DELETE | `/api/quizzes/{quiz_id}` | Delete a quiz **and** its attempts. Returns 204 |
 
-Questions carry **no answer, no explanation and no source anchor**; those come back when the student submits. `type` is `MULTIPLE_CHOICE` (4 options) or `TRUE_FALSE` (2 options). Options are referred to by their array index, starting at 0.
+Questions carry **no answer, no explanation and no source anchor**; those come back when the student submits (or one at a time from the `/answer` endpoint below, which Trivia uses to show the answer straight away; Mock Test never calls it). `type` is `MULTIPLE_CHOICE` (4 options) or `TRUE_FALSE` (2 options). Options are referred to by their array index, starting at 0.
 
 ```json
 {
@@ -153,6 +154,12 @@ Each item in the list (no `questions`):
 
 ```json
 { "id": "806f05a9-...", "section_id": "6caad8ec-...", "created_at": "...", "question_count": 20, "attempt_count": 1 }
+```
+
+`GET /api/quizzes/{quiz_id}/questions/{question_id}/answer` returns the same fields a submission result carries for that question, minus what the student picked. It records nothing.
+
+```json
+{ "question_id": "2d1f95a6-...", "answer_index": 1, "explanation": "Mitochondria produce ATP through cellular respiration.", "anchor_section": "2.3 Organelles", "source_excerpt": "Mitochondria produce most of the cell's ATP through respiration." }
 ```
 
 ## Submission

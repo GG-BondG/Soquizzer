@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, Response
 
 from app.dependencies import get_quiz_service
-from app.dto import ProgressResponse, QuizResponse, QuizSummaryResponse, SubmissionRequest, SubmissionResponse
+from app.dto import AnswerReveal, ProgressResponse, QuizResponse, QuizSummaryResponse, SubmissionRequest, SubmissionResponse
 from app.service import QuizService
 
 router = APIRouter(tags=["quizzes"])
@@ -21,6 +21,11 @@ def list_quizzes(section_id: str, service: QuizService = Depends(get_quiz_servic
 @router.get("/api/quizzes/{quiz_id}", response_model=QuizResponse)
 def get_quiz(quiz_id: str, service: QuizService = Depends(get_quiz_service)):
     return service.get(quiz_id)
+
+
+@router.get("/api/quizzes/{quiz_id}/questions/{question_id}/answer", response_model=AnswerReveal)
+def reveal_answer(quiz_id: str, question_id: str, service: QuizService = Depends(get_quiz_service)):
+    return service.reveal_answer(quiz_id, question_id)
 
 
 @router.delete("/api/quizzes/{quiz_id}", status_code=204)

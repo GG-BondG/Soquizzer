@@ -156,6 +156,89 @@
   background: var(--quiz-tint);
 }
 
+/* Trivia, once the answer is in: the right option goes green, a wrong pick red, and the question stays put */
+.option-row.is-right {
+  border: 1.5px solid rgba(63, 107, 76, 0.6);
+  background: rgba(63, 107, 76, 0.08);
+}
+
+.option-row.is-wrong {
+  border: 1.5px solid var(--exam-border);
+  background: var(--exam-tint);
+}
+
+.option-row.is-locked {
+  cursor: default;
+}
+
+.option-row.is-locked:hover {
+  border-color: var(--border);
+}
+
+.option-row.is-locked.is-right:hover {
+  border-color: rgba(63, 107, 76, 0.6);
+}
+
+.option-row.is-locked.is-wrong:hover {
+  border-color: var(--exam-border);
+}
+
+.option-tag {
+  margin-left: auto;
+  flex-shrink: 0;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text-2);
+}
+
+.reveal {
+  margin-top: 20px;
+  padding: 14px 18px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  font-size: 14px;
+  line-height: 1.55;
+}
+
+.reveal.is-right {
+  border-color: rgba(63, 107, 76, 0.5);
+  background: rgba(63, 107, 76, 0.07);
+}
+
+.reveal.is-wrong {
+  border-color: var(--exam-border);
+  background: var(--exam-tint);
+}
+
+.reveal-title {
+  font-weight: 600;
+}
+
+.reveal-explain {
+  margin-top: 6px;
+  color: var(--text-2);
+}
+
+.reveal-source {
+  display: flex;
+  flex-direction: column;
+  margin-top: 10px;
+  padding-left: 12px;
+  border-left: 3px solid rgba(28, 27, 23, 0.18);
+  font-size: 13px;
+  color: var(--text-2);
+}
+
+.reveal-source-label {
+  font-weight: 600;
+}
+
+.reveal-source-text {
+  font-style: italic;
+}
+
 .radio {
   display: inline-flex;
   width: 18px;

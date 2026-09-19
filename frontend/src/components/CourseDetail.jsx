@@ -3,10 +3,12 @@ import { Link, useNavigate, useParams } from 'react-router-dom';
 import { api, friendlyError, subjectLabel } from '../api.js';
 import { formatDate, formatPercent, typeLabel } from '../format.js';
 import { useApi } from '../useApi.js';
+import { useEstimatedProgress } from '../useEstimatedProgress.js';
 import { usePet } from '../pet/PetProvider.jsx';
 import { BackIcon, ChevronIcon, CloseIcon, DocIcon, PlusIcon, UploadIcon } from './Icons.jsx';
 import ConfirmDialog from './ConfirmDialog.jsx';
 import FloatingWindow from './FloatingWindow.jsx';
+import ProgressBar from './ProgressBar.jsx';
 import QuizModeBox from './QuizModeBox.jsx';
 import './CourseDetail.css';
 
@@ -38,6 +40,10 @@ export default function CourseDetail() {
   const sectionFileRef = useRef(null);
   const [sectionFiles, setSectionFiles] = useState([]); // the section's PDFs still to upload
   const [sectionProgress, setSectionProgress] = useState('');
+  const [readingIndex, setReadingIndex] = useState(0); // which of the files is being read
+  // the bar covers the whole batch: the files already read, plus an estimate for the one in flight
+  const fileProgress = useEstimatedProgress(sectionBusy && !!sectionProgress, { typicalMs: 15_000, restartKey: readingIndex });
+  const batchProgress = sectionFiles.length > 0 ? (readingIndex + fileProgress) / sectionFiles.length : 0;
   const [createdSection, setCreatedSection] = useState(null); // set once the section exists, so a retry only re-uploads
 
   const [pendingDelete, setPendingDelete] = useState(null); // { kind, id, name }
@@ -75,6 +81,7 @@ export default function CourseDetail() {
       let readCount = section.readCount;
       for (let i = 0; i < sectionFiles.length; i++) {
         const file = sectionFiles[i];
+        setReadingIndex(i);
         setSectionProgress(`Reading “${file.name}” (${i + 1} of ${sectionFiles.length})…`);
         pet.loading('Reading your PDFs… this can take a little while.');
         try {
@@ -330,7 +337,10 @@ export default function CourseDetail() {
 
             <div className="form-footer">
               {sectionBusy && sectionProgress ? (
-                <div className="form-progress">{sectionProgress}</div>
+                <div className="form-progress">
+                  {sectionProgress}
+                  <ProgressBar value={batchProgress} label="Reading PDFs" />
+                </div>
               ) : (
                 <div className="form-error">{sectionError}</div>
               )}

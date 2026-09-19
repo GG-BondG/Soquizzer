@@ -121,6 +121,15 @@ describe('requests', () => {
     });
   });
 
+  it('asks for one question\'s answer with a plain GET', async () => {
+    const fetch = mockFetch({ body: { question_id: 'q 2', answer_index: 1, explanation: 'Because.' } });
+
+    const revealed = await api.quizzes.answer('quiz1', 'q 2');
+
+    expect(called(fetch)).toMatchObject({ url: 'http://localhost:8000/api/quizzes/quiz1/questions/q%202/answer', method: 'GET' });
+    expect(revealed.answer_index).toBe(1);
+  });
+
   it('leaves out history filters that are not set', async () => {
     const fetch = mockFetch({ body: {} });
     await api.history.list({ courseId: 'c1', limit: 5 });

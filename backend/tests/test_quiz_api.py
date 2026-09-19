@@ -325,3 +325,29 @@ def test_the_next_quiz_prompt_tells_gemini_which_part_of_the_material_a_mistake_
 
     mistakes = quiz_generator.calls[1]["mistakes"]
     assert {m.anchor_section for m in mistakes} == {"Section 1", "Section 2"}
+
+
+def test_an_answer_can_be_revealed_before_submitting_and_records_nothing(client):
+    _, section_id = make_course_and_section(client)
+    quiz = create_quiz(client, section_id).json()
+    first, second = quiz["questions"][:2]  # multiple choice (right option 1), then true/false (right option 0)
+
+    revealed = client.get(f"/api/quizzes/{quiz['id']}/questions/{first['id']}/answer")
+
+    assert revealed.status_code == 200
+    body = revealed.json()
+    assert set(body) == {"question_id", "answer_index", "explanation", "anchor_section", "source_excerpt"}
+    assert body["question_id"] == first["id"] and body["answer_index"] == 1
+    assert client.get(f"/api/quizzes/{quiz['id']}/questions/{second['id']}/answer").json()["answer_index"] == 0
+    assert client.get(f"/api/sections/{section_id}/quizzes").json()[0]["attempt_count"] == 0
+
+
+def test_revealing_an_answer_that_does_not_exist_is_a_404(client):
+    _, section_id = make_course_and_section(client)
+    quiz = create_quiz(client, section_id).json()
+    other = create_quiz(client, section_id).json()
+
+    assert client.get(f"/api/quizzes/missing/questions/{quiz['questions'][0]['id']}/answer").status_code == 404
+    assert client.get(f"/api/quizzes/{quiz['id']}/questions/missing/answer").status_code == 404
+    # a question belongs to one quiz only
+    assert client.get(f"/api/quizzes/{quiz['id']}/questions/{other['questions'][0]['id']}/answer").status_code == 404

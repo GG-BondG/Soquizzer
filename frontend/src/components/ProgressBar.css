@@ -1,0 +1,36 @@
+.progress {
+  display: block;
+  height: 6px;
+  border-radius: 3px;
+  background: rgba(28, 27, 23, 0.1);
+  overflow: hidden;
+}
+
+.progress-fill {
+  display: block;
+  height: 100%;
+  border-radius: 3px;
+  background: var(--progress-color, var(--accent));
+  transition: width 0.25s linear;
+}
+
+/* the bar with its caption above it, used under a button that started slow work */
+.progress-block {
+  margin-top: 12px;
+  max-width: 420px;
+}
+
+.progress-block .progress {
+  margin-top: 8px;
+}
+
+.progress-caption {
+  font-size: 13px;
+  color: var(--text-2);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .progress-fill {
+    transition: none;
+  }
+}

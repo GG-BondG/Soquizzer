@@ -3,9 +3,11 @@ import { Link, useNavigate, useParams } from 'react-router-dom';
 import { api, friendlyError } from '../api.js';
 import { formatDate } from '../format.js';
 import { useApi } from '../useApi.js';
+import { useEstimatedProgress } from '../useEstimatedProgress.js';
 import { usePet } from '../pet/PetProvider.jsx';
 import { BackIcon, ChevronIcon, DocIcon, UploadIcon } from './Icons.jsx';
 import ConfirmDialog from './ConfirmDialog.jsx';
+import ProgressBar from './ProgressBar.jsx';
 
 export default function SectionDetail() {
   const { sectionId } = useParams();
@@ -26,6 +28,9 @@ export default function SectionDetail() {
 
   const [creating, setCreating] = useState(false);
   const [createError, setCreateError] = useState(null); // { status, message }
+
+  const quizProgress = useEstimatedProgress(creating, { typicalMs: 25_000 });
+  const uploadProgress = useEstimatedProgress(!!uploading, { typicalMs: 15_000 });
 
   async function newQuiz() {
     setCreating(true);
@@ -126,7 +131,12 @@ export default function SectionDetail() {
         </div>
       </div>
 
-      {creating && <div className="status-note">Generating a quiz from this section’s PDF. This can take up to a minute.</div>}
+      {creating && (
+        <div className="progress-block">
+          <div className="progress-caption">Generating a quiz from this section’s PDF. This can take up to a minute.</div>
+          <ProgressBar value={quizProgress} label="Generating quiz" />
+        </div>
+      )}
 
       {createError?.status === 409 && (
         <div className="info-note">
@@ -156,7 +166,12 @@ export default function SectionDetail() {
           <input ref={fileInputRef} type="file" accept="application/pdf" hidden onChange={handleUpload} />
         </div>
 
-        {uploading && <div className="status-note">Reading “{uploading}”. This can take up to a minute.</div>}
+        {uploading && (
+          <div className="progress-block">
+            <div className="progress-caption">Reading “{uploading}”. This can take up to a minute.</div>
+            <ProgressBar value={uploadProgress} label="Reading PDF" />
+          </div>
+        )}
         {uploadError && <div className="error-note">{uploadError}</div>}
         {materials.error && (
           <div className="error-note">

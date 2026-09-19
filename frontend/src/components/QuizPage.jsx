@@ -23,8 +23,13 @@ export default function QuizPage() {
   const mode = location.state?.mode in QUIZ_MODES ? location.state.mode : null;
   const themeClass = mode ? `quiz-${mode}` : '';
   const modeLabel = mode ? QUIZ_MODES[mode].label : 'Quiz';
+  // Trivia is a warm-up: each answer is shown as soon as it is picked. Mock Test keeps them back until submitting.
+  const isTrivia = mode === 'trivia';
 
   const [answers, setAnswers] = useState({}); // question id -> selected option index
+  const [revealed, setRevealed] = useState({}); // Trivia: question id -> { answer_index, explanation, anchor_section, source_excerpt }
+  const [revealing, setRevealing] = useState({}); // Trivia: question ids whose answer is being fetched
+  const [revealError, setRevealError] = useState(null); // { questionId, message } when an answer could not be fetched
   const [index, setIndex] = useState(0);
   const [elapsed, setElapsed] = useState(0);
   const [submitting, setSubmitting] = useState(false);
@@ -70,8 +75,30 @@ export default function QuizPage() {
     }
   }
 
+  function pick(question, optionIndex) {
+    if (!isTrivia) {
+      setAnswers((a) => ({ ...a, [question.id]: optionIndex }));
+      return;
+    }
+    if (revealed[question.id] || revealing[question.id]) return; // Trivia: the first pick counts, the answer is already in
+    setAnswers((a) => ({ ...a, [question.id]: optionIndex }));
+    setRevealing((r) => ({ ...r, [question.id]: true }));
+    setRevealError(null);
+    api.quizzes
+      .answer(quiz.id, question.id)
+      .then((answer) => setRevealed((r) => ({ ...r, [question.id]: answer })))
+      .catch((err) => {
+        // The answer never showed, so take the pick back and let the student choose again.
+        setAnswers((a) => Object.fromEntries(Object.entries(a).filter(([id]) => id !== question.id)));
+        setRevealError({ questionId: question.id, message: err.message });
+      })
+      .finally(() => setRevealing((r) => Object.fromEntries(Object.entries(r).filter(([id]) => id !== question.id))));
+  }
+
   function retake() {
     setAnswers({});
+    setRevealed({});
+    setRevealError(null);
     setIndex(0);
     setSubmitError('');
     setResult(null);
@@ -164,6 +191,9 @@ export default function QuizPage() {
   const question = quiz.questions[index];
   const answeredCount = Object.keys(answers).length;
   const isLast = index === total - 1;
+  const answer = revealed[question.id]; // set once Trivia has shown this question's answer
+  const locked = isTrivia && (!!answer || !!revealing[question.id]);
+  const gotItRight = answer && answers[question.id] === answer.answer_index;
 
   return (
     <div className={`page exam-page ${themeClass}`}>
@@ -206,27 +236,53 @@ export default function QuizPage() {
         <div className="option-list">
           {question.options.map((text, i) => {
             const picked = answers[question.id] === i;
+            const isRight = answer?.answer_index === i;
+            const state = isRight ? 'is-right' : answer && picked ? 'is-wrong' : picked ? 'is-picked' : '';
             return (
               <div
                 key={i}
                 role="radio"
                 aria-checked={picked}
+                aria-disabled={locked}
                 tabIndex={0}
-                className={`option-row ${picked ? 'is-picked' : ''}`}
-                onClick={() => setAnswers((a) => ({ ...a, [question.id]: i }))}
+                className={`option-row ${state} ${locked ? 'is-locked' : ''}`}
+                onClick={() => pick(question, i)}
                 onKeyDown={(e) => {
                   if (e.key === 'Enter' || e.key === ' ') {
                     e.preventDefault();
-                    setAnswers((a) => ({ ...a, [question.id]: i }));
+                    pick(question, i);
                   }
                 }}
               >
                 <span className={`radio ${picked ? 'is-picked' : ''}`} />
                 <span className="option-text">{text}</span>
+                {answer && (isRight || picked) && (
+                  <span className="option-tag">{isRight && picked ? 'Your answer · correct' : isRight ? 'Correct answer' : 'Your answer'}</span>
+                )}
               </div>
             );
           })}
         </div>
+
+        {answer && (
+          <div className={`reveal ${gotItRight ? 'is-right' : 'is-wrong'}`} role="status">
+            <div className="reveal-title">
+              {gotItRight ? 'Correct!' : `Not quite. The correct answer is “${question.options[answer.answer_index]}”.`}
+            </div>
+            {answer.explanation && <div className="reveal-explain">{answer.explanation}</div>}
+            {(answer.anchor_section || answer.source_excerpt) && (
+              <div className="reveal-source">
+                <span className="reveal-source-label">
+                  From the material{answer.anchor_section ? ` · ${answer.anchor_section}` : ''}
+                </span>
+                {answer.source_excerpt && <span className="reveal-source-text">{answer.source_excerpt}</span>}
+              </div>
+            )}
+          </div>
+        )}
+        {revealError?.questionId === question.id && (
+          <div className="error-note">Couldn’t show the answer: {revealError.message} Pick again to retry.</div>
+        )}
 
         <div className="q-jump" aria-label="Jump to question">
           {quiz.questions.map((q, i) => (

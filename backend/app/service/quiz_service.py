@@ -1,5 +1,6 @@
 from app.dto import (
     AnswerResult,
+    AnswerReveal,
     Mistake,
     ProgressResponse,
     RereadSuggestion,
@@ -8,7 +9,13 @@ from app.dto import (
     TypeStat,
 )
 from app.entity import Answer, Attempt, Question, Quiz
-from app.exception import FileTooLargeError, InvalidSubmissionError, NoMaterialError, QuizNotFoundError
+from app.exception import (
+    FileTooLargeError,
+    InvalidSubmissionError,
+    NoMaterialError,
+    QuestionNotFoundError,
+    QuizNotFoundError,
+)
 from app.llm import PastMistake, QuizGenerator, TypeAccuracy
 from app.repository import AnswerRepository, AttemptRepository, MaterialRepository, QuizRepository
 from app.service.course_service import CourseService
@@ -107,6 +114,19 @@ class QuizService:
         if quiz is None:
             raise QuizNotFoundError(f"Quiz {quiz_id} not found")
         return quiz
+
+    def reveal_answer(self, quiz_id: str, question_id: str) -> AnswerReveal:
+        """The right answer to one question, nothing recorded. Trivia shows it as soon as the student picks."""
+        question = next((q for q in self.get(quiz_id).questions if q.id == question_id), None)
+        if question is None:
+            raise QuestionNotFoundError(f"Question {question_id} is not part of quiz {quiz_id}")
+        return AnswerReveal(
+            question_id=question.id,
+            answer_index=question.answer_index,
+            explanation=question.explanation,
+            anchor_section=question.anchor_section,
+            source_excerpt=question.source_excerpt,
+        )
 
     def list_by_section(self, section_id: str) -> list[Quiz]:
         section = self._sections.get(section_id)

@@ -157,6 +157,9 @@ export const api = {
         json: type ? { type } : undefined,
         timeout: LONG_TIMEOUT_MS,
       }),
+    // The right answer to one question before the quiz is submitted. Only Trivia asks: it shows the answer as soon
+    // as the student picks. Mock Test waits for the submission, which returns every answer at once.
+    answer: (quizId, questionId) => request(`/api/quizzes/${id(quizId)}/questions/${id(questionId)}/answer`),
     submit: (quizId, { answers, timeSpentSeconds }) =>
       request(`/api/quizzes/${id(quizId)}/submissions`, {
         method: 'POST',

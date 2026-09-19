@@ -218,6 +218,11 @@ button.file-drop:disabled {
 }
 
 .form-progress {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
   font-size: 13px;
   color: var(--text-2);
 }

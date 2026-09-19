@@ -2,9 +2,11 @@ import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { api } from '../api.js';
 import { QUIZ_MODES } from '../quizModes.js';
+import { useEstimatedProgress } from '../useEstimatedProgress.js';
 import { usePet } from '../pet/PetProvider.jsx';
 import { ChevronIcon, ClipboardIcon, CloseIcon, LightbulbIcon } from './Icons.jsx';
 import FloatingWindow from './FloatingWindow.jsx';
+import ProgressBar from './ProgressBar.jsx';
 import './QuizModeBox.css';
 
 // A large box on the course page. Clicking it grows into a floating window listing the course's sections;
@@ -22,6 +24,7 @@ export default function QuizModeBox({ mode, sections }) {
   const [pdfCounts, setPdfCounts] = useState({}); // section id -> number of PDFs (missing while still loading)
 
   const busy = startingId !== null;
+  const progress = useEstimatedProgress(busy, { typicalMs: 25_000 });
   const list = sections ?? [];
   const missingCount = list.filter((s) => pdfCounts[s.id] === 0).length;
 
@@ -141,7 +144,10 @@ export default function QuizModeBox({ mode, sections }) {
                     <span className="row-index">{String(i + 1).padStart(2, '0')}</span>
                     <span className="row-title">{s.name}</span>
                     {startingId === s.id ? (
-                      <span className="pick-status">Generating… this can take up to a minute</span>
+                      <span className="pick-status">
+                        Generating… this can take up to a minute
+                        <ProgressBar value={progress} label="Generating quiz" />
+                      </span>
                     ) : missing ? (
                       <span className="pick-note">No PDF yet</span>
                     ) : (
