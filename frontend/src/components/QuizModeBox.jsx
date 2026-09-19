@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { api } from '../api.js';
 import { QUIZ_MODES } from '../quizModes.js';
-import { useAssistant } from '../pet/PetProvider.jsx';
+import { useAssistant } from '../assistant/AssistantProvider.jsx';
 import { ChevronIcon, ClipboardIcon, CloseIcon, LightbulbIcon } from './Icons.jsx';
 import FloatingWindow from './FloatingWindow.jsx';
 import './QuizModeBox.css';

@@ -3,7 +3,7 @@ import { Link, useNavigate, useParams } from 'react-router-dom';
 import { api, friendlyError } from '../api.js';
 import { formatDate } from '../format.js';
 import { useApi } from '../useApi.js';
-import { useAssistant } from '../pet/PetProvider.jsx';
+import { useAssistant } from '../assistant/AssistantProvider.jsx';
 import { BackIcon, ChevronIcon, DocIcon, UploadIcon } from './Icons.jsx';
 import ConfirmDialog from './ConfirmDialog.jsx';
 import SectionProgress from './SectionProgress.jsx';

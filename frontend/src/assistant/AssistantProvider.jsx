@@ -1,6 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { api } from '../api.js';
-import Live2DPet from './Live2DPet.jsx';
+import Live2DAssistant from './Live2DAssistant.jsx';
 import { CORRECT_LINES, WRONG_LINES, pickLine } from './encouragements.js';
 
 const BUBBLE_MS = 3500;
@@ -25,8 +25,6 @@ const AssistantContext = createContext({
   stopAsking: noop,
 });
 
-// Used only when no question is on screen (e.g. the student taps the pet on another page): a light, local
-// canned reply. Once a question is active, submitChat calls the real Gemini-backed endpoint instead.
 function pickReply(message) {
   const text = (message || '').trim();
   if (!text) return 'I\'m listening. Tell me what you\'re stuck on.';
@@ -37,9 +35,9 @@ function pickReply(message) {
   return ASSISTANT_REPLIES[Math.floor(Math.random() * ASSISTANT_REPLIES.length)];
 }
 
-// The assistant lives above the router so it stays on screen while the student moves between pages.
 export function AssistantProvider({ children }) {
   const assistantRef = useRef(null);
+  const messageListRef = useRef(null);
   const lastLineId = useRef(null);
   const hideTimer = useRef(null);
   const [bubble, setBubble] = useState(null);
@@ -47,10 +45,14 @@ export function AssistantProvider({ children }) {
   const [chatInput, setChatInput] = useState('');
   const [chatSending, setChatSending] = useState(false);
   const [messages, setMessages] = useState([{ role: 'assistant', text: GENERIC_GREETING }]);
-  // Which question (if any) the quiz page currently has on screen; set via askAbout/stopAsking below.
   const [askContext, setAskContext] = useState(null); // { quizId, questionId } | null
 
-  // Show `text` in the bubble; it fades after BUBBLE_MS unless `sticky` (used while waiting on the backend).
+  useEffect(() => {
+    const list = messageListRef.current;
+    if (!list) return;
+    list.scrollTop = list.scrollHeight;
+  }, [messages, chatOpen]);
+
   const showBubble = useCallback((text, { sticky = false } = {}) => {
     clearTimeout(hideTimer.current);
     setBubble(text);
@@ -62,11 +64,6 @@ export function AssistantProvider({ children }) {
     setBubble(null);
   }, []);
 
-  // The quiz page calls this with the question currently on screen; the pet then answers about that question
-  // for real instead of giving a canned reply. A new question starts a fresh conversation.
-  // Bails out to the same object when nothing changed: the caller (QuizPage) re-runs this on every render of
-  // the pet context (e.g. each keystroke in the chat box changes the context's identity), and returning a new object
-  // literal every time here would re-trigger that same context change right back — an infinite loop.
   const askAbout = useCallback((quizId, questionId) => {
     setAskContext((prev) => (prev?.quizId === quizId && prev?.questionId === questionId ? prev : { quizId, questionId }));
   }, []);
@@ -88,29 +85,23 @@ export function AssistantProvider({ children }) {
     if (!askContext) {
       const assistantMessage = { role: 'assistant', text: pickReply(trimmed) };
       setMessages((current) => [...current, userMessage, assistantMessage]);
-      showBubble(assistantMessage.text);
       return;
     }
 
-    // The backend keeps no state between calls, so the transcript so far goes along on every turn. Its role
-    // names are 'student' and 'pet', whatever the frontend calls them.
-    const history = messages.map((m) => ({ role: m.role === 'user' ? 'student' : 'pet', text: m.text }));
+    const history = messages.map((m) => ({ role: m.role === 'user' ? 'student' : 'assistant', text: m.text }));
     setMessages((current) => [...current, userMessage]);
     setChatSending(true);
     try {
       const { reply } = await api.chat.ask(askContext.quizId, askContext.questionId, { message: trimmed, history });
       setMessages((current) => [...current, { role: 'assistant', text: reply }]);
-      showBubble(reply);
     } catch (err) {
       const text = `I couldn't reach the server: ${err.message}`;
       setMessages((current) => [...current, { role: 'assistant', text }]);
-      showBubble(text);
     } finally {
       setChatSending(false);
     }
   }, [askContext, chatInput, chatSending, messages, showBubble]);
 
-  // Say a random line from `lines`, in text and (if the clip exists) voice. Returns the line.
   const say = useCallback(
     (lines) => {
       const line = pickLine(lines, lastLineId.current);
@@ -122,16 +113,18 @@ export function AssistantProvider({ children }) {
     [showBubble]
   );
 
-  // Call when the student answers correctly: a random encouraging line.
   const cheer = useCallback(() => say(CORRECT_LINES), [say]);
 
-  // Right or wrong, the assistant answers in voice. A `text` replaces the line in the bubble (used for the quiz score),
-  // but the voice line is still spoken.
   const answerResult = useCallback(
     (correct, text) => {
-      const line = say(correct ? CORRECT_LINES : WRONG_LINES);
+      if (correct) {
+        cheer();
+        return;
+      }
+
+      const line = say(WRONG_LINES);
       if (text) showBubble(text);
-      if (!correct) setMessages((current) => [...current, { role: 'assistant', text: text ?? line.text }]);
+      else showBubble(line.text);
     },
     [say, showBubble]
   );
@@ -139,7 +132,6 @@ export function AssistantProvider({ children }) {
   const value = useMemo(
     () => ({
       cheer,
-      // Status messages for backend work. `loading` stays until the next message replaces it.
       loading: (text) => showBubble(text, { sticky: true }),
       success: (text) => showBubble(text),
       error: (text) => showBubble(text),
@@ -165,24 +157,24 @@ export function AssistantProvider({ children }) {
   return (
     <AssistantContext.Provider value={value}>
       {children}
-      <div className="pet-shell">
+      <div className="assistant-shell">
         {chatOpen && (
-          <div className="pet-chat-panel" role="dialog" aria-label="Assistant chat">
-            <div className="pet-chat-header">
+          <div className="assistant-chat-panel" role="dialog" aria-label="Assistant chat">
+            <div className="assistant-chat-header">
               <span>Study assistant</span>
-              <button type="button" className="pet-chat-close" onClick={() => setChatOpen(false)} aria-label="Close assistant chat">
+              <button type="button" className="assistant-chat-close" onClick={() => setChatOpen(false)} aria-label="Close assistant chat">
                 ×
               </button>
             </div>
-            <div className="pet-chat-message-list">
+            <div ref={messageListRef} className="assistant-chat-message-list">
               {messages.map((msg, index) => (
-                <div key={`${msg.role}-${index}`} className={`pet-chat-message pet-chat-message-${msg.role}`}>
+                <div key={`${msg.role}-${index}`} className={`assistant-chat-message assistant-chat-message-${msg.role}`}>
                   {msg.text}
                 </div>
               ))}
-              {chatSending && <div className="pet-chat-message pet-chat-message-assistant pet-chat-message-thinking">…</div>}
+              {chatSending && <div className="assistant-chat-message assistant-chat-message-assistant assistant-chat-message-thinking">…</div>}
             </div>
-            <div className="pet-chat-form">
+            <div className="assistant-chat-form">
               <input
                 type="text"
                 value={chatInput}
@@ -203,7 +195,7 @@ export function AssistantProvider({ children }) {
             </div>
           </div>
         )}
-        <Live2DPet ref={assistantRef} bubble={bubble} onTap={handleAssistantTap} />
+        <Live2DAssistant ref={assistantRef} bubble={bubble} onTap={handleAssistantTap} />
       </div>
     </AssistantContext.Provider>
   );
@@ -212,6 +204,3 @@ export function AssistantProvider({ children }) {
 export function useAssistant() {
   return useContext(AssistantContext);
 }
-
-export const PetProvider = AssistantProvider;
-export const usePet = useAssistant;

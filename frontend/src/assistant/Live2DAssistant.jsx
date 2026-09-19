@@ -1,7 +1,7 @@
 import { useEffect, useImperativeHandle, useRef, useState } from 'react';
 import * as PIXI from 'pixi.js';
 import { loadCubismCore, resolveModelUrl } from './live2dAssets.js';
-import './Live2DPet.css';
+import './Live2DAssistant.css';
 
 // pixi-live2d-display finds the ticker through window.PIXI.
 window.PIXI = PIXI;
@@ -19,14 +19,24 @@ function clamp(value, min, max) {
 }
 
 function updateGaze(model, pointerX, pointerY) {
-  const coreModel = model?.internalModel?.coreModel;
-  if (!coreModel) return;
+  if (!model) return;
 
   const rect = model.canvas?.getBoundingClientRect?.() ?? { width: WIDTH, height: HEIGHT, left: 0, top: 0 };
-  const centerX = rect.left + rect.width / 2;
-  const centerY = rect.top + rect.height / 2;
-  const dx = clamp((pointerX - centerX) / Math.max(rect.width * 0.6, 1), -1, 1);
-  const dy = clamp((pointerY - centerY) / Math.max(rect.height * 0.6, 1), -1, 1);
+  const localX = pointerX - rect.left - rect.width * 3.5;
+  const localY = pointerY - rect.top - rect.height * 0.35;
+
+  if (typeof model.focus === 'function') {
+    model.focus(localX, localY, false);
+    return;
+  }
+
+  const modelCenterX = rect.width * 3.5;
+  const modelCenterY = rect.height * 0.35;
+  const dx = clamp((localX - modelCenterX) / Math.max(rect.width * 0.5, 1), -1, 1);
+  const dy = clamp((localY - modelCenterY) / Math.max(rect.height * 0.5, 1), -1, 1);
+
+  const coreModel = model.internalModel?.coreModel;
+  if (!coreModel) return;
 
   const eyeX = dx * 0.9;
   const eyeY = -dy * 0.75;
@@ -94,9 +104,10 @@ function playWithLipSync(model, audioUrl, onError) {
     .catch(() => stop(true));
 }
 
-export default function Live2DPet({ ref, bubble, onTap }) {
+export default function Live2DAssistant({ ref, bubble, onTap }) {
   const hostRef = useRef(null);
   const modelRef = useRef(null);
+  const pointerRef = useRef({ x: window.innerWidth / 2, y: window.innerHeight / 2 });
   const [failed, setFailed] = useState(false);
 
   useEffect(() => {
@@ -104,8 +115,16 @@ export default function Live2DPet({ ref, bubble, onTap }) {
     let app = null;
     let onPointerDown = null;
     let onPointerMove = null;
+    let rafId = null;
     const canvas = document.createElement('canvas');
     hostRef.current.appendChild(canvas);
+
+    const loop = () => {
+      if (!cancelled && modelRef.current) {
+        updateGaze(modelRef.current, pointerRef.current.x, pointerRef.current.y);
+        rafId = requestAnimationFrame(loop);
+      }
+    };
 
     (async () => {
       try {
@@ -133,9 +152,10 @@ export default function Live2DPet({ ref, bubble, onTap }) {
         modelRef.current = model;
 
         onPointerMove = (event) => {
-          updateGaze(model, event.clientX, event.clientY);
+          pointerRef.current = { x: event.clientX, y: event.clientY };
         };
         window.addEventListener('pointermove', onPointerMove);
+        rafId = requestAnimationFrame(loop);
 
         // Tapping the pet makes it react. The pet sits over the page with pointer-events off so it never blocks
         // what is underneath, so this listens on the window and asks the model whether the tap landed on it.
@@ -148,7 +168,7 @@ export default function Live2DPet({ ref, bubble, onTap }) {
         };
         window.addEventListener('pointerdown', onPointerDown);
       } catch (error) {
-        console.warn('Live2D pet unavailable, showing the text bubble only:', error);
+        console.warn('Live2D assistant unavailable, showing the text bubble only:', error);
         if (!cancelled) setFailed(true);
       }
     })();
@@ -157,6 +177,7 @@ export default function Live2DPet({ ref, bubble, onTap }) {
       cancelled = true;
       if (onPointerMove) window.removeEventListener('pointermove', onPointerMove);
       if (onPointerDown) window.removeEventListener('pointerdown', onPointerDown);
+      if (rafId) cancelAnimationFrame(rafId);
       modelRef.current = null;
       app?.destroy(false, { children: true });
       canvas.remove();
@@ -174,17 +195,17 @@ export default function Live2DPet({ ref, bubble, onTap }) {
   }));
 
   return (
-    <div className="pet-root" aria-live="polite">
+    <div className="assistant-root" aria-live="polite">
       {bubble && (
-        <div className="pet-dialog" role="dialog" aria-label="Pet message">
-          <div className="pet-dialog-header">
-            <span className="pet-dialog-badge">助手</span>
+        <div className="assistant-dialog" role="dialog" aria-label="Assistant message">
+          <div className="assistant-dialog-header">
+            <span className="assistant-dialog-badge">助手</span>
           </div>
-          <div className="pet-dialog-body">{bubble}</div>
+          <div className="assistant-dialog-body">{bubble}</div>
         </div>
       )}
-      <div ref={hostRef} className="pet-canvas" />
-      {failed && <div className="pet-fallback" aria-hidden="true">🐱</div>}
+      <div ref={hostRef} className="assistant-canvas" />
+      {failed && <div className="assistant-fallback" aria-hidden="true">🐱</div>}
     </div>
   );
 }

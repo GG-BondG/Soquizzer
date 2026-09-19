@@ -2,46 +2,41 @@ import { act, fireEvent, render, screen } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { useEffect, useImperativeHandle } from 'react';
 import { api } from '../api.js';
-import { PetProvider, usePet } from './PetProvider.jsx';
+import { AssistantProvider, useAssistant } from './AssistantProvider.jsx';
 import { CORRECT_LINES, WRONG_LINES } from './encouragements.js';
 
 const perform = vi.hoisted(() => vi.fn());
 
-vi.mock('./Live2DPet.jsx', () => {
-  function FakePet({ ref, bubble, onTap }) {
+vi.mock('./Live2DAssistant.jsx', () => {
+  function FakeAssistant({ ref, bubble, onTap }) {
     useImperativeHandle(ref, () => ({ perform }));
     return (
-      <button type="button" onClick={onTap} data-testid="pet-button">
+      <button type="button" onClick={onTap} data-testid="assistant-button">
         {bubble ?? 'no-bubble'}
       </button>
     );
   }
-  return { default: FakePet };
+  return { default: FakeAssistant };
 });
 
 vi.mock('../api.js', () => ({
   api: { chat: { ask: vi.fn() } },
 }));
 
-// A fresh vi.fn() per test, rather than api.chat.ask.mockReset()/mockClear() on a shared instance: calling
-// mockReset/mockClear in beforeEach and later mockImplementation-ing a synchronous throw in the test body
-// triggers a Vitest/tinyspy issue where the promise's own try/catch (confirmed to run via tracing) still gets
-// reported as an unhandled/uncaught error. Reassigning the mock avoids it entirely and keeps tests isolated.
 beforeEach(() => {
   api.chat.ask = vi.fn();
+  perform.mockClear();
 });
 
-function PetProbe({ onClick }) {
-  const pet = usePet();
+function AssistantProbe({ onClick }) {
+  const assistant = useAssistant();
   return (
-    <button type="button" data-testid="probe" onClick={() => onClick(pet)}>
+    <button type="button" data-testid="probe" onClick={() => onClick(assistant)}>
       probe
     </button>
   );
 }
 
-// Wrapped in an async act() so the promise inside submitChat settles (and is caught) before the test moves on,
-// instead of leaking past a synchronous fireEvent.click into an unhandled rejection.
 async function send(text) {
   fireEvent.change(screen.getByPlaceholderText('Ask your assistant...'), { target: { value: text } });
   await act(async () => {
@@ -49,76 +44,77 @@ async function send(text) {
   });
 }
 
-describe('PetProvider', () => {
-  beforeEach(() => perform.mockClear());
-
-  it('opens the assistant chat when the pet is tapped', () => {
+describe('AssistantProvider', () => {
+  it('opens the assistant chat when the assistant is tapped', () => {
     render(
-      <PetProvider>
+      <AssistantProvider>
         <div>page</div>
-      </PetProvider>
+      </AssistantProvider>
     );
 
-    fireEvent.click(screen.getByTestId('pet-button'));
+    fireEvent.click(screen.getByTestId('assistant-button'));
 
     expect(screen.getByRole('dialog', { name: 'Assistant chat' })).toBeTruthy();
   });
 
-  it('opens a chat panel and lets the user send a message', () => {
+  it('opens a chat panel and lets the user send a message', async () => {
     render(
-      <PetProvider>
+      <AssistantProvider>
         <div>page</div>
-      </PetProvider>
+      </AssistantProvider>
     );
 
-    fireEvent.click(screen.getByTestId('pet-button'));
+    fireEvent.click(screen.getByTestId('assistant-button'));
     fireEvent.change(screen.getByPlaceholderText('Ask your assistant...'), { target: { value: 'hello' } });
     fireEvent.click(screen.getByText('Send'));
 
-    expect(screen.getByText('hello')).toBeTruthy();
+    expect(await screen.findByText('hello')).toBeTruthy();
     expect(screen.getAllByText(/hey there|i'm ready to help/i).length).toBeGreaterThan(0);
   });
 
-  it('keeps only one dialog open when the pet is tapped', () => {
+  it('does not show a duplicate floating bubble when assistant replies in chat', async () => {
+    api.chat.ask.mockResolvedValue({ reply: 'Think about what each organelle does.' });
     render(
-      <PetProvider>
-        <div>page</div>
-      </PetProvider>
+      <AssistantProvider>
+        <AssistantProbe onClick={(assistant) => assistant.askAbout('quiz1', 'q1')} />
+      </AssistantProvider>
     );
 
-    fireEvent.click(screen.getByTestId('pet-button'));
+    fireEvent.click(screen.getByTestId('probe'));
+    fireEvent.click(screen.getByTestId('assistant-button'));
+    await send('why not option 2?');
 
-    expect(screen.getByRole('dialog', { name: 'Assistant chat' })).toBeTruthy();
-    expect(screen.queryByText(/I'm here when you need me/i)).toBeNull();
+    expect(screen.getAllByText('Think about what each organelle does.')).toHaveLength(1);
   });
 
   it('reacts differently to correct and wrong answers', () => {
     const { unmount } = render(
-      <PetProvider>
-        <PetProbe onClick={(pet) => pet.answerResult(true, 'Correct! Great job!')} />
-      </PetProvider>
+      <AssistantProvider>
+        <AssistantProbe onClick={(assistant) => assistant.answerResult(true, 'Correct! Great job!')} />
+      </AssistantProvider>
     );
 
     fireEvent.click(screen.getByTestId('probe'));
-    expect(screen.getByText('Correct! Great job!')).toBeTruthy();
+    expect(screen.queryByText('Correct! Great job!')).toBeNull();
     unmount();
 
     render(
-      <PetProvider>
-        <PetProbe onClick={(pet) => pet.answerResult(false, 'Not quite. Try again!')} />
-      </PetProvider>
+      <AssistantProvider>
+        <AssistantProbe onClick={(assistant) => assistant.answerResult(false, 'Not quite. Try again!')} />
+      </AssistantProvider>
     );
 
+    fireEvent.click(screen.getByTestId('assistant-button'));
     fireEvent.click(screen.getByTestId('probe'));
     expect(screen.getByText('Not quite. Try again!')).toBeTruthy();
   });
 
   it('speaks a voiced comforting line after a wrong answer, and a cheering one after a correct answer', () => {
     render(
-      <PetProvider>
-        <PetProbe onClick={(pet) => pet.answerResult(false)} />
-        <PetProbe onClick={(pet) => pet.answerResult(true)} />
-      </PetProvider>
+      <AssistantProvider>
+        <AssistantProbe onClick={(assistant) => assistant.answerResult(false)} />
+        <AssistantProbe onClick={(assistant) => assistant.answerResult(true)} />
+      </AssistantProvider>
     );
 
     const [wrong, correct] = screen.getAllByTestId('probe');
@@ -135,9 +131,9 @@ describe('PetProvider', () => {
 
   it('still speaks the voice line on a wrong answer when a score text replaces the bubble', () => {
     render(
-      <PetProvider>
-        <PetProbe onClick={(pet) => pet.answerResult(false, '1 out of 5.')} />
-      </PetProvider>
+      <AssistantProvider>
+        <AssistantProbe onClick={(assistant) => assistant.answerResult(false, '1 out of 5.')} />
+      </AssistantProvider>
     );
 
     fireEvent.click(screen.getByTestId('probe'));
@@ -149,45 +145,45 @@ describe('PetProvider', () => {
   describe('asking about the question on screen', () => {
     it('greets with a question-specific line once askAbout is called', () => {
       render(
-        <PetProvider>
-          <PetProbe onClick={(pet) => pet.askAbout('quiz1', 'q1')} />
-        </PetProvider>
+        <AssistantProvider>
+          <AssistantProbe onClick={(assistant) => assistant.askAbout('quiz1', 'q1')} />
+        </AssistantProvider>
       );
 
       fireEvent.click(screen.getByTestId('probe'));
-      fireEvent.click(screen.getByTestId('pet-button'));
+      fireEvent.click(screen.getByTestId('assistant-button'));
 
       expect(screen.getByText('Stuck on this one? Ask me anything about it.')).toBeTruthy();
     });
 
-    it('calls the real backend (not the canned replies) once a question is active', async () => {
+    it('calls the real backend once a question is active', async () => {
       api.chat.ask.mockResolvedValue({ reply: 'Think about what each organelle does.' });
       render(
-        <PetProvider>
-          <PetProbe onClick={(pet) => pet.askAbout('quiz1', 'q1')} />
-        </PetProvider>
+        <AssistantProvider>
+          <AssistantProbe onClick={(assistant) => assistant.askAbout('quiz1', 'q1')} />
+        </AssistantProvider>
       );
       fireEvent.click(screen.getByTestId('probe'));
-      fireEvent.click(screen.getByTestId('pet-button'));
+      fireEvent.click(screen.getByTestId('assistant-button'));
 
       await send('why not option 2?');
 
       expect(screen.getAllByText('Think about what each organelle does.').length).toBeGreaterThan(0);
       expect(api.chat.ask).toHaveBeenCalledWith('quiz1', 'q1', {
         message: 'why not option 2?',
-        history: [{ role: 'pet', text: 'Stuck on this one? Ask me anything about it.' }],
+        history: [{ role: 'assistant', text: 'Stuck on this one? Ask me anything about it.' }],
       });
     });
 
     it('shows a friendly message if the chat request fails', async () => {
       api.chat.ask.mockRejectedValue(new Error('Request timed out'));
       render(
-        <PetProvider>
-          <PetProbe onClick={(pet) => pet.askAbout('quiz1', 'q1')} />
-        </PetProvider>
+        <AssistantProvider>
+          <AssistantProbe onClick={(assistant) => assistant.askAbout('quiz1', 'q1')} />
+        </AssistantProvider>
       );
       fireEvent.click(screen.getByTestId('probe'));
-      fireEvent.click(screen.getByTestId('pet-button'));
+      fireEvent.click(screen.getByTestId('assistant-button'));
 
       await send('help');
 
@@ -196,13 +192,13 @@ describe('PetProvider', () => {
 
     it('closes the chat and starts a fresh conversation when the active question changes', () => {
       function AskSwitcher() {
-        const pet = usePet();
+        const assistant = useAssistant();
         return (
           <>
-            <button type="button" data-testid="ask-q1" onClick={() => pet.askAbout('quiz1', 'q1')}>
+            <button type="button" data-testid="ask-q1" onClick={() => assistant.askAbout('quiz1', 'q1')}>
               ask q1
             </button>
-            <button type="button" data-testid="ask-q2" onClick={() => pet.askAbout('quiz1', 'q2')}>
+            <button type="button" data-testid="ask-q2" onClick={() => assistant.askAbout('quiz1', 'q2')}>
               ask q2
             </button>
           </>
@@ -210,13 +206,13 @@ describe('PetProvider', () => {
       }
 
       render(
-        <PetProvider>
+        <AssistantProvider>
           <AskSwitcher />
-        </PetProvider>
+        </AssistantProvider>
       );
 
       fireEvent.click(screen.getByTestId('ask-q1'));
-      fireEvent.click(screen.getByTestId('pet-button'));
+      fireEvent.click(screen.getByTestId('assistant-button'));
       expect(screen.getByRole('dialog', { name: 'Assistant chat' })).toBeTruthy();
 
       fireEvent.click(screen.getByTestId('ask-q2'));
@@ -226,13 +222,13 @@ describe('PetProvider', () => {
 
     it('falls back to the canned reply once stopAsking is called', async () => {
       function Controls() {
-        const pet = usePet();
+        const assistant = useAssistant();
         return (
           <>
-            <button type="button" data-testid="ask" onClick={() => pet.askAbout('quiz1', 'q1')}>
+            <button type="button" data-testid="ask" onClick={() => assistant.askAbout('quiz1', 'q1')}>
               ask
             </button>
-            <button type="button" data-testid="stop" onClick={() => pet.stopAsking()}>
+            <button type="button" data-testid="stop" onClick={() => assistant.stopAsking()}>
               stop
             </button>
           </>
@@ -240,14 +236,14 @@ describe('PetProvider', () => {
       }
 
       render(
-        <PetProvider>
+        <AssistantProvider>
           <Controls />
-        </PetProvider>
+        </AssistantProvider>
       );
 
       fireEvent.click(screen.getByTestId('ask'));
       fireEvent.click(screen.getByTestId('stop'));
-      fireEvent.click(screen.getByTestId('pet-button'));
+      fireEvent.click(screen.getByTestId('assistant-button'));
 
       await send('hello');
 
@@ -255,25 +251,23 @@ describe('PetProvider', () => {
       expect(screen.getAllByText(/hey there|i'm ready to help/i).length).toBeGreaterThan(0);
     });
 
-    it('does not loop when askAbout is called on every render (QuizPage effect depends on `pet`, whose identity changes on every keystroke)', () => {
+    it('does not loop when askAbout is called on every render', () => {
       let calls = 0;
       function ReAsker() {
-        const pet = usePet();
-        // No dependency array: runs after every render, standing in for an effect that depends on `pet` itself.
+        const assistant = useAssistant();
         useEffect(() => {
           calls += 1;
-          pet.askAbout('quiz1', 'q1');
+          assistant.askAbout('quiz1', 'q1');
         });
         return null;
       }
 
       render(
-        <PetProvider>
+        <AssistantProvider>
           <ReAsker />
-        </PetProvider>
+        </AssistantProvider>
       );
 
-      // Unbounded (React throws "Maximum update depth exceeded") if askAbout returned a new object every call.
       expect(calls).toBeLessThan(10);
     });
   });

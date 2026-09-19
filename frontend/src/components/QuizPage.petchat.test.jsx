@@ -1,21 +1,21 @@
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { PetProvider } from '../pet/PetProvider.jsx';
+import { AssistantProvider } from '../assistant/AssistantProvider.jsx';
 import QuizPage from './QuizPage.jsx';
 
 const chatAsk = vi.hoisted(() => vi.fn());
-// The pet renders every time PetProvider does, so counting its renders counts the provider's. A render loop
+// The assistant renders every time AssistantProvider does, so counting its renders counts the provider's. A render loop
 // fails the test with an error here instead of hanging it.
-const petRenders = vi.hoisted(() => ({ count: 0 }));
+const assistantRenders = vi.hoisted(() => ({ count: 0 }));
 
-vi.mock('../pet/Live2DPet.jsx', () => ({
+vi.mock('../assistant/Live2DAssistant.jsx', () => ({
   default: ({ onTap }) => {
-    petRenders.count += 1;
-    if (petRenders.count > 200) throw new Error('PetProvider is re-rendering in a loop');
+    assistantRenders.count += 1;
+    if (assistantRenders.count > 200) throw new Error('AssistantProvider is re-rendering in a loop');
     return (
-      <button type="button" data-testid="pet-button" onClick={onTap}>
-        pet
+      <button type="button" data-testid="assistant-button" onClick={onTap}>
+        assistant
       </button>
     );
   },
@@ -34,11 +34,11 @@ const quiz = {
 function renderQuiz() {
   render(
     <MemoryRouter initialEntries={[{ pathname: '/quiz/quiz-1', state: { quiz, mode: 'mock' } }]}>
-      <PetProvider>
+      <AssistantProvider>
         <Routes>
           <Route path="/quiz/:quizId" element={<QuizPage />} />
         </Routes>
-      </PetProvider>
+      </AssistantProvider>
     </MemoryRouter>
   );
 }
@@ -47,39 +47,39 @@ const settle = () => act(async () => new Promise((resolve) => setTimeout(resolve
 
 // The real QuizPage inside the real PetProvider: the unit tests of each use a stand-in for the other, so they
 // cannot see a loop that only shows up when the two are wired together.
-describe('QuizPage wired to the real pet', () => {
+describe('QuizPage wired to the real assistant', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    petRenders.count = 0;
+    assistantRenders.count = 0;
   });
 
   it('settles after mounting instead of re-rendering forever', async () => {
     renderQuiz();
     await settle();
 
-    const settled = petRenders.count;
+    const settled = assistantRenders.count;
     await settle();
 
-    expect(petRenders.count).toBe(settled);
+    expect(assistantRenders.count).toBe(settled);
   });
 
   it('does not loop while the student types in the chat box', async () => {
     renderQuiz();
-    fireEvent.click(screen.getByTestId('pet-button'));
+    fireEvent.click(screen.getByTestId('assistant-button'));
     await settle();
 
     fireEvent.change(screen.getByPlaceholderText('Ask your assistant...'), { target: { value: 'hi' } });
     await settle();
-    const settled = petRenders.count;
+    const settled = assistantRenders.count;
     await settle();
 
-    expect(petRenders.count).toBe(settled);
+    expect(assistantRenders.count).toBe(settled);
   });
 
   it('asks the tutor about the question that is on screen', async () => {
     chatAsk.mockResolvedValue({ reply: 'Think about what makes energy.' });
     renderQuiz();
-    fireEvent.click(screen.getByTestId('pet-button'));
+    fireEvent.click(screen.getByTestId('assistant-button'));
     fireEvent.change(screen.getByPlaceholderText('Ask your assistant...'), { target: { value: 'Help?' } });
 
     fireEvent.click(screen.getByText('Send'));

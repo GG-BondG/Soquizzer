@@ -20,7 +20,25 @@ class Settings(BaseSettings):
     mistake_review_limit: int = 20
     questions_per_quiz: int = 20
     quiz_language: str = "English"  # the language Gemini writes quizzes in, whatever language the material is in
-    cors_origins: list[str] = ["http://localhost:5173", "http://127.0.0.1:5173", "null"]  # Vite dev server, Electron file://
+    cors_origins: list[str] = [
+        "http://localhost:5173",
+        "http://localhost:5174",
+        "http://localhost:5175",
+        "http://localhost:5176",
+        "http://localhost:5177",
+        "http://localhost:5178",
+        "http://localhost:5179",
+        "http://localhost:5180",
+        "http://127.0.0.1:5173",
+        "http://127.0.0.1:5174",
+        "http://127.0.0.1:5175",
+        "http://127.0.0.1:5176",
+        "http://127.0.0.1:5177",
+        "http://127.0.0.1:5178",
+        "http://127.0.0.1:5179",
+        "http://127.0.0.1:5180",
+        "null",
+    ]  # Vite dev server auto-increment ports, Electron file://
 
     @property
     def database_url(self) -> str:

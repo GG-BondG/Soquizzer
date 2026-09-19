@@ -4,7 +4,7 @@ import { api } from '../api.js';
 import { formatClock, formatDuration, formatPercent, typeLabel } from '../format.js';
 import { QUIZ_MODES } from '../quizModes.js';
 import { useApi } from '../useApi.js';
-import { useAssistant } from '../pet/PetProvider.jsx';
+import { useAssistant } from '../assistant/AssistantProvider.jsx';
 import { BackIcon, ClockIcon } from './Icons.jsx';
 import MathText from './MathText.jsx';
 import QuestionReview from './QuestionReview.jsx';

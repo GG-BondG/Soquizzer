@@ -13,7 +13,7 @@ const assistant = vi.hoisted(() => ({
 }));
 const check = vi.hoisted(() => vi.fn());
 
-vi.mock('../pet/PetProvider.jsx', () => ({ useAssistant: () => assistant }));
+vi.mock('../assistant/AssistantProvider.jsx', () => ({ useAssistant: () => assistant }));
 vi.mock('../api.js', () => ({ api: { quizzes: { check, get: vi.fn(), submit: vi.fn() } } }));
 
 const quiz = {
@@ -59,7 +59,6 @@ describe('QuizPage in Trivia', () => {
     expect(check).toHaveBeenCalledWith('quiz-1', 'q1', 1);
     expect(await screen.findByText('Mitochondria make ATP.')).toBeTruthy();
     expect(screen.getByText('Correct')).toBeTruthy();
-    // no text argument: the pet picks one of its own voiced lines
     expect(assistant.answerResult).toHaveBeenCalledWith(true);
   });
 
@@ -71,7 +70,6 @@ describe('QuizPage in Trivia', () => {
 
     expect(await screen.findByText('Incorrect')).toBeTruthy();
     expect(screen.getByText('Correct answer')).toBeTruthy();
-    // no text argument: the assistant consoles with one of its own voiced lines
     expect(assistant.answerResult).toHaveBeenCalledWith(false);
   });
 

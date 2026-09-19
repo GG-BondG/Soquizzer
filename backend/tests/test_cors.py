@@ -1,7 +1,15 @@
 import pytest
 
 
-@pytest.mark.parametrize("origin", ["http://localhost:5173", "http://127.0.0.1:5173", "null"])
+@pytest.mark.parametrize(
+    "origin",
+    [
+        "http://localhost:5173",
+        "http://localhost:5180",
+        "http://127.0.0.1:5173",
+        "null",
+    ],
+)
 def test_the_vite_dev_server_and_electron_may_call_the_api(client, origin):
     response = client.options(
         "/api/courses",
