@@ -3,9 +3,11 @@ import { Link, useNavigate } from 'react-router-dom';
 import { api, SUBJECTS, subjectLabel } from '../api.js';
 import { formatDate } from '../format.js';
 import { useApi } from '../useApi.js';
-import { useAssistant } from '../pet/PetProvider.jsx';
+import { useAssistant } from '../assistant/AssistantProvider.jsx';
 import { PlusIcon, ClockIcon, DocIcon, CloseIcon } from './Icons.jsx';
 import FloatingWindow from './FloatingWindow.jsx';
+import ActivityHeatmap from './ActivityHeatmap.jsx';
+import logo from '../../resources/200_001-removebg-preview.png';
 import './MainMenu.css';
 
 const EMPTY_FORM = { name: '', subject: 'OTHER' };
@@ -50,14 +52,16 @@ export default function MainMenu() {
     <div className="page menu-page">
       <div className="menu-header">
         <div className="brand">
-          <span className="brand-dot" />
-          <span className="brand-name">Coursebook</span>
+          <img className="brand-logo" src={logo} alt="" />
+          <span className="brand-name">Soquizzer</span>
         </div>
         <Link to="/history" className="btn">
           <ClockIcon />
           History
         </Link>
       </div>
+
+      <ActivityHeatmap />
 
       <div className="menu-label">Your courses{courses ? ` · ${courses.length}` : ''}</div>
 
@@ -98,7 +102,7 @@ export default function MainMenu() {
         ))}
       </div>
 
-      <FloatingWindow originRef={createCardRef} open={open} onClose={() => !busy && setOpen(false)} collapsed={<PlusIcon />}>
+      <FloatingWindow originRef={createCardRef} open={open} onClose={() => !busy && setOpen(false)} collapsed={<PlusIcon style={{ color: 'var(--brand)' }} />}>
         <form className="form-inner" onSubmit={handleSubmit}>
           <div className="form-header">
             <div className="form-title">New course</div>

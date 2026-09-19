@@ -81,6 +81,14 @@ describe('requests', () => {
     expect(called(fetch).url).toBe('http://localhost:8000/api/courses/a%2Fb%20c');
   });
 
+  it("asks for one section's progress, not the whole course's", async () => {
+    const fetch = mockFetch({ body: { by_type: [], mistakes: [], reread: [] } });
+
+    await api.sections.progress('s1');
+
+    expect(called(fetch).url).toBe('http://localhost:8000/api/sections/s1/progress');
+  });
+
   it('rejects with the server message, status and detail', async () => {
     mockFetch({ status: 404, body: { detail: 'Course c1 not found' } });
 
@@ -121,10 +129,35 @@ describe('requests', () => {
     });
   });
 
+  it('checks one answer against its question and sends the picked option', async () => {
+    const fetch = mockFetch({ body: { is_correct: true } });
+
+    await api.quizzes.check('q1', 'a', 2);
+
+    expect(called(fetch)).toMatchObject({
+      url: 'http://localhost:8000/api/quizzes/q1/questions/a/check',
+      method: 'POST',
+    });
+    expect(JSON.parse(called(fetch).body)).toEqual({ selected_index: 2 });
+  });
+
   it('leaves out history filters that are not set', async () => {
     const fetch = mockFetch({ body: {} });
     await api.history.list({ courseId: 'c1', limit: 5 });
     expect(called(fetch).url).toBe('http://localhost:8000/api/history?course_id=c1&limit=5');
+  });
+
+  it('asks the pet about a question, sending the transcript so far', async () => {
+    const fetch = mockFetch({ body: { reply: 'Think about what each organelle does.' } });
+    const history = [{ role: 'student', text: 'hi' }, { role: 'pet', text: 'what have you tried?' }];
+
+    const result = await api.chat.ask('q1', 'a1', { message: 'still stuck', history });
+
+    expect(result).toEqual({ reply: 'Think about what each organelle does.' });
+    const request = called(fetch);
+    expect(request.url).toBe('http://localhost:8000/api/quizzes/q1/questions/a1/chat');
+    expect(request.method).toBe('POST');
+    expect(JSON.parse(request.body)).toEqual({ message: 'still stuck', history });
   });
 });
 

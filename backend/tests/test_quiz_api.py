@@ -89,6 +89,7 @@ def test_unknown_section_course_quiz_are_404(client):
     assert create_quiz(client, "nope").status_code == 404
     assert client.get("/api/sections/nope/quizzes").status_code == 404
     assert client.get("/api/courses/nope/progress").status_code == 404
+    assert client.get("/api/sections/nope/progress").status_code == 404
     assert client.get("/api/quizzes/nope").status_code == 404
     assert client.delete("/api/quizzes/nope").status_code == 404
     body = {"answers": [{"question_id": "x", "selected_index": 0}]}
@@ -120,6 +121,50 @@ def test_submission_is_graded_against_the_answer_gemini_wrote(client):
     }
     wrong = by_id[quiz["questions"][2]["id"]]
     assert wrong["is_correct"] is False and wrong["answer_index"] == 1 and wrong["selected_index"] == 0
+
+
+def check(client, quiz, question_id, selected_index):
+    return client.post(f"/api/quizzes/{quiz['id']}/questions/{question_id}/check", json={"selected_index": selected_index})
+
+
+def test_checking_one_answer_reveals_it_immediately_and_records_nothing(client):
+    course_id, section_id = make_course_and_section(client)
+    quiz = create_quiz(client, section_id).json()
+    first = quiz["questions"][0]["id"]
+
+    right = check(client, quiz, first, 1)
+    wrong = check(client, quiz, first, 0)
+
+    assert right.status_code == wrong.status_code == 200
+    assert right.json() == {
+        "question_id": first, "selected_index": 1, "is_correct": True, "answer_index": 1, "explanation": "Because 1.",
+        "anchor_section": "Section 1", "source_excerpt": "Passage for question 1.",
+    }
+    assert wrong.json()["is_correct"] is False and wrong.json()["answer_index"] == 1
+    assert client.get(f"/api/sections/{section_id}/quizzes").json()[0]["attempt_count"] == 0
+    assert client.get(f"/api/courses/{course_id}/progress").json()["by_type"] == []
+
+
+def test_checking_agrees_with_what_submitting_says(client):
+    _, section_id = make_course_and_section(client)
+    quiz = create_quiz(client, section_id).json()
+    body = picks(quiz, correct_ids={quiz["questions"][0]["id"]})
+
+    checked = [check(client, quiz, a["question_id"], a["selected_index"]).json() for a in body["answers"]]
+    submitted = client.post(f"/api/quizzes/{quiz['id']}/submissions", json=body).json()["results"]
+
+    assert checked == submitted
+
+
+def test_checking_rejects_a_missing_quiz_question_or_option(client):
+    _, section_id = make_course_and_section(client)
+    quiz = create_quiz(client, section_id).json()
+    first = quiz["questions"][0]["id"]
+
+    assert check(client, {"id": "nope"}, first, 0).status_code == 404
+    assert check(client, quiz, "not-a-real-question-id", 0).status_code == 404
+    assert check(client, quiz, first, 9).status_code == 422
+    assert check(client, quiz, first, -1).status_code == 422
 
 
 def test_partial_submission_only_records_answered_questions(client):
@@ -170,6 +215,35 @@ def test_progress_lists_mistakes_and_accuracy_by_question_type(client):
     mistake = progress["mistakes"][0]
     assert mistake["quiz_id"] == quiz["id"] and mistake["type"] == "TRUE_FALSE"
     assert (mistake["selected_index"], mistake["answer_index"]) == (1, 0)
+
+
+def test_section_progress_only_counts_that_sections_answers(client):
+    course_id, section_a = make_course_and_section(client)
+    section_b = make_section(client, course_id, "Chapter 2")
+    quiz_a = create_quiz(client, section_a).json()
+    quiz_b = create_quiz(client, section_b).json()
+    a1, a2, a3, a4 = [q["id"] for q in quiz_a["questions"]]
+    submit(client, quiz_a, correct_ids={a1, a3})  # the true/false ones are wrong
+    submit(client, quiz_b)  # everything wrong, in section B
+
+    progress = client.get(f"/api/sections/{section_a}/progress").json()
+
+    assert progress["by_type"] == [
+        {"type": "MULTIPLE_CHOICE", "total": 2, "correct": 2},
+        {"type": "TRUE_FALSE", "total": 2, "correct": 0},
+    ]
+    assert {m["question_id"] for m in progress["mistakes"]} == {a2, a4}
+    assert {m["quiz_id"] for m in progress["mistakes"]} == {quiz_a["id"]}
+    assert {r["anchor_section"] for r in progress["reread"]} == {"Section 1", "Section 2"}
+    course = client.get(f"/api/courses/{course_id}/progress").json()
+    assert sum(t["total"] for t in course["by_type"]) == 8  # the course still adds both sections up
+
+
+def test_section_progress_is_empty_before_any_answer(client):
+    _, section_id = make_course_and_section(client)
+    create_quiz(client, section_id)
+
+    assert client.get(f"/api/sections/{section_id}/progress").json() == {"by_type": [], "mistakes": [], "reread": []}
 
 
 def test_next_quiz_in_a_section_re_reads_the_mistakes_still_open(client, quiz_generator):

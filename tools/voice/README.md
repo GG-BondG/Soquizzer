@@ -1,8 +1,8 @@
 # Voice clip generator
 
-`make_voice.py` makes the pet's voice clips (`frontend/public/voice/correct-XX.wav`): it reads the lines from
+`make_voice.py` makes the pet's voice clips (`frontend/public/voice/correct-NN.wav` and `wrong-NN.wav`): it reads the lines from
 `frontend/src/pet/encouragements.js`, speaks each one with an `edge-tts` voice, then converts the speech to the target
-voice with an RVC v2 model (`rvc-python`). Eight clips take about 30 seconds on a laptop CPU.
+voice with an RVC v2 model (`rvc-python`). Sixteen clips take about a minute on a laptop CPU.
 
 ## Setup (once)
 
@@ -37,6 +37,8 @@ python tools/voice/make_voice.py \
 - `--target-f0 330` measures the pitch of the source speech and shifts it to about 330 Hz, the pitch the first (Chinese-language)
   clips had. An English source voice sits around 210 Hz, so it is shifted up 7 semitones. Use `--pitch N` instead to
   set the shift yourself.
+- `--only wrong` (or `--only correct`) writes just that kind of clip and leaves the others as they are. The pitch is
+  still worked out from all the lines, so new clips match the existing ones. Use it after adding or rewording lines.
 - `--voice` picks the `edge-tts` source voice (default `en-US-AriaNeural`; list them with `edge-tts --list-voices`).
 - `--index-rate` (default 0.75) is how strongly the model's voice features are mixed in; 0.5 to 0.8 is sensible and
   higher sounds more metallic.

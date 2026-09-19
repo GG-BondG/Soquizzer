@@ -1,7 +1,7 @@
 import { useEffect, useImperativeHandle, useRef, useState } from 'react';
 import * as PIXI from 'pixi.js';
 import { loadCubismCore, resolveModelUrl } from './live2dAssets.js';
-import './Live2DPet.css';
+import './Live2DAssistant.css';
 
 // pixi-live2d-display finds the ticker through window.PIXI.
 window.PIXI = PIXI;
@@ -104,7 +104,7 @@ function playWithLipSync(model, audioUrl, onError) {
     .catch(() => stop(true));
 }
 
-export default function Live2DPet({ ref, bubble, onTap }) {
+export default function Live2DAssistant({ ref, bubble, onTap }) {
   const hostRef = useRef(null);
   const modelRef = useRef(null);
   const pointerRef = useRef({ x: window.innerWidth / 2, y: window.innerHeight / 2 });
@@ -168,7 +168,7 @@ export default function Live2DPet({ ref, bubble, onTap }) {
         };
         window.addEventListener('pointerdown', onPointerDown);
       } catch (error) {
-        console.warn('Live2D pet unavailable, showing the text bubble only:', error);
+        console.warn('Live2D assistant unavailable, showing the text bubble only:', error);
         if (!cancelled) setFailed(true);
       }
     })();
@@ -195,17 +195,17 @@ export default function Live2DPet({ ref, bubble, onTap }) {
   }));
 
   return (
-    <div className="pet-root" aria-live="polite">
+    <div className="assistant-root" aria-live="polite">
       {bubble && (
-        <div className="pet-dialog" role="dialog" aria-label="Pet message">
-          <div className="pet-dialog-header">
-            <span className="pet-dialog-badge">助手</span>
+        <div className="assistant-dialog" role="dialog" aria-label="Assistant message">
+          <div className="assistant-dialog-header">
+            <span className="assistant-dialog-badge">助手</span>
           </div>
-          <div className="pet-dialog-body">{bubble}</div>
+          <div className="assistant-dialog-body">{bubble}</div>
         </div>
       )}
-      <div ref={hostRef} className="pet-canvas" />
-      {failed && <div className="pet-fallback" aria-hidden="true">🐱</div>}
+      <div ref={hostRef} className="assistant-canvas" />
+      {failed && <div className="assistant-fallback" aria-hidden="true">🐱</div>}
     </div>
   );
 }

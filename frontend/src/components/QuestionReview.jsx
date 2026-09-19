@@ -1,4 +1,5 @@
 import { typeLabel } from '../format.js';
+import MathText from './MathText.jsx';
 import './QuestionReview.css';
 
 // One graded question: every option, the user's pick, the correct answer and the
@@ -15,13 +16,18 @@ export default function QuestionReview({
   explanation,
   anchorSection,
   sourceExcerpt,
+  animate = false,
+  revealIndex = 0,
 }) {
   const answered = selectedIndex !== null && selectedIndex !== undefined;
   const correct = answered && selectedIndex === answerIndex;
   const status = !answered ? 'skipped' : correct ? 'correct' : 'wrong';
 
   return (
-    <div className="review">
+    <div
+      className={`review review-${status} ${animate ? 'is-animated' : ''}`}
+      style={animate ? { '--review-delay': `${Math.min(revealIndex, 8) * 70}ms` } : undefined}
+    >
       <div className="review-head">
         <span className="review-num">{String(number).padStart(2, '0')}</span>
         <span className={`review-status review-status-${status}`}>
@@ -30,7 +36,9 @@ export default function QuestionReview({
         {type && <span className="review-type">{typeLabel(type)}</span>}
       </div>
 
-      <div className="review-stem">{stem}</div>
+      <div className="review-stem">
+        <MathText text={stem} />
+      </div>
 
       <div className="review-options">
         {options.map((text, i) => {
@@ -38,7 +46,9 @@ export default function QuestionReview({
           const isPicked = i === selectedIndex;
           return (
             <div key={i} className={`review-option ${isAnswer ? 'is-right' : isPicked ? 'is-wrong' : ''}`}>
-              <span className="review-option-text">{text}</span>
+              <span className="review-option-text">
+                <MathText text={text} />
+              </span>
               {(isAnswer || isPicked) && (
                 <span className="review-tag">
                   {isAnswer && isPicked ? 'Your answer · correct' : isAnswer ? 'Correct answer' : 'Your answer'}
@@ -49,7 +59,11 @@ export default function QuestionReview({
         })}
       </div>
 
-      {explanation && <div className="review-explain">{explanation}</div>}
+      {explanation && (
+        <div className="review-explain">
+          <MathText text={explanation} />
+        </div>
+      )}
 
       {(anchorSection || sourceExcerpt) && (
         <div className="review-source">
@@ -57,7 +71,11 @@ export default function QuestionReview({
             {correct ? 'From the material' : 'Re-read this'}
             {anchorSection ? ` · ${anchorSection}` : ''}
           </div>
-          {sourceExcerpt && <div className="review-source-text">{sourceExcerpt}</div>}
+          {sourceExcerpt && (
+            <div className="review-source-text">
+              <MathText text={sourceExcerpt} />
+            </div>
+          )}
         </div>
       )}
     </div>

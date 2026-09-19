@@ -10,6 +10,7 @@ from app.exception.errors import (
     LlmError,
     MaterialNotFoundError,
     NoMaterialError,
+    QuestionNotFoundError,
     QuizNotFoundError,
     UnsupportedFileTypeError,
 )
@@ -27,6 +28,7 @@ __all__ = [
     "LlmError",
     "MaterialNotFoundError",
     "NoMaterialError",
+    "QuestionNotFoundError",
     "QuizNotFoundError",
     "UnsupportedFileTypeError",
     "register_exception_handlers",

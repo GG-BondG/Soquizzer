@@ -17,6 +17,7 @@ from app.service import (
     SectionService,
     HistoryService,
     MaterialService,
+    PetChatService,
     QuizService,
 )
 
@@ -67,6 +68,18 @@ def get_quiz_service(
         settings.questions_per_quiz,
         settings.mistake_review_limit,
         settings.max_material_chars,
+    )
+
+
+def get_pet_chat_service(
+    container: Container = Depends(get_container),
+    session: Session = Depends(get_session),
+) -> PetChatService:
+    return PetChatService(
+        QuizRepository(session),
+        AnswerRepository(session),
+        container.pet_tutor,
+        container.settings.mistake_review_limit,
     )
 
 

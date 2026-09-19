@@ -1,9 +1,10 @@
-"""Makes the pet's voice clips (frontend/public/voice/correct-XX.wav).
+"""Makes the pet's voice clips (frontend/public/voice/correct-NN.wav and wrong-NN.wav).
 
 Reads the lines from frontend/src/pet/encouragements.js, speaks each one with a TTS voice, converts that speech to
 the target voice with an RVC v2 model, and writes one wav file per line id. See tools/voice/README.md for setup.
 
     python make_voice.py --model seren2.pth --index added_IVF1668_Flat_nprobe_1_seren2_v2.index --target-f0 330
+    python make_voice.py ... --only wrong    # only the wrong-NN clips, leaving the correct-NN ones untouched
 """
 import argparse
 import math
@@ -23,8 +24,8 @@ LINES_FILE = ROOT / "frontend" / "src" / "pet" / "encouragements.js"
 
 
 def read_lines():
-    """[(id, text)] from encouragements.js. Texts are in single or double quotes."""
-    pattern = r"id: '(correct-\d+)', text: (?:\"([^\"]+)\"|'([^']+)')"
+    """[(id, text)] from encouragements.js (correct-NN and wrong-NN). Texts are in single or double quotes."""
+    pattern = r"id: '((?:correct|wrong)-\d+)', text: (?:\"([^\"]+)\"|'([^']+)')"
     return [(line_id, double or single) for line_id, double, single in re.findall(pattern, LINES_FILE.read_text(encoding="utf-8"))]
 
 
@@ -89,6 +90,11 @@ def main():
         type=float,
         help="median pitch in Hz to aim for; works out the shift from the source speech and overrides --pitch",
     )
+    parser.add_argument(
+        "--only",
+        choices=["correct", "wrong"],
+        help="only write the clips of this kind; the pitch is still worked out from all lines so the clips match",
+    )
     parser.add_argument("--index-rate", type=float, default=0.75, help="0.5 to 0.8 is sensible; higher is more metallic")
     args = parser.parse_args()
 
@@ -104,6 +110,8 @@ def main():
         pitch = pitch_shift_to(args.target_f0, [work / f"{i}.wav" for i, _ in lines]) if args.target_f0 else args.pitch
         rvc = load_converter(args.model, args.index, pitch, args.index_rate)
         for line_id, _ in lines:
+            if args.only and not line_id.startswith(f"{args.only}-"):
+                continue
             rvc.infer_file(str(work / f"{line_id}.wav"), str(args.out / f"{line_id}.wav"))
             print("wrote", args.out / f"{line_id}.wav", flush=True)
 

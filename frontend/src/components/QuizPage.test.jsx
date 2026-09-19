@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import QuizPage from './QuizPage.jsx';
@@ -8,32 +8,38 @@ const assistant = vi.hoisted(() => ({
   loading: vi.fn(),
   error: vi.fn(),
   idle: vi.fn(),
+  askAbout: vi.fn(),
+  stopAsking: vi.fn(),
 }));
+const check = vi.hoisted(() => vi.fn());
 
-const submit = vi.hoisted(() => vi.fn());
-
-vi.mock('../pet/PetProvider.jsx', () => ({ useAssistant: () => assistant }));
-vi.mock('../api.js', () => ({
-  api: {
-    quizzes: {
-      submit,
-      get: vi.fn(),
-    },
-  },
-  subjectLabel: (value) => value,
-}));
+vi.mock('../assistant/AssistantProvider.jsx', () => ({ useAssistant: () => assistant }));
+vi.mock('../api.js', () => ({ api: { quizzes: { check, get: vi.fn(), submit: vi.fn() } } }));
 
 const quiz = {
   id: 'quiz-1',
   section_id: 'sec-1',
   questions: [
     { id: 'q1', position: 1, type: 'MULTIPLE_CHOICE', stem: 'What makes ATP?', options: ['Nucleus', 'Mitochondria', 'Ribosome', 'Golgi'] },
+    { id: 'q2', position: 2, type: 'TRUE_FALSE', stem: 'The nucleus stores DNA.', options: ['True', 'False'] },
   ],
 };
 
-function renderQuiz() {
+function graded(selected, answer, explanation = 'Mitochondria make ATP.') {
+  return {
+    question_id: 'q1',
+    selected_index: selected,
+    is_correct: selected === answer,
+    answer_index: answer,
+    explanation,
+    anchor_section: '',
+    source_excerpt: '',
+  };
+}
+
+function renderQuiz(mode) {
   render(
-    <MemoryRouter initialEntries={[{ pathname: '/quiz/quiz-1', state: { quiz } }]}>
+    <MemoryRouter initialEntries={[{ pathname: '/quiz/quiz-1', state: { quiz, mode } }]}>
       <Routes>
         <Route path="/quiz/:quizId" element={<QuizPage />} />
       </Routes>
@@ -41,54 +47,68 @@ function renderQuiz() {
   );
 }
 
-describe('QuizPage', () => {
-  beforeEach(() => {
-    vi.clearAllMocks();
-  });
+describe('QuizPage in Trivia', () => {
+  beforeEach(() => vi.clearAllMocks());
 
-  it('submits the answer and calls assistant.answerResult for a correct result', async () => {
-    submit.mockResolvedValue({
-      attempt_id: 'attempt-1',
-      score: 1,
-      total: 1,
-      timeSpentSeconds: 12,
-      results: [{ question_id: 'q1', selected_index: 1, answer_index: 1, explanation: 'Mitochondria make ATP.', anchor_section: '', source_excerpt: '' }],
-    });
+  it('grades a pick at once, shows the answer, and the pet cheers right away', async () => {
+    check.mockResolvedValue(graded(1, 1));
+    renderQuiz('trivia');
 
-    renderQuiz();
     fireEvent.click(screen.getByText('Mitochondria'));
-    fireEvent.click(screen.getByRole('button', { name: 'Submit' }));
 
-    expect(assistant.loading).toHaveBeenCalledWith('Checking your answers…');
-    await screen.findByText('Results');
-    expect(assistant.answerResult).toHaveBeenCalledWith(true, expect.stringContaining('1 out of 1'));
+    expect(check).toHaveBeenCalledWith('quiz-1', 'q1', 1);
+    expect(await screen.findByText('Mitochondria make ATP.')).toBeTruthy();
+    expect(screen.getByText('Correct')).toBeTruthy();
+    expect(assistant.answerResult).toHaveBeenCalledWith(true);
   });
 
-  it('shows the wrong-answer bubble and reports submit errors', async () => {
-    submit.mockRejectedValue(new Error('Network down'));
+  it('shows the right option and lets the pet console the student after a wrong pick', async () => {
+    check.mockResolvedValue(graded(0, 1));
+    renderQuiz('trivia');
 
-    renderQuiz();
     fireEvent.click(screen.getByText('Nucleus'));
-    fireEvent.click(screen.getByRole('button', { name: 'Submit' }));
+
+    expect(await screen.findByText('Incorrect')).toBeTruthy();
+    expect(screen.getByText('Correct answer')).toBeTruthy();
+    expect(assistant.answerResult).toHaveBeenCalledWith(false);
+  });
+
+  it('makes the pick final: the answer stays on screen and is not graded twice', async () => {
+    check.mockResolvedValue(graded(0, 1));
+    renderQuiz('trivia');
+
+    fireEvent.click(screen.getByText('Nucleus'));
+    await screen.findByText('Incorrect');
+    fireEvent.click(screen.getByText('Next →'));
+    fireEvent.click(screen.getByText('← Previous'));
+
+    expect(screen.getByText('Incorrect')).toBeTruthy();
+    expect(screen.queryByRole('radio')).toBeNull();
+    expect(check).toHaveBeenCalledTimes(1);
+  });
+
+  it('lets the student pick again when the answer could not be fetched', async () => {
+    check.mockRejectedValue(new Error('Network down'));
+    renderQuiz('trivia');
+
+    fireEvent.click(screen.getByText('Mitochondria'));
 
     expect(await screen.findByText('Network down')).toBeTruthy();
-    expect(assistant.error).toHaveBeenCalledWith('I could not submit that.');
+    expect(assistant.error).toHaveBeenCalled();
+    await waitFor(() => expect(screen.getAllByRole('radio').every((r) => r.getAttribute('aria-checked') === 'false')).toBe(true));
   });
+});
 
-  it('calls assistant.idle when retaking the quiz', async () => {
-    submit.mockResolvedValue({
-      attempt_id: 'attempt-1',
-      score: 0,
-      total: 1,
-      results: [{ question_id: 'q1', selected_index: 0, answer_index: 1, explanation: 'Mitochondria make ATP.', anchor_section: '', source_excerpt: '' }],
-    });
+describe('QuizPage in Mock Test', () => {
+  beforeEach(() => vi.clearAllMocks());
 
-    renderQuiz();
-    fireEvent.click(screen.getByText('Nucleus'));
-    fireEvent.click(screen.getByRole('button', { name: 'Submit' }));
-    await screen.findByText('Results');
-    fireEvent.click(screen.getByRole('button', { name: 'Try again' }));
+  it('keeps the answers secret until the quiz is submitted', () => {
+    renderQuiz('mock');
 
-    expect(assistant.idle).toHaveBeenCalled();
+    fireEvent.click(screen.getByText('Mitochondria'));
+
+    expect(check).not.toHaveBeenCalled();
+    expect(assistant.answerResult).not.toHaveBeenCalled();
+    expect(screen.getAllByRole('radio')[1].getAttribute('aria-checked')).toBe('true');
   });
 });

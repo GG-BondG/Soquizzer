@@ -1,5 +1,6 @@
 from app.dto import (
     AnswerResult,
+    CheckRequest,
     Mistake,
     ProgressResponse,
     RereadSuggestion,
@@ -8,7 +9,13 @@ from app.dto import (
     TypeStat,
 )
 from app.entity import Answer, Attempt, Question, Quiz
-from app.exception import FileTooLargeError, InvalidSubmissionError, NoMaterialError, QuizNotFoundError
+from app.exception import (
+    FileTooLargeError,
+    InvalidSubmissionError,
+    NoMaterialError,
+    QuestionNotFoundError,
+    QuizNotFoundError,
+)
 from app.llm import PastMistake, QuizGenerator, TypeAccuracy
 from app.repository import AnswerRepository, AttemptRepository, MaterialRepository, QuizRepository
 from app.service.course_service import CourseService
@@ -115,6 +122,29 @@ class QuizService:
     def delete(self, quiz_id: str) -> None:
         self._quizzes.delete(self.get(quiz_id))
 
+    def check(self, quiz_id: str, question_id: str, request: CheckRequest) -> AnswerResult:
+        """Grade one answer on the spot (Trivia shows the answer after every question). Nothing is stored: the
+        attempt is still recorded by `submit`, once, at the end."""
+        quiz = self.get(quiz_id)
+        question = next((q for q in quiz.questions if q.id == question_id), None)
+        if question is None:
+            raise QuestionNotFoundError(f"Question {question_id} not found in quiz {quiz_id}")
+        if not 0 <= request.selected_index < len(question.options):
+            raise InvalidSubmissionError(f"Option {request.selected_index} does not exist for question {question.id}")
+        return self._result(question, request.selected_index)
+
+    @staticmethod
+    def _result(question: Question, selected_index: int) -> AnswerResult:
+        return AnswerResult(
+            question_id=question.id,
+            selected_index=selected_index,
+            is_correct=selected_index == question.answer_index,
+            answer_index=question.answer_index,
+            explanation=question.explanation,
+            anchor_section=question.anchor_section,
+            source_excerpt=question.source_excerpt,
+        )
+
     def submit(self, quiz_id: str, request: SubmissionRequest) -> SubmissionResponse:
         """Grade by comparing with the answer Gemini wrote; nothing is stored unless every answer is valid."""
         quiz = self.get(quiz_id)
@@ -129,19 +159,9 @@ class QuizService:
                 raise InvalidSubmissionError(f"Question {question.id} was answered more than once")
             if not 0 <= item.selected_index < len(question.options):
                 raise InvalidSubmissionError(f"Option {item.selected_index} does not exist for question {question.id}")
-            is_correct = item.selected_index == question.answer_index
-            answers.append(Answer(question_id=question.id, selected_index=item.selected_index, is_correct=is_correct))
-            results.append(
-                AnswerResult(
-                    question_id=question.id,
-                    selected_index=item.selected_index,
-                    is_correct=is_correct,
-                    answer_index=question.answer_index,
-                    explanation=question.explanation,
-                    anchor_section=question.anchor_section,
-                    source_excerpt=question.source_excerpt,
-                )
-            )
+            result = self._result(question, item.selected_index)
+            answers.append(Answer(question_id=question.id, selected_index=item.selected_index, is_correct=result.is_correct))
+            results.append(result)
         score = sum(a.is_correct for a in answers)
         attempt = self._attempts.add(
             Attempt(
@@ -156,11 +176,18 @@ class QuizService:
 
     def progress(self, course_id: str) -> ProgressResponse:
         course = self._courses.get(course_id)
-        still_wrong = self._answers.still_wrong(_REREAD_SCAN_LIMIT, course_id=course.id)
+        return self._progress(course_id=course.id)
+
+    def section_progress(self, section_id: str) -> ProgressResponse:
+        section = self._sections.get(section_id)
+        return self._progress(section_id=section.id)
+
+    def _progress(self, *, section_id: str | None = None, course_id: str | None = None) -> ProgressResponse:
+        still_wrong = self._answers.still_wrong(_REREAD_SCAN_LIMIT, section_id=section_id, course_id=course_id)
         return ProgressResponse(
             by_type=[
                 TypeStat(type=kind, total=total, correct=correct)
-                for kind, total, correct in self._answers.stats_by_type(course_id=course.id)
+                for kind, total, correct in self._answers.stats_by_type(section_id=section_id, course_id=course_id)
             ],
             mistakes=[
                 Mistake(

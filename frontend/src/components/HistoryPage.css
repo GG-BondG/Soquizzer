@@ -44,7 +44,7 @@
   font-size: 12px;
   letter-spacing: 0.06em;
   text-transform: uppercase;
-  color: var(--text-3);
+  color: var(--brand);
 }
 
 .history-section {
@@ -61,5 +61,5 @@
 .attempt-meta {
   margin-top: 8px;
   font-size: 14px;
-  color: var(--text-2);
+  color: var(--brand);
 }
