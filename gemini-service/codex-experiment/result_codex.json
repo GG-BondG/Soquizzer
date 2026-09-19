@@ -1,0 +1,61 @@
+{
+  "reading_title": "COMPLETE INDUCTION PART I",
+  "questions": [
+    {
+      "id": "q1",
+      "type": "restate_concept",
+      "anchor_section": "Complete Induction (CI)",
+      "source_excerpt": "But we also make an assumption for that n, called the Inductive Hypothesis (IH): P is true for each value smaller than n satisfying the precondition; so we can use any of those instances of P to prove P for n.",
+      "answer_source_excerpt": "But we also make an assumption for that n, called the Inductive Hypothesis (IH): P is true for each value smaller than n satisfying the precondition; so we can use any of those instances of P to prove P for n.",
+      "prompt": "In your own words, what is the core difference in the Inductive Hypothesis of Complete Induction compared to just assuming a predicate holds for a single previous value?",
+      "answer": "The Inductive Hypothesis in Complete Induction assumes the predicate is true for all valid values strictly smaller than n, allowing the proof to use any of those smaller instances, not just the immediately preceding one.",
+      "rubric_points": [
+        "Mentions assuming the predicate is true for all or each value smaller than n",
+        "Notes that these smaller values must satisfy the precondition/base bound"
+      ],
+      "hint_on_wrong": "Look closely at the phrase 'each value smaller than n' in the text. How many instances are we assuming P is true for?"
+    },
+    {
+      "id": "q2",
+      "type": "predict_next",
+      "anchor_section": "Change-Making Revisited",
+      "source_excerpt": "Case n = 12: 4, 0 ∈ N and 12 = 12 + 0 = 4 · 3 + 0 · 7. Case n = 13: 2, 1 ∈ N and 13 = 6 + 7 = 2 · 3 + 1 · 7. Case n = 14: 0, 2 ∈ N and 14 = 0 + 14 = 0 · 3 + 2 · 7. Otherwise: Then n ≥ 15",
+      "answer_source_excerpt": "n ∈ N so n − 3 ∈ Z, and n ≥ 15 so n − 3 ≥ 15 − 3 = 12. So n − 3 ∈ N and n − 3 ≥ 12 [valid call], and n − 3 < n [valid as recursive call], i.e., n − 3 is one of 12, . . . , n − 1. So P (n − 3) by IH [the call].",
+      "prompt": "The author explicitly checks base cases up to n = 14 and then assumes n ≥ 15 for the general step. Based on this specific cutoff, what smaller instance of the problem do you expect the proof to rely on to build the solution for n?",
+      "answer": "The proof will rely on the instance n - 3. Since the base cases cover up to 14, starting the general case at n ≥ 15 guarantees that subtracting 3 will result in a number that is at least 12, which is safely covered by the Inductive Hypothesis.",
+      "rubric_points": [
+        "Predicts the use of the n - 3 instance",
+        "Connects the n ≥ 15 condition to ensuring the smaller instance remains at least 12"
+      ],
+      "hint_on_wrong": "If we only know the base cases up to 14, and we start the general case at 15, how far back can we jump while guaranteeing we hit a number that is at least 12?"
+    },
+    {
+      "id": "q3",
+      "type": "restate_concept",
+      "anchor_section": "Phrasing the IH and sequence notation",
+      "source_excerpt": "Keep in mind that “. . .” notation for sequences can be a bit misleading if taken literally: “12, 13, . . ., n − 1” doesn’t necessarily include 12, 13, and n − 1. When n = 12 there are no elements in that sequence and the IH contains no usable assumptions / instances.",
+      "answer_source_excerpt": "Keep in mind that “. . .” notation for sequences can be a bit misleading if taken literally: “12, 13, . . ., n − 1” doesn’t necessarily include 12, 13, and n − 1. When n = 12 there are no elements in that sequence and the IH contains no usable assumptions / instances.",
+      "prompt": "Explain mathematically why the sequence '12, 13, ..., n - 1' contains no usable assumptions specifically when n = 12.",
+      "answer": "The sequence represents all integers starting from 12 up to n - 1. If n = 12, then n - 1 is 11. A sequence that starts at 12 and ends at 11 is empty, meaning there are no strictly smaller valid instances to assume.",
+      "rubric_points": [
+        "Identifies that when n = 12, the upper bound n - 1 evaluates to 11",
+        "Explains that a sequence starting at 12 and ending at 11 is empty"
+      ],
+      "hint_on_wrong": "Calculate the actual numerical value of the upper bound 'n - 1' when n is exactly 12."
+    },
+    {
+      "id": "q4",
+      "type": "why_generalize",
+      "anchor_section": "Prime Factorization Revisited",
+      "source_excerpt": "We again rely on the fact that if a natural is at least two and not prime then it’s the non-trivial product of two naturals: ∀ n ∈ N, n ≥ 2 ∧ ¬pr ime (n) ⇒ ∃ a, b ∈ N, 2 ≤ a, b < n ∧ n = a · b.",
+      "answer_source_excerpt": "Since a, b ∈ N and 2 ≤ a < n, and 2 ≤ b < n, there are primes a0, . . . , am and b0, . . . , bℓ witnessing the IH for a and for b",
+      "prompt": "In the change-making proof, we knew exactly how far back to look (we used a fixed step of n - 3). Why does the prime factorization proof require the full power of Complete Induction (assuming the statement for all smaller values) rather than just looking back by a fixed constant?",
+      "answer": "When a number n is not prime, it factors into two numbers a and b. We only know that a and b are strictly between 2 and n, but we don't know their exact values or how far away they are from n. Complete induction guarantees we have the assumption ready for whatever arbitrary sizes a and b turn out to be.",
+      "rubric_points": [
+        "Notes that the factors a and b can be any numbers between 2 and n - 1",
+        "Explains that we cannot predict a fixed step size because the factors vary depending on n"
+      ],
+      "hint_on_wrong": "Look at the bounds given for a and b in the excerpt. Do we know exactly what a and b are relative to n, or just a range?"
+    }
+  ]
+}

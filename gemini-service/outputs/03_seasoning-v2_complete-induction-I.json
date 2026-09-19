@@ -1,0 +1,59 @@
+{
+  "reading_title": "CSC236 2025 FALL - COMPLETE INDUCTION PART I",
+  "questions": [
+    {
+      "id": "q1",
+      "type": "celebrity_quote",
+      "anchor_concept": "Complete Induction as a recursive proof technique (Page 1)",
+      "hook": "The renowned computer scientist and creator of Ghostscript, L. Peter Deutsch, famously said: 'To iterate is human, to recurse divine.' In CSC236, we find that this 'divine' recursion applies not only to writing code but also to constructing mathematical proofs.",
+      "prompt": "Based on the definition on Page 1, how does Complete Induction (CI) embody this 'divine recursive' nature compared to standard iteration (like a simple step-by-step induction)? How does its Inductive Hypothesis (IH) differ?",
+      "answer": "Standard induction typically relies only on the immediately preceding step (n-1 to n), much like a standard iteration stepping forward one by one. Complete Induction, however, assumes the property holds for all valid instances smaller than n. This perfectly mirrors a recursive function, which can call itself on any smaller subproblem, not just the n-1 case.",
+      "hint_on_wrong": "Think about what exactly the Inductive Hypothesis (IH) assumes in Complete Induction. Does it only look one step back, or does it give you access to a broader history of values?"
+    },
+    {
+      "id": "q2",
+      "type": "meme_joke",
+      "anchor_concept": "The misleading nature of '...' notation for sequences in the Inductive Hypothesis (Page 2)",
+      "hook": "Picture the 'Expanding Brain' meme format. Small Brain: Stating your IH as 'P is true for 12, 13, ..., n-1'. Glowing Brain: Stating your IH as 'If k ∈ ℕ and 12 ≤ k < n then P(k)'. Galaxy Brain: Stating your IH fully symbolically as '∀ k ∈ ℕ, 12 ≤ k < n ⇒ P(k)'.",
+      "prompt": "According to the reading, why is the 'Galaxy Brain' (or 'Glowing Brain') phrasing so much better than the 'Small Brain' ellipsis (...) notation? What logical misunderstanding can the ellipsis cause in edge cases like n=12?",
+      "answer": "The ellipsis notation '12, 13, ..., n-1' is misleading if taken literally, as it tricks the reader into thinking 12 and 13 must always be present. When n=12, the sequence is actually empty, and the IH contains no usable assumptions. The formal inequality rigorously handles the empty set without implying the existence of specific elements.",
+      "hint_on_wrong": "Try plugging n=12 directly into the phrase '12, 13, ..., n-1'. Does that sequence make any sense mathematically when the upper bound is 11?"
+    },
+    {
+      "id": "q3",
+      "type": "counter_intuitive",
+      "anchor_concept": "Multiple base cases in the change-making proof (Page 1: Case n=12, 13, 14)",
+      "hook": "When first learning mathematical induction, a common misconception is: 'Since induction works like falling dominoes, if you knock down the first one, the rest will naturally fall. Therefore, you only ever need to check one base case, like n=12!'",
+      "prompt": "Is this intuition correct for the change-making proof (n = 3a + 7b)? Why would the proof completely collapse if we only verified n=12 and skipped checking 13 and 14?",
+      "answer": "The intuition is incorrect here. In the 'Otherwise' (recursive) step of the proof, showing P(n) relies on calling P(n-3). If our only base case was n=12, and we tried to prove for n=13, we would need to invoke P(10). But 10 is outside our established domain (n >= 12). We must establish enough base cases (12, 13, and 14) so that any number 15 or larger can safely step back by 3 and land on a proven case.",
+      "hint_on_wrong": "Look closely at the 'Otherwise' case in the proof, specifically the line 'So P(n-3) by IH'. If your foundation is only n=12, whose shoulders do you stand on when trying to prove n=13?"
+    },
+    {
+      "id": "q4",
+      "type": "future_use_preview",
+      "anchor_concept": "Prime Factorization proof structure splitting into non-trivial products (Page 2)",
+      "hook": "In the 'Prime Factorization Revisited' section, you used Complete Induction to prove that every number >= 2 is a product of primes by splitting a non-prime n into two smaller integers a and b, and applying the Inductive Hypothesis to both.",
+      "prompt": "This specific strategy of breaking a large problem into two smaller, non-trivial subproblems, solving them recursively, and combining the results is the mathematical foundation for a highly famous algorithmic paradigm you will study extensively in future algorithm courses. What is this paradigm called?",
+      "answer": "Divide and Conquer. Complete Induction is the fundamental mathematical tool used to prove the correctness and analyze the complexity of Divide and Conquer algorithms (like MergeSort or QuickSort), because these algorithms naturally divide an input of size n into smaller parts that perfectly match the Complete Induction hypothesis structure.",
+      "hint_on_wrong": "Think of the famous algorithmic approach used by algorithms like MergeSort, where you split a list into two halves, recursively sort them, and merge them back together."
+    },
+    {
+      "id": "q5",
+      "type": "cross_discipline_analogy",
+      "anchor_concept": "Complete Induction (IH) definition assuming truth for all values less than n (Page 1)",
+      "hook": "If writing mathematical proofs is like rock climbing, a standard Simple Induction is like a climber who can only step from rock hold n-1 to reach hold n.",
+      "prompt": "Based on the reading's definition of Complete Induction (specifically how the IH is formulated), what kind of advanced gear or environment does Complete Induction give our rock climber?",
+      "answer": "Complete Induction provides a safety net or ladder built across all the previously climbed rock holds. To pull yourself up to hold n, you don't just have to rely on the immediate prior hold n-1; you have access to any or all holds below you (every natural number k < n).",
+      "hint_on_wrong": "Reread the 'Assume (IH)' definition on the first page: 'P is true for each natural less than n...'. How many previous stepping stones are you allowed to use?"
+    },
+    {
+      "id": "q6",
+      "type": "scenario_roleplay",
+      "anchor_concept": "The requirement to explicitly state instances of the IH, especially for unnamed predicates (Page 2)",
+      "hook": "Imagine you are a Code Reviewer, but instead of reviewing Python, you are reviewing a junior student's CSC236 Complete Induction proof. They used an unnamed predicate with universal quantification, and the recursive steps are hard to trace.",
+      "prompt": "According to the strong advice at the top of page 2, what crucial 'logging' behavior must you tell the student to explicitly write down (announce) in their proof to avoid it looking like a mysterious 'ghost function'?",
+      "answer": "You must tell the student to explicitly announce each time an instance of the Inductive Hypothesis (IH) is used, and more importantly, announce which specific instance is being used (e.g., 'by IH for n-3'). In code, recursive calls are obvious by the function name, but in proofs (especially with unnamed predicates), failing to explicitly state the IH instance makes the recursive structure invisible.",
+      "hint_on_wrong": "Look at the very first paragraph of page 2. In programming, you just look for the function name. What does the text say you need to 'announce' in your CI proofs?"
+    }
+  ]
+}

@@ -1,0 +1,122 @@
+{
+  "questions": [
+    {
+      "type": "MULTIPLE_CHOICE",
+      "stem": "As an engineer designing a simulation system, you frequently need to merge two large priority queues. If you use standard binary heaps, this UNION operation is a major bottleneck. According to the text, what is the worst-case running time of UNION for standard binary heaps, and how does a binomial heap improve it?",
+      "options": [
+        "Binary heap: Θ(n), Binomial heap: O(lg n)",
+        "Binary heap: O(lg n), Binomial heap: O(1)",
+        "Binary heap: Θ(n), Binomial heap: O(1)",
+        "Binary heap: O(lg n), Binomial heap: O(lg n)"
+      ],
+      "answer_index": 0,
+      "explanation": "The text states that by concatenating the arrays of two binary heaps and running MIN-HEAPIFY, UNION takes Θ(n) worst-case time, while binomial heaps perform UNION in O(lg n) time."
+    },
+    {
+      "type": "MULTIPLE_CHOICE",
+      "stem": "Which of the following best describes the distribution of nodes at depth i in a binomial tree Bk?",
+      "options": [
+        "There are exactly (k choose i) nodes at depth i.",
+        "There are exactly 2^i nodes at depth i.",
+        "There are exactly k - i nodes at depth i.",
+        "There are exactly (k-1 choose i) nodes at depth i."
+      ],
+      "answer_index": 0,
+      "explanation": "Property 3 of Lemma 19.1 explicitly states that there are exactly (k choose i) nodes at depth i in binomial tree Bk, which also gives the 'binomial' tree its name."
+    },
+    {
+      "type": "TRUE_FALSE",
+      "stem": "It is a common misconception that because binomial trees grow exponentially in total size (2^k nodes), their maximum node degree must also grow very quickly as a function of n. Is it true that the maximum degree of any node in an n-node binomial tree is tightly bounded by lg n?",
+      "options": [
+        "True",
+        "False"
+      ],
+      "answer_index": 0,
+      "explanation": "According to Corollary 19.2, the maximum degree of any node in an n-node binomial tree is exactly lg n."
+    },
+    {
+      "type": "MULTIPLE_CHOICE",
+      "stem": "In a binomial heap H containing exactly 13 nodes, which specific binomial trees will be present in the heap?",
+      "options": [
+        "B3, B2, and B0",
+        "B4 and B1",
+        "B3, B1, and B0",
+        "B2, B1, and B0"
+      ],
+      "answer_index": 0,
+      "explanation": "The binary representation of 13 is 1101. As the text explains, binomial tree Bi appears in H if and only if bit i is 1. Thus, bit 3, bit 2, and bit 0 are 1, meaning B3, B2, and B0 are present."
+    },
+    {
+      "type": "MULTIPLE_CHOICE",
+      "stem": "How is each binomial tree within a binomial heap represented in memory to support efficient merge operations?",
+      "options": [
+        "Using a left-child, right-sibling representation where each node points to its parent, leftmost child, and immediate right sibling.",
+        "Using an array-based representation identical to binary heaps, where a node at index i has children at 2i and 2i+1.",
+        "Using a doubly-linked list for all children of a node, with an explicit array of pointers to each child.",
+        "Using a binary search tree representation where the left child is smaller and the right child is larger than the parent."
+      ],
+      "answer_index": 0,
+      "explanation": "The text details that each binomial tree is stored in the left-child, right-sibling representation, where each node contains pointers p[x], child[x], and sibling[x]."
+    },
+    {
+      "type": "MULTIPLE_CHOICE",
+      "stem": "During the BINOMIAL-LINK(y, z) procedure, how is a B_{k-1} tree rooted at y linked to a B_{k-1} tree rooted at z?",
+      "options": [
+        "Node y becomes the new head of the linked list of node z's children, making z the root of a Bk tree.",
+        "Node z becomes the new head of the linked list of node y's children, making y the root of a Bk tree.",
+        "Node y is inserted as the rightmost sibling in node z's child list.",
+        "The roots y and z are both attached as children to a newly allocated dummy root node."
+      ],
+      "answer_index": 0,
+      "explanation": "BINOMIAL-LINK makes node z the parent of y, and y becomes the leftmost child of z (the new head of the linked list of z's children)."
+    },
+    {
+      "type": "MULTIPLE_CHOICE",
+      "stem": "Imagine an 'Expanding Brain' meme comparing priority queue operations. Small brain: Rebuilding a binary heap from scratch in O(n) time. Galaxy brain: Uniting two binomial heaps in O(lg n) time. During this O(lg n) BINOMIAL-HEAP-UNION procedure, what dictates whether two roots are linked together?",
+      "options": [
+        "They are linked if they have the same degree, using 4 distinct cases to maintain the property of having at most one root of each degree.",
+        "They are linked based solely on their key values, ensuring the smaller key is always placed to the left of the larger key.",
+        "They are linked only if they both belong to the same original input heap, maintaining strict separation until the final step.",
+        "They are linked randomly and then restructured later to satisfy the binomial heap properties."
+      ],
+      "answer_index": 0,
+      "explanation": "BINOMIAL-HEAP-UNION repeatedly links binomial trees whose roots have the same degree. The algorithm evaluates 4 specific cases based on the degrees of x, next-x, and sibling[next-x] to resolve duplicates."
+    },
+    {
+      "type": "MULTIPLE_CHOICE",
+      "stem": "Consider the analogy of opening a matryoshka (Russian nesting doll). When you remove the outer layer, you are left with a collection of perfectly intact smaller dolls. Similarly, in a binomial heap, when BINOMIAL-HEAP-EXTRACT-MIN removes the root of a Bk tree, what must be done to its children to prepare them for the UNION step?",
+      "options": [
+        "The linked list of its children is reversed to form a new valid binomial heap, which is then united with the rest of the original heap.",
+        "The children are immediately re-inserted into the heap one by one using the standard INSERT procedure.",
+        "The children's degrees are all incremented by 1, and they are appended to the end of the root list.",
+        "The smallest child is promoted to become the new root of the entire Bk tree structure without altering the siblings."
+      ],
+      "answer_index": 0,
+      "explanation": "The children of a Bk root are roots of B_{k-1}, B_{k-2}, ..., B0 trees (in that order). To form a valid binomial heap, their linked list must be reversed so their degrees strictly increase, creating a new heap H' that can be passed to BINOMIAL-HEAP-UNION."
+    },
+    {
+      "type": "MULTIPLE_CHOICE",
+      "stem": "In the BINOMIAL-HEAP-DECREASE-KEY procedure, what happens if the decreased key of a node y becomes smaller than the key of its parent z?",
+      "options": [
+        "The procedure exchanges the keys and satellite data of y and z, and continues 'bubbling up' the tree until the min-heap property is satisfied.",
+        "The procedure detaches node y and its subtree, moving it directly to the root list of the binomial heap.",
+        "The procedure recursively decreases the keys of all children of y to maintain the min-heap property.",
+        "The procedure performs a BINOMIAL-LINK on y and z to fuse them into a single node."
+      ],
+      "answer_index": 0,
+      "explanation": "Like a binary min-heap, BINOMIAL-HEAP-DECREASE-KEY 'bubbles up' the decreased key by repeatedly exchanging it with its parent's key until min-heap order is restored."
+    },
+    {
+      "type": "MULTIPLE_CHOICE",
+      "stem": "How does the BINOMIAL-HEAP-DELETE(H, x) procedure effectively remove a specific node x in O(lg n) time?",
+      "options": [
+        "It decreases x's key to -∞ to bubble it to the root, and then extracts it using BINOMIAL-HEAP-EXTRACT-MIN.",
+        "It directly unlinks x from its parent and siblings, and then calls MIN-HEAPIFY on the affected trees.",
+        "It replaces x's key with the key of the last node in the heap, deletes the last node, and bubbles the new key down.",
+        "It splits the binomial tree containing x into two separate trees, discards x, and merges the remaining trees back into the heap."
+      ],
+      "answer_index": 0,
+      "explanation": "BINOMIAL-HEAP-DELETE first calls BINOMIAL-HEAP-DECREASE-KEY with a value of -∞ to bring node x to the root level, and then eliminates it entirely by calling BINOMIAL-HEAP-EXTRACT-MIN."
+    }
+  ]
+}
