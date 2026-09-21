@@ -9,7 +9,7 @@ router = APIRouter(prefix="/api/courses", tags=["courses"])
 
 @router.post("", status_code=201, response_model=CourseResponse)
 def create_course(request: CourseCreateRequest, service: CourseService = Depends(get_course_service)):
-    return service.create(request)
+    return service.create(request.name, request.subject)
 
 
 @router.get("", response_model=list[CourseResponse])

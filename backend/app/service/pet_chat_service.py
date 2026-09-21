@@ -1,14 +1,13 @@
-from app.dto import ChatRequest, ChatResponse
-from app.exception import QuestionNotFoundError, QuizNotFoundError
 from app.ports import ChatTurn, OwnAttempt, PetTutor, QuestionContext
-from app.repository import AnswerRepository, QuizRepository
+from app.repository import AnswerRepository
+from app.service.quiz_service import QuizService
 from app.service.section_profile import load_section_profile
 
 
 class PetChatService:
     def __init__(
         self,
-        quizzes: QuizRepository,
+        quizzes: QuizService,
         answers: AnswerRepository,
         tutor: PetTutor,
         mistake_review_limit: int,
@@ -18,15 +17,10 @@ class PetChatService:
         self._tutor = tutor
         self._mistake_review_limit = mistake_review_limit
 
-    def reply(self, quiz_id: str, question_id: str, request: ChatRequest) -> ChatResponse:
+    def reply(self, quiz_id: str, question_id: str, message: str, history: list[ChatTurn]) -> str:
         """Builds this question's context (plus the student's own history on it and in the section) fresh from the
         database on every call — nothing about the conversation is kept on the server between requests."""
-        quiz = self._quizzes.get(quiz_id)
-        if quiz is None:
-            raise QuizNotFoundError(f"Quiz {quiz_id} not found")
-        question = next((q for q in quiz.questions if q.id == question_id), None)
-        if question is None:
-            raise QuestionNotFoundError(f"Question {question_id} not found in quiz {quiz_id}")
+        question = self._quizzes.get_question(quiz_id, question_id)
 
         context = QuestionContext(
             type=question.type,
@@ -40,8 +34,5 @@ class PetChatService:
             OwnAttempt(selected_index=a.selected_index, is_correct=a.is_correct)
             for a in self._answers.history_for_question(question.id)
         ]
-        profile = load_section_profile(self._answers, quiz.section_id, self._mistake_review_limit)
-        history = [ChatTurn(from_student=turn.role == "student", text=turn.text) for turn in request.history]
-
-        reply = self._tutor.reply(context, own_attempts, profile.mistakes, profile.accuracy, history, request.message)
-        return ChatResponse(reply=reply)
+        profile = load_section_profile(self._answers, question.quiz.section_id, self._mistake_review_limit)
+        return self._tutor.reply(context, own_attempts, profile.mistakes, profile.accuracy, history, message)

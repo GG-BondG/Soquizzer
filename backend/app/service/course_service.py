@@ -1,5 +1,4 @@
-from app.dto import CourseCreateRequest
-from app.entity import Course
+from app.entity import Course, Subject
 from app.exception import CourseNotFoundError
 from app.repository import CourseRepository
 
@@ -8,8 +7,8 @@ class CourseService:
     def __init__(self, courses: CourseRepository):
         self._courses = courses
 
-    def create(self, request: CourseCreateRequest) -> Course:
-        return self._courses.add(Course(name=request.name, subject=request.subject))
+    def create(self, name: str, subject: Subject) -> Course:
+        return self._courses.add(Course(name=name, subject=subject))
 
     def get(self, course_id: str) -> Course:
         course = self._courses.get(course_id)

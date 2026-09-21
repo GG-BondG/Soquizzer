@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, Response
 
-from app.dependencies import get_quiz_service
+from app.dependencies import get_grading_service, get_progress_service, get_quiz_service
 from app.dto import (
     AnswerResult,
     CheckRequest,
@@ -10,7 +10,7 @@ from app.dto import (
     SubmissionRequest,
     SubmissionResponse,
 )
-from app.service import QuizService
+from app.service import GradingService, ProgressService, QuizService, SubmittedAnswer
 
 router = APIRouter(tags=["quizzes"])
 
@@ -38,21 +38,22 @@ def delete_quiz(quiz_id: str, service: QuizService = Depends(get_quiz_service)):
 
 
 @router.post("/api/quizzes/{quiz_id}/questions/{question_id}/check", response_model=AnswerResult)
-def check_answer(quiz_id: str, question_id: str, request: CheckRequest, service: QuizService = Depends(get_quiz_service)):
+def check_answer(quiz_id: str, question_id: str, request: CheckRequest, service: GradingService = Depends(get_grading_service)):
     """Grades one answer right away and reveals the answer and explanation; nothing is recorded."""
-    return service.check(quiz_id, question_id, request)
+    return service.check(quiz_id, question_id, request.selected_index)
 
 
 @router.post("/api/quizzes/{quiz_id}/submissions", status_code=201, response_model=SubmissionResponse)
-def submit_answers(quiz_id: str, request: SubmissionRequest, service: QuizService = Depends(get_quiz_service)):
-    return service.submit(quiz_id, request)
+def submit_answers(quiz_id: str, request: SubmissionRequest, service: GradingService = Depends(get_grading_service)):
+    answers = [SubmittedAnswer(item.question_id, item.selected_index) for item in request.answers]
+    return service.submit(quiz_id, answers, request.time_spent_seconds)
 
 
 @router.get("/api/courses/{course_id}/progress", response_model=ProgressResponse)
-def get_progress(course_id: str, service: QuizService = Depends(get_quiz_service)):
+def get_progress(course_id: str, service: ProgressService = Depends(get_progress_service)):
     return service.progress(course_id)
 
 
 @router.get("/api/sections/{section_id}/progress", response_model=ProgressResponse)
-def get_section_progress(section_id: str, service: QuizService = Depends(get_quiz_service)):
+def get_section_progress(section_id: str, service: ProgressService = Depends(get_progress_service)):
     return service.section_progress(section_id)
