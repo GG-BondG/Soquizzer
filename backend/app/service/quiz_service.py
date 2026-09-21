@@ -16,9 +16,10 @@ from app.exception import (
     QuestionNotFoundError,
     QuizNotFoundError,
 )
-from app.ports import PastMistake, QuizGenerator, TypeAccuracy
+from app.ports import QuizGenerator
 from app.repository import AnswerRepository, AttemptRepository, MaterialRepository, QuizRepository
 from app.service.course_service import CourseService
+from app.service.section_profile import load_section_profile
 from app.service.section_service import SectionService
 
 _EARLIER_STEMS = 60  # questions of earlier quizzes in the section that the next quiz is told not to repeat
@@ -84,15 +85,11 @@ class QuizService:
         if sum(len(content) for _, content in materials) > self._max_material_chars:
             raise FileTooLargeError("The section's PDF is too large to fit in one quiz prompt")
 
-        mistakes = [
-            PastMistake(q.stem, q.options, q.answer_index, a.selected_index, q.explanation, q.anchor_section)
-            for q, a in self._answers.still_wrong(self._mistake_review_limit, section_id=section.id)
-        ]
-        accuracy = [
-            TypeAccuracy(kind, total, correct) for kind, total, correct in self._answers.stats_by_type(section_id=section.id)
-        ]
+        profile = load_section_profile(self._answers, section.id, self._mistake_review_limit)
         earlier_stems = [q.stem for quiz in self._quizzes.list_by_section(section.id) for q in quiz.questions][:_EARLIER_STEMS]
-        generated = self._generator.generate(materials, mistakes, accuracy, self._questions_per_quiz, earlier_stems)
+        generated = self._generator.generate(
+            materials, profile.mistakes, profile.accuracy, self._questions_per_quiz, earlier_stems
+        )
 
         questions = [
             Question(

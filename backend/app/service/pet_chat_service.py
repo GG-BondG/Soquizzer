@@ -1,7 +1,8 @@
 from app.dto import ChatRequest, ChatResponse
 from app.exception import QuestionNotFoundError, QuizNotFoundError
-from app.ports import ChatTurn, OwnAttempt, PastMistake, PetTutor, QuestionContext, TypeAccuracy
+from app.ports import ChatTurn, OwnAttempt, PetTutor, QuestionContext
 from app.repository import AnswerRepository, QuizRepository
+from app.service.section_profile import load_section_profile
 
 
 class PetChatService:
@@ -39,15 +40,8 @@ class PetChatService:
             OwnAttempt(selected_index=a.selected_index, is_correct=a.is_correct)
             for a in self._answers.history_for_question(question.id)
         ]
-        mistakes = [
-            PastMistake(q.stem, q.options, q.answer_index, a.selected_index, q.explanation, q.anchor_section)
-            for q, a in self._answers.still_wrong(self._mistake_review_limit, section_id=quiz.section_id)
-        ]
-        accuracy = [
-            TypeAccuracy(kind, total, correct)
-            for kind, total, correct in self._answers.stats_by_type(section_id=quiz.section_id)
-        ]
+        profile = load_section_profile(self._answers, quiz.section_id, self._mistake_review_limit)
         history = [ChatTurn(from_student=turn.role == "student", text=turn.text) for turn in request.history]
 
-        reply = self._tutor.reply(context, own_attempts, mistakes, accuracy, history, request.message)
+        reply = self._tutor.reply(context, own_attempts, profile.mistakes, profile.accuracy, history, request.message)
         return ChatResponse(reply=reply)
