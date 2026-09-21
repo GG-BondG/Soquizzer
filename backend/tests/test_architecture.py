@@ -28,3 +28,10 @@ def test_only_the_gateway_imports_the_gemini_sdk():
         if path.name != "gemini_gateway.py" and sdk_import.search(path.read_text())
     ]
     assert offenders == []
+
+
+def test_services_take_plain_values_not_http_request_schemas():
+    """Controllers unpack request bodies; a service must not know the shape of the HTTP layer's input."""
+    request_import = re.compile(r"^from app\.dto import .*Request", re.MULTILINE)
+    offenders = [path.name for path in (BACKEND / "app" / "service").glob("*.py") if request_import.search(path.read_text())]
+    assert offenders == []

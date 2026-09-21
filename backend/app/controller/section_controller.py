@@ -9,7 +9,7 @@ router = APIRouter(tags=["sections"])
 
 @router.post("/api/courses/{course_id}/sections", status_code=201, response_model=SectionResponse)
 def create_section(course_id: str, request: SectionCreateRequest, service: SectionService = Depends(get_section_service)):
-    return service.create(course_id, request)
+    return service.create(course_id, request.name)
 
 
 @router.get("/api/courses/{course_id}/sections", response_model=list[SectionResponse])

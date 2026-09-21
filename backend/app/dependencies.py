@@ -14,11 +14,13 @@ from app.repository import (
 )
 from app.service import (
     CourseService,
-    SectionService,
+    GradingService,
     HistoryService,
     MaterialService,
     PetChatService,
+    ProgressService,
     QuizService,
+    SectionService,
 )
 
 
@@ -58,16 +60,13 @@ def get_material_service(
 def get_quiz_service(
     container: Container = Depends(get_container),
     session: Session = Depends(get_session),
-    courses: CourseService = Depends(get_course_service),
     sections: SectionService = Depends(get_section_service),
 ) -> QuizService:
     settings = container.settings
     return QuizService(
         QuizRepository(session),
         AnswerRepository(session),
-        AttemptRepository(session),
         MaterialRepository(session),
-        courses,
         sections,
         container.quiz_generator,
         settings.questions_per_quiz,
@@ -76,16 +75,28 @@ def get_quiz_service(
     )
 
 
+def get_grading_service(
+    session: Session = Depends(get_session),
+    quizzes: QuizService = Depends(get_quiz_service),
+) -> GradingService:
+    return GradingService(quizzes, AttemptRepository(session))
+
+
+def get_progress_service(
+    container: Container = Depends(get_container),
+    session: Session = Depends(get_session),
+    courses: CourseService = Depends(get_course_service),
+    sections: SectionService = Depends(get_section_service),
+) -> ProgressService:
+    return ProgressService(AnswerRepository(session), courses, sections, container.settings.mistake_review_limit)
+
+
 def get_pet_chat_service(
     container: Container = Depends(get_container),
     session: Session = Depends(get_session),
+    quizzes: QuizService = Depends(get_quiz_service),
 ) -> PetChatService:
-    return PetChatService(
-        QuizRepository(session),
-        AnswerRepository(session),
-        container.pet_tutor,
-        container.settings.mistake_review_limit,
-    )
+    return PetChatService(quizzes, AnswerRepository(session), container.pet_tutor, container.settings.mistake_review_limit)
 
 
 def get_history_service(

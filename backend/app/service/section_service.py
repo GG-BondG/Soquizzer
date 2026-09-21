@@ -1,4 +1,3 @@
-from app.dto import SectionCreateRequest
 from app.entity import Section
 from app.exception import SectionNotFoundError
 from app.repository import SectionRepository
@@ -10,9 +9,9 @@ class SectionService:
         self._sections = sections
         self._courses = courses
 
-    def create(self, course_id: str, request: SectionCreateRequest) -> Section:
+    def create(self, course_id: str, name: str) -> Section:
         course = self._courses.get(course_id)
-        return self._sections.add(Section(course_id=course.id, name=request.name))
+        return self._sections.add(Section(course_id=course.id, name=name))
 
     def get(self, section_id: str) -> Section:
         section = self._sections.get(section_id)
