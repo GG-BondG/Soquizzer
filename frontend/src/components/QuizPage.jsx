@@ -4,18 +4,17 @@ import { api } from '../api.js';
 import { formatClock, formatDuration, formatPercent, typeLabel } from '../format.js';
 import { QUIZ_MODES } from '../quizModes.js';
 import { useApi } from '../useApi.js';
+import { useCountUp } from '../useCountUp.js';
+import { useOptionMotion } from '../useOptionMotion.js';
+import { useStopwatch } from '../useStopwatch.js';
+import { randomItem } from '../random.js';
 import { useAssistant } from '../pet/PetProvider.jsx';
 import { BackIcon, ClockIcon } from './Icons.jsx';
 import MathText from './MathText.jsx';
 import QuestionReview from './QuestionReview.jsx';
 import './QuizPage.css';
 
-const OPTION_MOTIONS = ['motion-pop', 'motion-ripple', 'motion-tilt'];
 const RESULT_MOTIONS = ['result-motion-rise', 'result-motion-bloom', 'result-motion-swing'];
-
-function randomItem(items) {
-  return items[Math.floor(Math.random() * items.length)];
-}
 
 export default function QuizPage() {
   const { quizId } = useParams();
@@ -38,63 +37,23 @@ export default function QuizPage() {
   const [revealed, setRevealed] = useState({}); // Trivia: question id -> the graded answer from the backend
   const checking = useRef(new Set()); // Trivia: questions whose answer is being fetched
   const [index, setIndex] = useState(0);
-  const [elapsed, setElapsed] = useState(0);
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState('');
   const [result, setResult] = useState(null);
-  const [displayedScore, setDisplayedScore] = useState(0);
-  const [optionMotion, setOptionMotion] = useState(null);
   const [resultMotion, setResultMotion] = useState(RESULT_MOTIONS[0]);
-  const startedAt = useRef(null);
-  const optionMotionTimer = useRef(null);
 
-  // The clock starts when the questions are on screen and stops once graded.
-  // (Retaking clears `result`, which restarts it.)
-  useEffect(() => {
-    if (!quiz || result) return;
-    startedAt.current = Date.now();
-    setElapsed(0);
-    const timer = setInterval(() => setElapsed(Math.floor((Date.now() - startedAt.current) / 1000)), 1000);
-    return () => clearInterval(timer);
-    // Restart only for a different quiz or after grading/retaking, not whenever the quiz object is re-created.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [quiz?.id, result]);
-
-  useEffect(() => () => clearTimeout(optionMotionTimer.current), []);
-
-  // Count up the score when results arrive. Reduced-motion users see the final value immediately.
-  useEffect(() => {
-    if (!result) return;
-    const reduceMotion =
-      typeof window.matchMedia === 'function' && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-    if (reduceMotion || result.score === 0) {
-      setDisplayedScore(result.score);
-      return;
-    }
-
-    let frame;
-    const started = performance.now();
-    const duration = 650;
-    const tick = (now) => {
-      const progress = Math.min((now - started) / duration, 1);
-      setDisplayedScore(Math.round(result.score * (1 - Math.pow(1 - progress, 3))));
-      if (progress < 1) frame = requestAnimationFrame(tick);
-    };
-    frame = requestAnimationFrame(tick);
-    return () => cancelAnimationFrame(frame);
-  }, [result]);
+  // The clock starts when the questions are on screen and stops once graded. (Retaking clears `result`, which
+  // restarts it.)
+  const { elapsed, secondsSinceStart } = useStopwatch({ running: !!quiz && !result, restartKey: quiz?.id });
+  const { optionMotion, playOptionMotion, clearOptionMotion } = useOptionMotion();
+  const displayedScore = useCountUp(result ? result.score : null); // counts up when the results arrive
 
   function chooseAnswer(questionId, optionIndex) {
-    clearTimeout(optionMotionTimer.current);
-    setOptionMotion({ questionId, optionIndex, name: randomItem(OPTION_MOTIONS) });
+    playOptionMotion(questionId, optionIndex);
     setAnswers((current) => ({ ...current, [questionId]: optionIndex }));
-    optionMotionTimer.current = setTimeout(() => setOptionMotion(null), 450);
   }
 
   // Lets the pet answer questions about whichever question is on screen; stops once graded or on leaving the page.
-  // Depend on the two callbacks, not on `assistant`: `assistant` is a new object whenever the chat state changes (every
-  // keystroke), and the cleanup below resets the context first, so `askAbout` would set a fresh object each time
-  // and re-render the pet context forever.
   const { askAbout, stopAsking } = assistant;
   useEffect(() => {
     const current = quiz?.questions?.[index];
@@ -107,7 +66,7 @@ export default function QuizPage() {
   }, [quiz, index, result, askAbout, stopAsking]);
 
   async function submit() {
-    const timeSpentSeconds = Math.round((Date.now() - startedAt.current) / 1000);
+    const timeSpentSeconds = secondsSinceStart();
     const payload = quiz.questions
       .filter((q) => answers[q.id] !== undefined)
       .map((q) => ({ question_id: q.id, selected_index: answers[q.id] }));
@@ -117,7 +76,6 @@ export default function QuizPage() {
     assistant.loading('Checking your answers…');
     try {
       const graded = await api.quizzes.submit(quiz.id, { answers: payload, timeSpentSeconds });
-      setDisplayedScore(0);
       setResultMotion(randomItem(RESULT_MOTIONS));
       setResult({ ...graded, timeSpentSeconds });
       const ratio = graded.total ? graded.score / graded.total : 0;
@@ -341,10 +299,7 @@ export default function QuizPage() {
                     className={`option-row ${picked ? 'is-picked' : ''} ${motion}`}
                     onClick={() => pick(question, i)}
                     onAnimationEnd={(event) => {
-                      if (event.target === event.currentTarget && motion) {
-                        clearTimeout(optionMotionTimer.current);
-                        setOptionMotion(null);
-                      }
+                      if (event.target === event.currentTarget && motion) clearOptionMotion();
                     }}
                     onKeyDown={(e) => {
                       if (e.key === 'Enter' || e.key === ' ') {
