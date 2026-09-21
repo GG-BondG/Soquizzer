@@ -1,0 +1,67 @@
+.breathe {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 14px 16px;
+  background: var(--accent-tint);
+  border-radius: 10px;
+}
+
+.breathe-orb {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 72px;
+  height: 72px;
+  padding: 0;
+  border: 1px dashed rgba(52, 82, 59, 0.35);
+  border-radius: 50%;
+  background: transparent;
+  cursor: pointer;
+}
+
+.breathe-orb:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+}
+
+.breathe-core {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, rgba(255, 255, 255, 0.55), rgba(52, 82, 59, 0.55) 70%);
+  transform: scale(0.5);
+  transition: transform 4s ease-in-out;
+}
+
+.breathe-orb:not(.is-active) .breathe-core {
+  transition: transform 0.4s ease;
+}
+
+.breathe-orb:not(.is-active):hover .breathe-core {
+  transform: scale(0.62);
+}
+
+.breathe-orb.is-in .breathe-core {
+  transform: scale(1);
+}
+
+.breathe-words {
+  font-family: var(--serif);
+  font-size: 17px;
+  font-weight: 600;
+  color: var(--accent);
+}
+
+.breathe-note {
+  margin-top: 2px;
+  font-size: 12px;
+  color: var(--text-3);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .breathe-core,
+  .breathe-orb:not(.is-active) .breathe-core {
+    transition: none;
+  }
+}

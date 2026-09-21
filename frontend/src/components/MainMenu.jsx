@@ -1,12 +1,14 @@
 import { useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { api, SUBJECTS, subjectLabel } from '../api.js';
+import { MAX_ATTEMPTS } from '../activity.js';
 import { formatDate } from '../format.js';
 import { useApi } from '../useApi.js';
 import { useAssistant } from '../pet/PetProvider.jsx';
 import { PlusIcon, ClockIcon, DocIcon, CloseIcon } from './Icons.jsx';
 import FloatingWindow from './FloatingWindow.jsx';
 import ActivityHeatmap from './ActivityHeatmap.jsx';
+import PowerRadar from './PowerRadar.jsx';
 import logo from '../../resources/200_001-removebg-preview.png';
 import './MainMenu.css';
 
@@ -14,6 +16,8 @@ const EMPTY_FORM = { name: '', subject: 'OTHER' };
 
 export default function MainMenu() {
   const { data: courses, error: loadError, loading, reload } = useApi(() => api.courses.list(), []);
+  // one request feeds both the heatmap and the power chart
+  const history = useApi(() => api.history.list({ limit: MAX_ATTEMPTS }), []);
   const navigate = useNavigate();
   const assistant = useAssistant();
   const createCardRef = useRef(null);
@@ -61,7 +65,10 @@ export default function MainMenu() {
         </Link>
       </div>
 
-      <ActivityHeatmap />
+      <div className="insights">
+        <ActivityHeatmap history={history} />
+        <PowerRadar history={history} />
+      </div>
 
       <div className="menu-label">Your courses{courses ? ` · ${courses.length}` : ''}</div>
 

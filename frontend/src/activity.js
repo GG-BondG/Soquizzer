@@ -2,8 +2,9 @@
 // (Sunday first), the newest week last. Days are the viewer's local calendar days.
 
 export const ACTIVITY_WEEKS = 26;
+export const MAX_ATTEMPTS = 200; // the most GET /api/history returns
 
-function dayKey(date) {
+export function dayKey(date) {
   const m = String(date.getMonth() + 1).padStart(2, '0');
   const d = String(date.getDate()).padStart(2, '0');
   return `${date.getFullYear()}-${m}-${d}`;
@@ -54,4 +55,42 @@ export function buildActivity(attempts, { weeks = ACTIVITY_WEEKS, today = new Da
     grid.push(column);
   }
   return { weeks: grid, total };
+}
+
+// The numbers on the dashboard tiles. `streak` counts consecutive days with a quiz, ending today (or yesterday, so
+// the streak is not lost before today's quiz); `thisWeek` counts quizzes in the last 7 days including today;
+// `bestScore` is the highest score ratio (0 to 1), or null with no graded quiz.
+export function summarizeActivity(attempts, { today = new Date() } = {}) {
+  const year = today.getFullYear();
+  const month = today.getMonth();
+  const day = today.getDate();
+  const weekStart = new Date(year, month, day - 6);
+
+  const days = new Set();
+  let thisWeek = 0;
+  let bestScore = null;
+  for (const attempt of attempts ?? []) {
+    if (!attempt?.submitted_at) continue;
+    const when = new Date(attempt.submitted_at);
+    if (Number.isNaN(when.getTime())) continue;
+    days.add(dayKey(when));
+    if (when >= weekStart) thisWeek += 1;
+    if (attempt.total > 0) bestScore = Math.max(bestScore ?? 0, attempt.score / attempt.total);
+  }
+
+  let back = days.has(dayKey(today)) ? 0 : 1;
+  let streak = 0;
+  while (days.has(dayKey(new Date(year, month, day - back)))) {
+    streak += 1;
+    back += 1;
+  }
+  return { streak, thisWeek, bestScore };
+}
+
+// The newest `count` attempts, newest first (the API already sorts them, but do not depend on it).
+export function recentAttempts(attempts, count = 3) {
+  return (attempts ?? [])
+    .filter((a) => a?.submitted_at && !Number.isNaN(new Date(a.submitted_at).getTime()))
+    .sort((a, b) => new Date(b.submitted_at) - new Date(a.submitted_at))
+    .slice(0, count);
 }

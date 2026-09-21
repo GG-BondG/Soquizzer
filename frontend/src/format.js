@@ -37,3 +37,19 @@ export const QUESTION_TYPES = {
 export function typeLabel(type) {
   return QUESTION_TYPES[type] ?? type;
 }
+
+// "Today", "Yesterday", "3 days ago", then a plain date. Counts local calendar days, not 24-hour spans.
+export function formatAgo(iso, now = new Date()) {
+  if (!iso) return '-';
+  const when = new Date(iso);
+  if (Number.isNaN(when.getTime())) return '-';
+  const days = Math.round(
+    (new Date(now.getFullYear(), now.getMonth(), now.getDate()) -
+      new Date(when.getFullYear(), when.getMonth(), when.getDate())) /
+      86_400_000
+  );
+  if (days <= 0) return 'Today';
+  if (days === 1) return 'Yesterday';
+  if (days < 7) return `${days} days ago`;
+  return formatDate(iso);
+}

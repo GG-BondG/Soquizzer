@@ -1,0 +1,179 @@
+.power {
+  --power-line: #e8731a;
+  padding: 20px 24px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+}
+
+.power-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.power .power-label {
+  margin-top: 0;
+}
+
+.power-total {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.power-number {
+  font-family: var(--serif);
+  font-size: 26px;
+  font-weight: 600;
+  line-height: 1;
+  color: var(--power-line);
+}
+
+.power-delta {
+  font-size: 12px;
+  color: var(--text-3);
+}
+
+.power-delta.is-up {
+  color: var(--power-line);
+  font-weight: 500;
+}
+
+.power-chart {
+  display: block;
+  width: 100%;
+  max-width: 380px;
+  height: auto;
+  margin: 8px auto 0;
+  overflow: visible;
+}
+
+.power-ring {
+  fill: none;
+  stroke: var(--border);
+  stroke-width: 1;
+}
+
+.power-ring.is-outer {
+  stroke: var(--border-strong);
+}
+
+.power-axis {
+  stroke: var(--border);
+  stroke-width: 1;
+}
+
+.power-trail {
+  fill: none;
+  stroke: var(--accent);
+  stroke-width: 1.5;
+  stroke-linejoin: round;
+}
+
+.power-latest-fill {
+  fill: var(--power-line);
+  fill-opacity: 0.16;
+  animation: power-fill 0.6s ease 0.5s backwards;
+}
+
+.power-latest {
+  fill: none;
+  stroke: var(--power-line);
+  stroke-width: 2.5;
+  stroke-linejoin: round;
+  /* pathLength="1" on the polygon, so one dash the size of the whole outline draws it in */
+  stroke-dasharray: 1 1;
+  animation: power-draw 0.9s ease-out backwards;
+}
+
+.power-dot {
+  fill: var(--power-line);
+  stroke: var(--surface);
+  stroke-width: 1.5;
+  animation: power-fill 0.4s ease 0.7s backwards;
+}
+
+.power-axis-label {
+  font-size: 12px;
+  fill: var(--text-2);
+}
+
+.power-axis-value {
+  font-size: 12px;
+  font-weight: 600;
+  fill: var(--text);
+}
+
+.power-axis-value .is-up {
+  fill: var(--power-line);
+  font-weight: 500;
+}
+
+.power-axis-value .is-down {
+  fill: var(--text-3);
+  font-weight: 400;
+}
+
+.power-foot {
+  margin-top: 4px;
+  text-align: center;
+}
+
+.power-legend {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--text-3);
+}
+
+.power-key {
+  display: inline-block;
+  width: 16px;
+  height: 3px;
+  margin-left: 8px;
+  border-radius: 2px;
+}
+
+.power-key:first-child {
+  margin-left: 0;
+}
+
+.power-key.is-latest {
+  background: var(--power-line);
+}
+
+.power-key.is-trail {
+  background: var(--accent);
+  opacity: 0.4;
+}
+
+.power-empty {
+  margin-top: 0;
+}
+
+@keyframes power-draw {
+  from {
+    stroke-dashoffset: 1;
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+@keyframes power-fill {
+  from {
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .power-latest,
+  .power-latest-fill,
+  .power-dot {
+    animation: none;
+  }
+}

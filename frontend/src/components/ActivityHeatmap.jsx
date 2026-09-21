@@ -1,10 +1,10 @@
 import { useMemo } from 'react';
-import { api } from '../api.js';
-import { ACTIVITY_WEEKS, buildActivity } from '../activity.js';
-import { useApi } from '../useApi.js';
+import { Link } from 'react-router-dom';
+import { ACTIVITY_WEEKS, buildActivity, recentAttempts, summarizeActivity } from '../activity.js';
+import { formatAgo, formatPercent } from '../format.js';
+import BreatheBox from './BreatheBox.jsx';
 import './ActivityHeatmap.css';
 
-const MAX_ATTEMPTS = 200; // the most GET /api/history returns
 const DAY_LABELS = ['', 'Mon', '', 'Wed', '', 'Fri', ''];
 
 function monthLabels(weeks) {
@@ -25,11 +25,14 @@ function cellTitle({ count, date }) {
   return `${count === 0 ? 'No quizzes' : `${count} ${count === 1 ? 'quiz' : 'quizzes'}`} on ${when}`;
 }
 
-export default function ActivityHeatmap() {
-  const { data, error, loading, reload } = useApi(() => api.history.list({ limit: MAX_ATTEMPTS }), []);
+// `history` is the result of useApi(() => api.history.list(...)), shared with the power chart.
+export default function ActivityHeatmap({ history }) {
+  const { data, error, loading, reload } = history;
   const attempts = data?.attempts;
   const { weeks, total } = useMemo(() => buildActivity(attempts), [attempts]);
   const months = useMemo(() => monthLabels(weeks), [weeks]);
+  const summary = useMemo(() => summarizeActivity(attempts), [attempts]);
+  const recent = useMemo(() => recentAttempts(attempts), [attempts]);
 
   return (
     <section className="activity" aria-label="Quiz activity">
@@ -57,27 +60,72 @@ export default function ActivityHeatmap() {
       {loading && !data && !error && <div className="status-note">Loading activity…</div>}
 
       {data && (
-        <div className="activity-scroll">
-          <div className="activity-grid">
-            <div className="activity-days" aria-hidden="true">
-              {DAY_LABELS.map((label, i) => (
-                <span key={i}>{label}</span>
-              ))}
-            </div>
-            {weeks.map((week, w) => (
-              <div className="activity-week" key={w}>
-                <span className="activity-month" aria-hidden="true">
-                  {months[w]}
-                </span>
-                {week.map((day, d) =>
-                  day ? (
-                    <span key={day.key} className={`activity-cell level-${day.level}`} title={cellTitle(day)} />
-                  ) : (
-                    <span key={d} className="activity-cell empty" />
-                  )
-                )}
+        <div className="activity-body">
+          <div className="activity-main">
+            <div className="activity-scroll">
+              <div className="activity-grid">
+                <div className="activity-days" aria-hidden="true">
+                  {DAY_LABELS.map((label, i) => (
+                    <span key={i}>{label}</span>
+                  ))}
+                </div>
+                {weeks.map((week, w) => (
+                  <div className="activity-week" key={w}>
+                    <span className="activity-month" aria-hidden="true">
+                      {months[w]}
+                    </span>
+                    {week.map((day, d) =>
+                      day ? (
+                        <span key={day.key} className={`activity-cell level-${day.level}`} title={cellTitle(day)} />
+                      ) : (
+                        <span key={d} className="activity-cell empty" />
+                      )
+                    )}
+                  </div>
+                ))}
               </div>
-            ))}
+            </div>
+
+            <div className="activity-recent">
+              <div className="activity-sub">Recent quizzes</div>
+              {recent.length === 0 ? (
+                <div className="status-note activity-recent-empty">Nothing yet. Your first quiz will show up here.</div>
+              ) : (
+                <ul>
+                  {recent.map((a) => (
+                    <li key={a.attempt_id}>
+                      <Link to={`/attempts/${a.attempt_id}`} className="activity-recent-row">
+                        <span className="activity-recent-name">
+                          {a.course_name} · {a.section_name}
+                        </span>
+                        <span className="activity-recent-score">
+                          {a.score}/{a.total}
+                        </span>
+                        <span className="activity-recent-when">{formatAgo(a.submitted_at)}</span>
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          </div>
+
+          <div className="activity-side">
+            <div className="activity-tiles">
+              <div className="activity-tile">
+                <div className="activity-tile-value">{summary.streak}</div>
+                <div className="activity-tile-label">Day streak</div>
+              </div>
+              <div className="activity-tile">
+                <div className="activity-tile-value">{summary.thisWeek}</div>
+                <div className="activity-tile-label">This week</div>
+              </div>
+              <div className="activity-tile">
+                <div className="activity-tile-value">{formatPercent(summary.bestScore)}</div>
+                <div className="activity-tile-label">Best score</div>
+              </div>
+            </div>
+            <BreatheBox />
           </div>
         </div>
       )}

@@ -29,6 +29,19 @@
   color: var(--brand);
 }
 
+.insights {
+  margin-top: 32px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 380px;
+  gap: 24px;
+}
+
+@media (max-width: 900px) {
+  .insights {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
 .menu-label {
   margin-top: 40px;
   font-size: 13px;
