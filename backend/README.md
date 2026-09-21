@@ -26,8 +26,10 @@ app/
 ├── repository/   SQLite repositories via SQLAlchemy (course, section, material, quiz, attempt, answer)
 ├── entity/       Database models (Course, Section, Material, Quiz, Question, Attempt, Answer)
 ├── dto/          Request/response schemas
-├── llm/          Native Google GenAI SDK: GeminiQuizGenerator (and the PdfJsonConverter interface)
-├── rag/          OCR, LocalPdfJsonConverter (PDF in, JSON out, no model)
+├── ports.py      What services need from outside (QuizGenerator, PetTutor, PdfJsonConverter, PageOcr) and the data they exchange; no SDK imports
+├── gemini_gateway.py  The only module that imports the Google GenAI SDK; the adapters below call Gemini through it
+├── llm/          Gemini adapters: GeminiQuizGenerator (prompt + validation), GeminiPetTutor
+├── rag/          GeminiPageOcr, LocalPdfJsonConverter (PDF in, JSON out, no model)
 ├── config/       Settings (env vars / .env)
 ├── exception/    AppError subclasses + handler that maps them to HTTP errors
 ├── container.py  Builds long-lived dependencies at startup
