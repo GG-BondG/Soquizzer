@@ -1,8 +1,6 @@
-from google import genai
-from google.genai import types
-
 from app.config import Settings
-from app.exception import ConfigurationError, LlmError
+from app.exception import LlmError
+from app.gemini_gateway import GeminiGateway
 from app.ports import ChatTurn, OwnAttempt, PastMistake, QuestionContext, TypeAccuracy
 
 
@@ -80,18 +78,10 @@ def build_prompt(
 
 
 class GeminiPetTutor:
-    """Native Google GenAI SDK call; a plain text reply, no schema — this is a chat, not structured data."""
+    """A plain text reply from Gemini, no schema: this is a chat, not structured data."""
 
-    def __init__(self, settings: Settings, client: genai.Client | None = None):
-        if client is None:
-            if not settings.google_api_key:
-                raise ConfigurationError("GEMINI_API_KEY is not set")
-            client = genai.Client(
-                api_key=settings.google_api_key,
-                http_options=types.HttpOptions(timeout=settings.generation_timeout_seconds * 1000),
-            )
-        self._client = client
-        self._model = settings.generation_model
+    def __init__(self, settings: Settings, gateway: GeminiGateway | None = None):
+        self._gateway = gateway or GeminiGateway(settings)
         self._language = settings.quiz_language
 
     def reply(
@@ -103,13 +93,9 @@ class GeminiPetTutor:
         history: list[ChatTurn],
         message: str,
     ) -> str:
-        prompt = build_prompt(question, own_attempts, mistakes, accuracy, history, message, self._language)
-        try:
-            response = self._client.models.generate_content(model=self._model, contents=prompt)
-        except Exception as exc:
-            raise LlmError(f"Gemini request failed: {str(exc)[:300]}") from exc
-
-        text = (response.text or "").strip()
+        text = self._gateway.generate_text(
+            build_prompt(question, own_attempts, mistakes, accuracy, history, message, self._language)
+        )
         if not text:
             raise LlmError("Gemini returned an empty reply")
         return text

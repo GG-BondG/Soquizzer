@@ -5,6 +5,7 @@ import pytest
 from app.config import Settings
 from app.entity import QuestionType
 from app.exception import ConfigurationError, LlmError
+from app.gemini_gateway import GeminiGateway
 from app.llm import GeminiQuizGenerator
 from app.ports import GeneratedQuestion, GeneratedQuiz, PastMistake, TypeAccuracy
 from app.llm.quiz_generator import build_prompt
@@ -36,7 +37,8 @@ def quiz(*questions):
 
 
 def generator(client):
-    return GeminiQuizGenerator(Settings(_env_file=None, generation_model="test-model"), client=client)
+    settings = Settings(_env_file=None, generation_model="test-model")
+    return GeminiQuizGenerator(settings, GeminiGateway(settings, client))
 
 
 MATERIALS = [("slides.pdf", '{"title": "Cells"}'), ("notes.pdf", '{"title": "DNA"}')]
@@ -80,7 +82,7 @@ def test_quizzes_are_written_in_english_by_default_and_in_the_configured_languag
 
     client = StubClient(parsed=quiz())
     settings = Settings(_env_file=None, generation_model="test-model", quiz_language="Spanish")
-    GeminiQuizGenerator(settings, client=client).generate(MATERIALS, [], [], 3)
+    GeminiQuizGenerator(settings, GeminiGateway(settings, client)).generate(MATERIALS, [], [], 3)
 
     assert "in Spanish, whatever language the material is in" in client.kwargs["contents"]
     assert "in English" not in client.kwargs["contents"]
@@ -119,9 +121,10 @@ def test_bad_model_output_or_api_error_raises_llm_error(client):
         generator(client).generate(MATERIALS, [], [], 1)
 
 
-def test_missing_api_key_is_a_configuration_error():
+def test_missing_api_key_is_a_configuration_error_when_the_quiz_is_requested_not_at_startup():
+    no_key = GeminiQuizGenerator(Settings(_env_file=None, google_api_key=""))
     with pytest.raises(ConfigurationError):
-        GeminiQuizGenerator(Settings(_env_file=None, google_api_key=""))
+        no_key.generate(MATERIALS, [], [], 1)
 
 
 def test_prompt_asks_for_a_source_anchor_and_names_the_section_of_each_past_mistake():

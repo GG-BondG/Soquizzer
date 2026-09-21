@@ -5,6 +5,7 @@ import pytest
 from app.config import Settings
 from app.entity import QuestionType
 from app.exception import ConfigurationError, LlmError
+from app.gemini_gateway import GeminiGateway
 from app.llm import GeminiPetTutor
 from app.ports import ChatTurn, OwnAttempt, PastMistake, QuestionContext, TypeAccuracy
 from app.llm.pet_tutor import build_prompt
@@ -25,7 +26,8 @@ class StubClient:
 
 
 def tutor(client):
-    return GeminiPetTutor(Settings(_env_file=None, generation_model="test-model"), client=client)
+    settings = Settings(_env_file=None, generation_model="test-model")
+    return GeminiPetTutor(settings, GeminiGateway(settings, client))
 
 
 QUESTION = QuestionContext(
@@ -82,7 +84,7 @@ def test_prompt_includes_the_conversation_transcript_in_order():
 def test_language_setting_is_forwarded_like_the_quiz_generator():
     client = StubClient(text="Hint!")
     settings = Settings(_env_file=None, generation_model="test-model", quiz_language="Spanish")
-    GeminiPetTutor(settings, client=client).reply(QUESTION, [], [], [], [], "hi")
+    GeminiPetTutor(settings, GeminiGateway(settings, client)).reply(QUESTION, [], [], [], [], "hi")
 
     assert "in Spanish." in client.kwargs["contents"]
 
@@ -101,6 +103,7 @@ def test_empty_reply_or_api_error_raises_llm_error(client):
         tutor(client).reply(QUESTION, [], [], [], [], "help")
 
 
-def test_missing_api_key_is_a_configuration_error():
+def test_missing_api_key_is_a_configuration_error_when_the_tutor_is_asked_not_at_startup():
+    no_key = GeminiPetTutor(Settings(_env_file=None, google_api_key=""))
     with pytest.raises(ConfigurationError):
-        GeminiPetTutor(Settings(_env_file=None, google_api_key=""))
+        no_key.reply(QUESTION, [], [], [], [], "help")

@@ -1,3 +1,4 @@
+import re
 import subprocess
 import sys
 from pathlib import Path
@@ -17,3 +18,13 @@ def test_services_do_not_depend_on_the_gemini_sdk():
     for module in ("app.service", "app.dto", "app.repository", "app.ports"):
         assert "google.genai" not in loaded_after_importing(module), module
 
+
+
+def test_only_the_gateway_imports_the_gemini_sdk():
+    sdk_import = re.compile(r"^\s*(from|import) google\b", re.MULTILINE)
+    offenders = [
+        str(path.relative_to(BACKEND))
+        for path in (BACKEND / "app").rglob("*.py")
+        if path.name != "gemini_gateway.py" and sdk_import.search(path.read_text())
+    ]
+    assert offenders == []

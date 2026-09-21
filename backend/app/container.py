@@ -1,11 +1,16 @@
+import logging
+
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
 from app.config import Settings
 from app.entity import Base, add_missing_columns
+from app.gemini_gateway import GeminiGateway
 from app.llm import GeminiPetTutor, GeminiQuizGenerator
 from app.ports import PageOcr, PdfJsonConverter, PetTutor, QuizGenerator
 from app.rag import GeminiPageOcr, LocalPdfJsonConverter
+
+logger = logging.getLogger(__name__)
 
 
 class Container:
@@ -25,7 +30,10 @@ class Container:
         Base.metadata.create_all(self.engine)
         add_missing_columns(self.engine)
         self.session_factory = sessionmaker(self.engine, expire_on_commit=False)
-        self.ocr = ocr or (GeminiPageOcr(settings) if settings.ocr_enabled else None)
+        if not settings.google_api_key:
+            logger.warning("GEMINI_API_KEY is not set: quizzes, the pet chat and OCR will fail until it is")
+        self.gemini = GeminiGateway(settings)  # shared by every Gemini-backed adapter below
+        self.ocr = ocr or (GeminiPageOcr(settings, self.gemini) if settings.ocr_enabled else None)
         self.pdf_converter = pdf_converter or LocalPdfJsonConverter(self.ocr)
-        self.quiz_generator = quiz_generator or GeminiQuizGenerator(settings)
-        self.pet_tutor = pet_tutor or GeminiPetTutor(settings)
+        self.quiz_generator = quiz_generator or GeminiQuizGenerator(settings, self.gemini)
+        self.pet_tutor = pet_tutor or GeminiPetTutor(settings, self.gemini)
