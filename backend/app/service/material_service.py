@@ -3,7 +3,7 @@ from typing import BinaryIO
 
 from app.entity import Material
 from app.exception import FileTooLargeError, MaterialNotFoundError, UnsupportedFileTypeError
-from app.llm import PdfJsonConverter
+from app.ports import PdfJsonConverter
 from app.repository import MaterialRepository
 from app.service.section_service import SectionService
 

@@ -1,61 +1,8 @@
-from dataclasses import dataclass
-from typing import Protocol
-
-from google import genai
-from google.genai import types
-from pydantic import BaseModel
-
 from app.config import Settings
 from app.entity import QuestionType
-from app.exception import ConfigurationError, LlmError
-
-
-class GeneratedQuestion(BaseModel):
-    type: QuestionType
-    stem: str
-    options: list[str]
-    answer_index: int  # 0-based index of the correct option
-    explanation: str
-    anchor_section: str  # the heading / section / page of the material the question is based on
-    source_excerpt: str  # a short passage of the material the student should re-read after a wrong answer
-
-
-class GeneratedQuiz(BaseModel):
-    """The response schema handed to Gemini."""
-
-    questions: list[GeneratedQuestion]
-
-
-@dataclass(frozen=True)
-class PastMistake:
-    """A question the student still gets wrong, as they last answered it."""
-
-    stem: str
-    options: list[str]
-    answer_index: int
-    selected_index: int
-    explanation: str
-    anchor_section: str = ""
-
-
-@dataclass(frozen=True)
-class TypeAccuracy:
-    type: QuestionType
-    total: int
-    correct: int
-
-
-class QuizGenerator(Protocol):
-    def generate(
-        self,
-        materials: list[tuple[str, str]],
-        mistakes: list[PastMistake],
-        accuracy: list[TypeAccuracy],
-        num_questions: int,
-        earlier_stems: list[str] | None = None,
-    ) -> GeneratedQuiz:
-        """materials are (filename, JSON text) pairs; earlier_stems are questions already asked in this section."""
-        ...
+from app.exception import LlmError
+from app.gemini_gateway import GeminiGateway
+from app.ports import GeneratedQuiz, PastMistake, TypeAccuracy
 
 
 INSTRUCTIONS = """Write a study quiz from the course material below.
@@ -151,18 +98,10 @@ def build_prompt(
 
 
 class GeminiQuizGenerator:
-    """Native Google GenAI SDK call that returns schema-shaped questions with their answers."""
+    """Asks Gemini (through the gateway) for schema-shaped questions with their answers."""
 
-    def __init__(self, settings: Settings, client: genai.Client | None = None):
-        if client is None:
-            if not settings.google_api_key:
-                raise ConfigurationError("GEMINI_API_KEY is not set")
-            client = genai.Client(
-                api_key=settings.google_api_key,
-                http_options=types.HttpOptions(timeout=settings.generation_timeout_seconds * 1000),
-            )
-        self._client = client
-        self._model = settings.generation_model
+    def __init__(self, settings: Settings, gateway: GeminiGateway | None = None):
+        self._gateway = gateway or GeminiGateway(settings)
         self._language = settings.quiz_language
 
     def generate(
@@ -173,21 +112,8 @@ class GeminiQuizGenerator:
         num_questions: int,
         earlier_stems: list[str] | None = None,
     ) -> GeneratedQuiz:
-        try:
-            response = self._client.models.generate_content(
-                model=self._model,
-                contents=build_prompt(materials, mistakes, accuracy, num_questions, self._language, earlier_stems),
-                config=types.GenerateContentConfig(
-                    response_mime_type="application/json",
-                    response_schema=GeneratedQuiz,
-                ),
-            )
-        except Exception as exc:
-            raise LlmError(f"Gemini request failed: {str(exc)[:300]}") from exc
-
-        quiz = response.parsed
-        if not isinstance(quiz, GeneratedQuiz):
-            raise LlmError("Gemini did not return a valid quiz")
+        prompt = build_prompt(materials, mistakes, accuracy, num_questions, self._language, earlier_stems)
+        quiz = self._gateway.generate_structured(prompt, GeneratedQuiz, expected="a valid quiz")
         _check_quiz(quiz)
         return quiz
 

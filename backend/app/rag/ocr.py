@@ -1,16 +1,11 @@
 import io
-from typing import Protocol
 
-from google import genai
-from google.genai import types
 from pydantic import BaseModel
 from pypdf import PdfReader, PdfWriter
 
 from app.config import Settings
-from app.exception import ConfigurationError, EmptyDocumentError, LlmError
-
-# A PDF whose pages average fewer characters than this has no usable text layer (it is scans or images).
-MIN_CHARS_PER_PAGE = 20
+from app.exception import EmptyDocumentError, LlmError
+from app.gemini_gateway import GeminiGateway
 
 PROMPT = """The attached PDF is a scan: its pages are images of text. Transcribe the text of every page.
 - Return `pages`: exactly {count} strings, one per page, in page order. Use an empty string for a page with no text.
@@ -25,25 +20,11 @@ class OcrPages(BaseModel):
     pages: list[str]
 
 
-class PageOcr(Protocol):
-    def transcribe(self, pdf: bytes) -> list[str]:
-        """Return the text of each page of a scanned PDF, one string per page (blank for an empty page)."""
-        ...
-
-
 class GeminiPageOcr:
     """Native Google GenAI SDK: Gemini reads the page images. Pages go in batches so no request is too large."""
 
-    def __init__(self, settings: Settings, client: genai.Client | None = None):
-        if client is None:
-            if not settings.google_api_key:
-                raise ConfigurationError("GEMINI_API_KEY is not set")
-            client = genai.Client(
-                api_key=settings.google_api_key,
-                http_options=types.HttpOptions(timeout=settings.generation_timeout_seconds * 1000),
-            )
-        self._client = client
-        self._model = settings.generation_model
+    def __init__(self, settings: Settings, gateway: GeminiGateway | None = None):
+        self._gateway = gateway or GeminiGateway(settings)
         self._pages_per_request = max(1, settings.ocr_pages_per_request)
         self._max_pages = settings.ocr_max_pages
         self._max_request_bytes = settings.max_material_pdf_bytes  # Gemini inline PDF limit
@@ -75,21 +56,9 @@ class GeminiPageOcr:
         return self._transcribe_batch(data, end - start)
 
     def _transcribe_batch(self, pdf: bytes, count: int) -> list[str]:
-        try:
-            response = self._client.models.generate_content(
-                model=self._model,
-                contents=[types.Part.from_bytes(data=pdf, mime_type="application/pdf"), PROMPT.format(count=count)],
-                config=types.GenerateContentConfig(
-                    response_mime_type="application/json",
-                    response_schema=OcrPages,
-                ),
-            )
-        except Exception as exc:
-            raise LlmError(f"Gemini OCR request failed: {str(exc)[:300]}") from exc
-
-        result = response.parsed
-        if not isinstance(result, OcrPages):
-            raise LlmError("Gemini did not return valid OCR text")
+        result = self._gateway.generate_structured(
+            PROMPT.format(count=count), OcrPages, pdf=pdf, task="OCR", expected="valid OCR text"
+        )
         if len(result.pages) == count:
             return result.pages
         # Page boundaries were lost: keep the text, attributed to the first page of the batch.

@@ -35,27 +35,32 @@ def get_course_service(session: Session = Depends(get_session)) -> CourseService
     return CourseService(CourseRepository(session))
 
 
+def get_section_service(
+    session: Session = Depends(get_session),
+    courses: CourseService = Depends(get_course_service),
+) -> SectionService:
+    return SectionService(SectionRepository(session), courses)
+
+
 def get_material_service(
     container: Container = Depends(get_container),
     session: Session = Depends(get_session),
+    sections: SectionService = Depends(get_section_service),
 ) -> MaterialService:
     return MaterialService(
         MaterialRepository(session),
-        SectionService(SectionRepository(session), CourseService(CourseRepository(session))),
+        sections,
         container.pdf_converter,
         container.settings.max_material_pdf_bytes,
     )
 
 
-def get_section_service(session: Session = Depends(get_session)) -> SectionService:
-    return SectionService(SectionRepository(session), CourseService(CourseRepository(session)))
-
-
 def get_quiz_service(
     container: Container = Depends(get_container),
     session: Session = Depends(get_session),
+    courses: CourseService = Depends(get_course_service),
+    sections: SectionService = Depends(get_section_service),
 ) -> QuizService:
-    courses = CourseService(CourseRepository(session))
     settings = container.settings
     return QuizService(
         QuizRepository(session),
@@ -63,7 +68,7 @@ def get_quiz_service(
         AttemptRepository(session),
         MaterialRepository(session),
         courses,
-        SectionService(SectionRepository(session), courses),
+        sections,
         container.quiz_generator,
         settings.questions_per_quiz,
         settings.mistake_review_limit,
@@ -83,6 +88,9 @@ def get_pet_chat_service(
     )
 
 
-def get_history_service(session: Session = Depends(get_session)) -> HistoryService:
-    courses = CourseService(CourseRepository(session))
-    return HistoryService(AttemptRepository(session), courses, SectionService(SectionRepository(session), courses))
+def get_history_service(
+    session: Session = Depends(get_session),
+    courses: CourseService = Depends(get_course_service),
+    sections: SectionService = Depends(get_section_service),
+) -> HistoryService:
+    return HistoryService(AttemptRepository(session), courses, sections)

@@ -6,6 +6,7 @@ from pypdf import PdfReader
 
 from app.config import Settings
 from app.exception import ConfigurationError, EmptyDocumentError, LlmError
+from app.gemini_gateway import GeminiGateway
 from app.rag import GeminiPageOcr
 from app.rag.ocr import OcrPages
 from tests.conftest import make_blank_pdf, make_pdf
@@ -33,7 +34,8 @@ class StubClient:
 
 def ocr(client, **overrides):
     overrides.setdefault("ocr_pages_per_request", 2)
-    return GeminiPageOcr(Settings(_env_file=None, **overrides), client=client)
+    settings = Settings(_env_file=None, **overrides)
+    return GeminiPageOcr(settings, GeminiGateway(settings, client))
 
 
 def test_pages_are_sent_in_batches_and_come_back_in_order():
@@ -83,6 +85,7 @@ def test_gemini_errors_and_empty_answers_become_llm_errors():
         ocr(StubClient(None)).transcribe(make_blank_pdf(1))
 
 
-def test_missing_api_key_is_a_configuration_error():
+def test_missing_api_key_is_a_configuration_error_when_a_scan_is_read_not_at_startup():
+    no_key = GeminiPageOcr(Settings(_env_file=None, gemini_api_key=""))
     with pytest.raises(ConfigurationError):
-        GeminiPageOcr(Settings(_env_file=None, gemini_api_key=""))
+        no_key.transcribe(make_blank_pdf(1))

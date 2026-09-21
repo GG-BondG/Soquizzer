@@ -6,7 +6,7 @@ from fastapi.testclient import TestClient
 from pypdf import PdfWriter
 
 from app.config import Settings
-from app.llm import GeneratedQuestion, GeneratedQuiz
+from app.ports import GeneratedQuestion, GeneratedQuiz
 from app.main import create_app
 
 

@@ -281,7 +281,9 @@ Soquizzer/
 │       ├── repository/      SQLAlchemy repositories (SQLite)
 │       ├── entity/          database models
 │       ├── dto/             request and response schemas
-│       ├── llm/             Gemini quiz generator
+│       ├── ports.py         interfaces the services depend on (quiz writer, tutor, PDF reading)
+│       ├── gemini_gateway.py  the single place that calls the Gemini SDK
+│       ├── llm/             Gemini quiz generator and pet tutor
 │       ├── rag/             PDF → JSON (pypdf) and Gemini OCR for scans
 │       └── config/          settings from env vars / .env
 ├── frontend/                Vite + React + Electron
