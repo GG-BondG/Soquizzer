@@ -22,7 +22,7 @@ Data lives under `DATA_DIR` (default `./data`): `soquizzer.db` (SQLite: courses,
 ```
 app/
 ├── controller/   HTTP layer: routing, no business logic. API.md documents every endpoint for the frontend
-├── service/      CourseService, SectionService, MaterialService, QuizService, HistoryService
+├── service/      CourseService, SectionService, MaterialService, QuizService (make/read quizzes), GradingService, ProgressService, HistoryService, PetChatService
 ├── repository/   SQLite repositories via SQLAlchemy (course, section, material, quiz, attempt, answer)
 ├── entity/       Database models (Course, Section, Material, Quiz, Question, Attempt, Answer)
 ├── dto/          Request/response schemas
