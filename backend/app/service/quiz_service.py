@@ -16,7 +16,7 @@ from app.exception import (
     QuestionNotFoundError,
     QuizNotFoundError,
 )
-from app.llm import PastMistake, QuizGenerator, TypeAccuracy
+from app.ports import PastMistake, QuizGenerator, TypeAccuracy
 from app.repository import AnswerRepository, AttemptRepository, MaterialRepository, QuizRepository
 from app.service.course_service import CourseService
 from app.service.section_service import SectionService

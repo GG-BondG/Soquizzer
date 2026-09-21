@@ -5,7 +5,8 @@ import pytest
 from app.config import Settings
 from app.entity import QuestionType
 from app.exception import ConfigurationError, LlmError
-from app.llm import GeminiQuizGenerator, GeneratedQuestion, GeneratedQuiz, PastMistake, TypeAccuracy
+from app.llm import GeminiQuizGenerator
+from app.ports import GeneratedQuestion, GeneratedQuiz, PastMistake, TypeAccuracy
 from app.llm.quiz_generator import build_prompt
 
 

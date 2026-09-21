@@ -1,61 +1,10 @@
-from dataclasses import dataclass
-from typing import Protocol
-
 from google import genai
 from google.genai import types
-from pydantic import BaseModel
 
 from app.config import Settings
 from app.entity import QuestionType
 from app.exception import ConfigurationError, LlmError
-
-
-class GeneratedQuestion(BaseModel):
-    type: QuestionType
-    stem: str
-    options: list[str]
-    answer_index: int  # 0-based index of the correct option
-    explanation: str
-    anchor_section: str  # the heading / section / page of the material the question is based on
-    source_excerpt: str  # a short passage of the material the student should re-read after a wrong answer
-
-
-class GeneratedQuiz(BaseModel):
-    """The response schema handed to Gemini."""
-
-    questions: list[GeneratedQuestion]
-
-
-@dataclass(frozen=True)
-class PastMistake:
-    """A question the student still gets wrong, as they last answered it."""
-
-    stem: str
-    options: list[str]
-    answer_index: int
-    selected_index: int
-    explanation: str
-    anchor_section: str = ""
-
-
-@dataclass(frozen=True)
-class TypeAccuracy:
-    type: QuestionType
-    total: int
-    correct: int
-
-
-class QuizGenerator(Protocol):
-    def generate(
-        self,
-        materials: list[tuple[str, str]],
-        mistakes: list[PastMistake],
-        accuracy: list[TypeAccuracy],
-        num_questions: int,
-        earlier_stems: list[str] | None = None,
-    ) -> GeneratedQuiz:
-        """materials are (filename, JSON text) pairs; earlier_stems are questions already asked in this section."""
-        ...
+from app.ports import GeneratedQuiz, PastMistake, TypeAccuracy
 
 
 INSTRUCTIONS = """Write a study quiz from the course material below.

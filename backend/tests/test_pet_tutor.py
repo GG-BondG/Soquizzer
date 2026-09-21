@@ -5,7 +5,8 @@ import pytest
 from app.config import Settings
 from app.entity import QuestionType
 from app.exception import ConfigurationError, LlmError
-from app.llm import ChatTurn, GeminiPetTutor, OwnAttempt, PastMistake, QuestionContext, TypeAccuracy
+from app.llm import GeminiPetTutor
+from app.ports import ChatTurn, OwnAttempt, PastMistake, QuestionContext, TypeAccuracy
 from app.llm.pet_tutor import build_prompt
 
 

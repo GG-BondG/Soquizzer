@@ -5,8 +5,7 @@ from app.config import Settings
 from app.container import Container
 from app.controller import chat_router, course_router, section_router, history_router, material_router, quiz_router
 from app.exception import register_exception_handlers
-from app.llm import PdfJsonConverter, PetTutor, QuizGenerator
-from app.rag import PageOcr
+from app.ports import PageOcr, PdfJsonConverter, PetTutor, QuizGenerator
 
 
 def create_app(

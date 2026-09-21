@@ -1,55 +1,9 @@
-from dataclasses import dataclass
-from typing import Protocol
-
 from google import genai
 from google.genai import types
 
 from app.config import Settings
-from app.entity import QuestionType
 from app.exception import ConfigurationError, LlmError
-from app.llm.quiz_generator import PastMistake, TypeAccuracy
-
-
-@dataclass(frozen=True)
-class QuestionContext:
-    """The question currently on the student's screen. The quiz has not been submitted yet."""
-
-    type: QuestionType
-    stem: str
-    options: list[str]
-    answer_index: int
-    explanation: str
-    anchor_section: str = ""
-
-
-@dataclass(frozen=True)
-class OwnAttempt:
-    """One earlier answer this student gave to this exact question (from a previous attempt at the same quiz)."""
-
-    selected_index: int
-    is_correct: bool
-
-
-@dataclass(frozen=True)
-class ChatTurn:
-    """One turn of the chat so far. `from_student` is False for the pet's own earlier replies."""
-
-    from_student: bool
-    text: str
-
-
-class PetTutor(Protocol):
-    def reply(
-        self,
-        question: QuestionContext,
-        own_attempts: list[OwnAttempt],
-        mistakes: list[PastMistake],
-        accuracy: list[TypeAccuracy],
-        history: list[ChatTurn],
-        message: str,
-    ) -> str:
-        """Answers `message` about `question`. `history` is the conversation so far, oldest first."""
-        ...
+from app.ports import ChatTurn, OwnAttempt, PastMistake, QuestionContext, TypeAccuracy
 
 
 INSTRUCTIONS = """You are Mochi, a friendly study-buddy character sitting next to a student who is taking a quiz \

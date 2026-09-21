@@ -3,8 +3,9 @@ from sqlalchemy.orm import sessionmaker
 
 from app.config import Settings
 from app.entity import Base, add_missing_columns
-from app.llm import GeminiPetTutor, GeminiQuizGenerator, PdfJsonConverter, PetTutor, QuizGenerator
-from app.rag import GeminiPageOcr, LocalPdfJsonConverter, PageOcr
+from app.llm import GeminiPetTutor, GeminiQuizGenerator
+from app.ports import PageOcr, PdfJsonConverter, PetTutor, QuizGenerator
+from app.rag import GeminiPageOcr, LocalPdfJsonConverter
 
 
 class Container:

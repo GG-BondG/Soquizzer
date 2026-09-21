@@ -6,9 +6,12 @@ import re
 from pypdf import PdfReader
 
 from app.exception import EmptyDocumentError
-from app.rag.ocr import MIN_CHARS_PER_PAGE, PageOcr
+from app.ports import PageOcr
 
 logger = logging.getLogger(__name__)
+
+# A PDF whose pages average fewer characters than this has no usable text layer (it is scans or images).
+MIN_CHARS_PER_PAGE = 20
 
 
 class LocalPdfJsonConverter:

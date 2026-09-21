@@ -1,5 +1,4 @@
 import io
-from typing import Protocol
 
 from google import genai
 from google.genai import types
@@ -8,9 +7,6 @@ from pypdf import PdfReader, PdfWriter
 
 from app.config import Settings
 from app.exception import ConfigurationError, EmptyDocumentError, LlmError
-
-# A PDF whose pages average fewer characters than this has no usable text layer (it is scans or images).
-MIN_CHARS_PER_PAGE = 20
 
 PROMPT = """The attached PDF is a scan: its pages are images of text. Transcribe the text of every page.
 - Return `pages`: exactly {count} strings, one per page, in page order. Use an empty string for a page with no text.
@@ -23,12 +19,6 @@ class OcrPages(BaseModel):
     """The response schema handed to Gemini."""
 
     pages: list[str]
-
-
-class PageOcr(Protocol):
-    def transcribe(self, pdf: bytes) -> list[str]:
-        """Return the text of each page of a scanned PDF, one string per page (blank for an empty page)."""
-        ...
 
 
 class GeminiPageOcr:

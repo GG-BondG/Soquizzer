@@ -1,6 +1,6 @@
 from app.dto import ChatRequest, ChatResponse
 from app.exception import QuestionNotFoundError, QuizNotFoundError
-from app.llm import ChatTurn, OwnAttempt, PastMistake, PetTutor, QuestionContext, TypeAccuracy
+from app.ports import ChatTurn, OwnAttempt, PastMistake, PetTutor, QuestionContext, TypeAccuracy
 from app.repository import AnswerRepository, QuizRepository
 
 
