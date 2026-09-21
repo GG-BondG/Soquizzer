@@ -52,6 +52,27 @@ async function send(text) {
 describe('PetProvider', () => {
   beforeEach(() => perform.mockClear());
 
+  it('keeps what pages get from useAssistant() the same while the student types in the chat', () => {
+    const onRender = vi.fn();
+    function Page() {
+      usePet();
+      onRender();
+      return <div>page</div>;
+    }
+    render(
+      <PetProvider>
+        <Page />
+      </PetProvider>
+    );
+    fireEvent.click(screen.getByTestId('pet-button'));
+    const before = onRender.mock.calls.length;
+
+    fireEvent.change(screen.getByPlaceholderText('Ask your assistant...'), { target: { value: 'h' } });
+    fireEvent.change(screen.getByPlaceholderText('Ask your assistant...'), { target: { value: 'he' } });
+
+    expect(onRender).toHaveBeenCalledTimes(before);
+  });
+
   it('opens the assistant chat when the pet is tapped', () => {
     render(
       <PetProvider>
