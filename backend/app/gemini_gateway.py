@@ -14,8 +14,8 @@ class GeminiGateway:
     """The one place that talks to the Google GenAI SDK: it builds the client, sends the request and turns every
     failure into an `LlmError`. The adapters (quiz writer, pet tutor, OCR) only decide what to ask.
 
-    The SDK client is created on the first request, so the app starts without an API key and only the features
-    that need Gemini fail (with a `ConfigurationError`) when used."""
+    The SDK client is created on the first request, so building an adapter needs no API key. Whether a missing key
+    stops the app is the container's decision (it does, at startup)."""
 
     def __init__(self, settings: Settings, client: genai.Client | None = None):
         self._settings = settings
