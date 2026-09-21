@@ -1,4 +1,4 @@
-import { formatClock, formatDate, formatDuration, formatPercent, typeLabel } from './format.js';
+import { formatAgo, formatClock, formatDate, formatDuration, formatPercent, typeLabel } from './format.js';
 
 describe('formatDuration', () => {
   it('shows a dash for a missing value', () => {
@@ -58,5 +58,25 @@ describe('typeLabel', () => {
     expect(typeLabel('MULTIPLE_CHOICE')).toBe('Multiple choice');
     expect(typeLabel('TRUE_FALSE')).toBe('True / False');
     expect(typeLabel('ESSAY')).toBe('ESSAY');
+  });
+});
+
+describe('formatAgo', () => {
+  const NOW = new Date(2026, 8, 19, 12, 0, 0);
+  const at = (day, hour = 9) => new Date(2026, 8, day, hour).toISOString();
+
+  it('says Today and Yesterday by calendar day, whatever the hour', () => {
+    expect(formatAgo(at(19, 0), NOW)).toBe('Today');
+    expect(formatAgo(at(18, 23), NOW)).toBe('Yesterday');
+  });
+
+  it('counts days up to a week, then falls back to the date', () => {
+    expect(formatAgo(at(16), NOW)).toBe('3 days ago');
+    expect(formatAgo(at(10), NOW)).toBe(formatDate(at(10)));
+  });
+
+  it('shows a dash for a missing or broken time', () => {
+    expect(formatAgo(null, NOW)).toBe('-');
+    expect(formatAgo('nope', NOW)).toBe('-');
   });
 });
